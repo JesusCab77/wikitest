@@ -1,0 +1,36 @@
+[May 9 16:03:09] 
+[May 9 16:03:09] ==DUPLICATOR INSTALLER BOOTSTRAP v4.5.2==
+[May 9 16:03:09] ----------------------------------------------------
+[May 9 16:03:09] Installer bootstrap start
+[May 9 16:03:09] Manual extract found so not going to extract dup-installer dir
+[May 9 16:03:09] EXTRACT dup-installer dir
+[May 9 16:03:09] Successfully deleted the file C:/xampp/htdocs/wikitest/dup-installer/dup-installer-log__[HASH].txt
+[May 9 16:03:09] NOTICE: Didn't need to extract the installer.
+[May 9 16:03:09] Set permissions of dup-installer<br/>
+[May 9 16:03:09] Set permissions of dup-installer/addons<br/>
+[May 9 16:03:09] Set permissions of dup-installer/api<br/>
+[May 9 16:03:09] Set permissions of dup-installer/assets<br/>
+[May 9 16:03:09] Set permissions of dup-installer/classes<br/>
+[May 9 16:03:09] Set permissions of dup-installer/ctrls<br/>
+[May 9 16:03:09] Set permissions of dup-installer/favicon<br/>
+[May 9 16:03:09] Set permissions of dup-installer/libs<br/>
+[May 9 16:03:09] Set permissions of dup-installer/original_files_[HASH]<br/>
+[May 9 16:03:09] Set permissions of dup-installer/src<br/>
+[May 9 16:03:09] Set permissions of dup-installer/templates<br/>
+[May 9 16:03:09] Set permissions of dup-installer/vendor<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-archive__[HASH].txt<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-database__[HASH].sql<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-installer-chunk__[HASH].json<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-installer-csrf__[HASH].txt<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-installer-dbinstall__[HASH].json<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-installer-extraction__[HASH].json<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-installer-notices__[HASH].json<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-installer-s3data__[HASH].json<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-params__[HASH].json<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-scan__[HASH].json<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-scanned-dirs__[HASH].txt<br/>
+[May 9 16:03:09] Set permissions of dup-installer/dup-scanned-files__[HASH].txt<br/>
+[May 9 16:03:09] Set permissions of dup-installer/index.php<br/>
+[May 9 16:03:09] Set permissions of dup-installer/main.installer.php<br/>
+[May 9 16:03:09] Set permissions of dup-installer/php_error__[HASH].log<br/>
+[May 9 16:03:09] DONE: No detected errors so redirecting to the main installer. Main Installer URI = http://localhost/wikitest/dup-installer/main.installer.php
