@@ -1,0 +1,178 @@
+# Translation of Plugins - Helpful - Stable (latest release) in Spanish (Spain)
+# This file is distributed under the same license as the Plugins - Helpful - Stable (latest release) package.
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2019-06-25 08:29:51+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: GlotPress/3.0.0-alpha.2\n"
+"Language: es\n"
+"Project-Id-Version: Plugins - Helpful - Stable (latest release)\n"
+
+#: templates/tabs/tab-texts.php:147
+msgctxt "option name"
+msgid "Column (contra)"
+msgstr "Columna (en contra)"
+
+#: templates/tabs/tab-texts.php:141
+msgctxt "option name"
+msgid "Column (pro)"
+msgstr "Columna (a favor)"
+
+#: templates/tabs/tab-texts.php:123
+msgctxt "option name"
+msgid "Button (contra)"
+msgstr "Botón (en contra)"
+
+#: templates/tabs/tab-texts.php:117
+msgctxt "option name"
+msgid "Button (pro)"
+msgstr "Botón (a favor)"
+
+#: templates/tabs/tab-texts.php:143
+msgctxt "option info"
+msgid "Here you can define your own text for the pro column in the post edit list."
+msgstr "Aquí puedes escribir tu texto para la columna \"a favor\" de la lista \"todas las publicaciones\"."
+
+#: templates/tabs/tab-texts.php:149
+msgctxt "option info"
+msgid "Here you can define your own text for the contra column in the post edit list."
+msgstr "Aquí puedes escribir tu propio texto para la columna «en contra» de la lista de edición de entradas."
+
+#: templates/tabs/tab-texts.php:83
+msgctxt "option info"
+msgid "This text will appear if the user has already voted."
+msgstr "Este texto aparecerá si el usuario ya ha votado."
+
+#: templates/tabs/tab-texts.php:81
+msgctxt "option name"
+msgid "Already voted"
+msgstr "Ya votado"
+
+#: templates/tabs/tab-texts.php:63
+msgctxt "option name"
+msgid "Content"
+msgstr "Contenido"
+
+#: templates/tabs/tab-texts.php:57
+msgctxt "option name"
+msgid "Headline"
+msgstr "Título"
+
+#: core/modules/class-frontend.php:102
+msgctxt "theme name"
+msgid "Flat"
+msgstr "Flat"
+
+#: core/modules/class-frontend.php:96
+msgctxt "theme name"
+msgid "Minimal"
+msgstr "Minimal"
+
+#: core/modules/class-frontend.php:90
+msgctxt "theme name"
+msgid "Dark"
+msgstr "Oscuro"
+
+#: core/modules/class-frontend.php:84
+msgctxt "theme name"
+msgid "Base"
+msgstr "Base"
+
+#: core/tabs/class-design.php:67
+msgctxt "tab name"
+msgid "Design"
+msgstr "Diseño"
+
+#: templates/tabs/tab-system.php:25 core/tabs/class-system.php:106
+msgctxt "tab name"
+msgid "System"
+msgstr "Sistema"
+
+#: core/modules/class-admin.php:226 core/modules/class-core.php:154
+msgctxt "column name"
+msgid "Contra"
+msgstr "En contra"
+
+#: core/modules/class-admin.php:225 core/modules/class-core.php:153
+msgctxt "column name"
+msgid "Pro"
+msgstr "A favor"
+
+#: core/modules/class-core.php:152
+msgctxt "text contra button"
+msgid "No"
+msgstr "No"
+
+#: core/modules/class-core.php:151
+msgctxt "text pro button"
+msgid "Yes"
+msgstr "Sí"
+
+#: core/modules/class-core.php:150
+msgctxt "error after voting"
+msgid "Sorry, an error has occurred."
+msgstr "Lo siento, ha ocurrido un error."
+
+#: core/modules/class-core.php:149 core/modules/class-core.php:156
+#: core/modules/class-core.php:157 core/modules/class-core.php:158
+msgctxt "text after voting"
+msgid "Thank you for voting."
+msgstr "Gracias por votar."
+
+#: core/modules/class-core.php:148
+msgctxt "already voted"
+msgid "You have already voted for this post."
+msgstr "Ya has votado en esta publicación."
+
+#: core/modules/class-core.php:147
+msgctxt "default description"
+msgid "Let us know if you liked the post. That’s the only way we can improve."
+msgstr "Haznos saber si te ha gustado esta publicación. Solo de esta manera podemos mejorar."
+
+#: core/modules/class-core.php:146
+msgctxt "default headline"
+msgid "Was this post helpful?"
+msgstr "¿Ha sido útil esta publicación?"
+
+#: templates/tabs/tab-texts.php:65
+msgctxt "option info"
+msgid "Here you can define your own content."
+msgstr "Aquí puedes definir tu propio contenido."
+
+#: templates/tabs/tab-texts.php:59
+msgctxt "option info"
+msgid "Here you can define your own headline."
+msgstr "Aquí puede escribir tu título."
+
+#: core/modules/class-widget.php:104
+msgctxt "headline dashboard widget"
+msgid "Helpful"
+msgstr "Helpful"
+
+#: templates/tabs/tab-texts.php:95
+msgctxt "option info"
+msgid "The text that is displayed, after a negative vote (shortcodes <b>without Ajax</b> are also possible!)"
+msgstr "El texto que se mostrará, tras un voto negativo (¡también se pueden utilizar shortcodes <b>sin Ajax</b>!)"
+
+#: templates/tabs/tab-texts.php:89
+msgctxt "option info"
+msgid "The text that is displayed, after a positive vote (shortcodes <b>without Ajax</b> are also possible!)"
+msgstr "El texto que se mostrará, tras un voto positivo (¡también se pueden utilizar shortcodes <b>sin Ajax</b>!)"
+
+#: templates/tabs/tab-feedback.php:137
+msgctxt "option name"
+msgid "Name"
+msgstr "Nombre"
+
+#. Description of the plugin
+msgid "Add a fancy feedback form under your posts or post-types and ask your visitors a question. Give them the abbility to vote with yes or no."
+msgstr "Añade un bonito formulario bajo tus entradas o tipos de entradas y hazle una pregunta a tus visitantes. Dales la posibilidad de votar con sí o no."
+
+#. Plugin Name of the plugin
+#: templates/admin.php:22 core/modules/class-admin.php:62
+#: core/modules/class-admin.php:63
+msgid "Helpful"
+msgstr "Helpful"
