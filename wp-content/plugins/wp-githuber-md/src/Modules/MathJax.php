@@ -104,7 +104,7 @@ class MathJax extends ModuleAbstract {
 								$(".language-mathjax").each(function(i) {
 									var content = $(this).html();
 									if ($(this).hasClass("mathjax-inline")) {
-										$(this).html("$$ " + content + " $$");
+										$(this).html("$ " + content + " $");
 									} else {
 										$(this).html("$$" + "\n" + content + "\n" + "$$");
 									}
@@ -174,7 +174,7 @@ class MathJax extends ModuleAbstract {
 	public static function mathjax_inline_markup( $content ) {
 
 		$regex = '%<code>\$((?:[^$]+ |(?<=(?<!\\\\)\\\\)\$ )+)(?<!\\\\)\$<\/code>%ix';
-		$content = preg_replace_callback( $regex, function() {
+		$result = preg_replace_callback( $regex, function() {
 			$matches = func_get_arg(0);
 
 			if ( ! empty( $matches[1] ) ) {
@@ -183,6 +183,10 @@ class MathJax extends ModuleAbstract {
 				return '<code class="mathjax-inline language-mathjax">' . trim( $mathjax ) . '</code>';
 			}
 		}, $content );
+
+		if ( ! empty( $result ) ) {
+			$content = $result;
+		}
 
 		return $content;
 	}

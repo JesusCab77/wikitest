@@ -1,28 +1,33 @@
 <?php
 /**
- * Provides useful helpers for the other classes of the plugin.
+ * Helper class.
  *
- * @package Helpful\Core
- * @author  Pixelbart <me@pixelbart.de>
- * @version 4.3.0
+ * @package Helpful
+ * @subpackage Core
+ * @version 4.4.59
+ * @since 4.3.0
  */
+
 namespace Helpful\Core;
+
+use Helpful\Core\Services;
 
 /* Prevent direct access */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Helper
-{
+/**
+ * ...
+ */
+class Helper {
 	/**
 	 * Returns the WordPress information about the plugin.
 	 *
 	 * @version 4.3.0
 	 * @return array
 	 */
-	public static function get_plugin_data()
-	{		
+	public static function get_plugin_data() {
 		if ( ! function_exists( 'get_plugin_data' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
@@ -42,13 +47,16 @@ class Helper
 
 	/**
 	 * Set custom timezone if set in the options.
-	 *
-	 * @version 4.3.0
-	 * @return void
 	 */
-	public static function set_timezone()
-	{
-		$timezone = get_option( 'helpful_timezone' );
+	public static function set_timezone() {
+		$options = new Services\Options();
+
+		$timezone = $options->get_option( 'helpful_timezone', date_default_timezone_get(), 'esc_attr' );
+
+		if ( isset( $timezone ) && '' !== trim( $timezone ) && false === self::is_timezone( $timezone ) ) {
+			$options->update_option( 'helpful_timezone', '' );
+			return false;
+		}
 
 		if ( isset( $timezone ) && '' !== trim( $timezone ) ) {
 			date_default_timezone_set( $timezone );
@@ -56,26 +64,37 @@ class Helper
 	}
 
 	/**
+	 * Checks if a timezone exists.
+	 *
+	 * @source https://stackoverflow.com/a/5823217
+	 *
+	 * @param string $timezone Timezone string.
+	 *
+	 * @return bool
+	 */
+	public static function is_timezone( $timezone ) {
+		@$tz = timezone_open( $timezone );
+		return ( false !== $tz );
+	}
+
+	/**
 	 * Returns the available options for Same-Site cookies.
 	 *
 	 * @return array
 	 */
-	public static function get_samesite_options()
-	{
-		$defaults = [ 'None', 'Lax', 'Strict' ];
-
+	public static function get_samesite_options() {
+		$defaults = array( 'None', 'Lax', 'Strict' );
 		return apply_filters( 'helpful_samesite_options', $defaults );
 	}
 
 	/**
 	 * Checks if the current tab is in use.
 	 *
-	 * @param string $tab
+	 * @param string $tab Tab to check.
 	 *
 	 * @return bool
 	 */
-	public static function is_active_tab( $tab )
-	{
+	public static function is_active_tab( $tab ) {
 		$screen = get_current_screen();
 
 		if ( 'toplevel_page_helpful' !== $screen->base ) {
@@ -83,7 +102,7 @@ class Helper
 		}
 
 		$current = apply_filters( 'helpful_current_tab', false );
-		
+
 		if ( $tab !== $current ) {
 			return false;
 		}
@@ -96,13 +115,12 @@ class Helper
 	 *
 	 * @return array
 	 */
-	public static function get_credits_data()
-	{
-		$credits = [			
+	public static function get_credits_data() {
+		$credits = array(
 			'url'  => apply_filters( 'helpful_credits_url', 'https://helpful-plugin.info' ),
 			'name' => apply_filters( 'helpful_credits_name', 'Helpful' ),
 			'rel'  => apply_filters( 'helpful_credits_rel', 'noopener' ),
-		];
+		);
 
 		$html = '<a href="%1$s" target="_blank" rel="%2$s">%3$s</a>';
 		$html = apply_filters( 'helpful_credits_html', $html );
@@ -117,8 +135,7 @@ class Helper
 	 *
 	 * @return array
 	 */
-	public static function get_admin_tabs()
-	{
+	public static function get_admin_tabs() {
 		$current = apply_filters( 'helpful_current_tab', false );
 		return apply_filters( 'helpful_get_admin_tabs', __return_empty_array(), $current );
 	}
@@ -126,12 +143,11 @@ class Helper
 	/**
 	 * Get tab url.
 	 *
-	 * @param string $tab
+	 * @param string $tab Tab to check.
 	 *
 	 * @return string
 	 */
-	public static function get_tab_url( $tab )
-	{
+	public static function get_tab_url( $tab ) {
 		$tab = sanitize_text_field( wp_unslash( $tab ) );
 		return apply_filters( 'helpful_get_tab_url', admin_url( 'admin.php?page=helpful&tab=' . $tab ) );
 	}
@@ -139,40 +155,38 @@ class Helper
 	/**
 	 * Get tab class.
 	 *
-	 * @param string $tab
+	 * @param string $tab Tab to check.
 	 *
 	 * @return string
 	 */
-	public static function get_tab_class( $tab )
-	{
+	public static function get_tab_class( $tab ) {
 		$tab = sanitize_text_field( wp_unslash( $tab ) );
 
 		$class = '';
-		
+
 		if ( self::is_active_tab( $tab ) ) {
 			$class = 'active';
 		}
-		
+
 		return apply_filters( 'helpful_get_tab_class', $class );
 	}
 
 	/**
 	 * Get tab attribute.
 	 *
-	 * @param string $tab
+	 * @param string $tab Tab to check.
 	 *
 	 * @return string
 	 */
-	public static function get_tab_attr( $tab )
-	{
+	public static function get_tab_attr( $tab ) {
 		$tab = sanitize_text_field( wp_unslash( $tab ) );
 
 		$attr = '';
-		
+
 		if ( self::is_active_tab( $tab ) ) {
 			$attr = 'selected';
 		}
-		
+
 		return apply_filters( 'helpful_get_tab_attr', $attr );
 	}
 
@@ -181,8 +195,7 @@ class Helper
 	 *
 	 * @return string
 	 */
-	public static function get_logo()
-	{
+	public static function get_logo() {
 		$logo = plugins_url( 'core/assets/images/helpful-heart.svg', HELPFUL_FILE );
 		return apply_filters( 'helpful_logo', $logo );
 	}
@@ -190,14 +203,13 @@ class Helper
 	/**
 	 * Returns an array of media data from Helpful.
 	 *
-	 * @return array 
+	 * @return array
 	 */
-	public static function get_plugin_media_data()
-	{
-		$media = [
+	public static function get_plugin_media_data() {
+		$media = array(
 			'logo'  => self::get_logo(),
 			'color' => '#88c057',
-		];
+		);
 
 		return apply_filters( 'helpful_media_data', $media );
 	}
@@ -205,25 +217,21 @@ class Helper
 	/**
 	 * Plugins URL
 	 *
-	 * @param string $path
+	 * @param string $path Path to search.
 	 *
 	 * @return string
 	 */
-	public static function plugins_url( $path )
-	{
+	public static function plugins_url( $path ) {
 		return plugins_url( $path, HELPFUL_FILE );
 	}
 
 	/**
 	 * Filter the conditions and check if you are for example on the homepage and not in the single view.
 	 *
-	 * @version 4.3.0
-	 *
 	 * @return array
 	 */
-	public static function get_conditions()
-	{
-		$conditions = [];
+	public static function get_conditions() {
+		$conditions = array();
 
 		if ( ! is_singular() ) {
 			$conditions[] = 'is_not_singular';
@@ -247,23 +255,26 @@ class Helper
 	/**
 	 * Get html output for alerts.
 	 *
-	 * @param string $message
-	 * @param string $type
-	 * @param int $close
+	 * @param string $message Alert message.
+	 * @param string $type Alert message type.
+	 * @param int    $close Show close.
 	 *
 	 * @return string
 	 */
-	public static function get_alert( $message, $type = 'none', $close = 2500 )
-	{
+	public static function get_alert( $message, $type = 'none', $close = 2500 ) {
 		$classes = 'helpful-alert helpful-auto-close';
 
-		$types = [ 'success', 'danger', 'info' ];
+		$types = array( 'success', 'danger', 'info' );
 
-		if ( in_array( $type, $types ) ) {
+		if ( in_array( $type, $types, true ) ) {
 			$classes .= ' helpful-alert-' . $type;
 		}
 
 		$close = intval( $close );
+
+		if ( 0 === $close ) {
+			return sprintf( '<div class="%s">%s</div>', $classes, $message );
+		}
 
 		return sprintf( '<div class="%s" data-close="%s">%s</div>', $classes, $close, $message );
 	}
@@ -273,9 +284,8 @@ class Helper
 	 *
 	 * @return array
 	 */
-	public static function datatables_language_string()
-	{
-		$language = [
+	public static function datatables_language_string() {
+		$language = array(
 			'decimal'        => esc_html_x( '', 'datatables decimal', 'helpful' ),
 			'emptyTable'     => esc_html_x( 'No data available in table', 'datatables emptyTable', 'helpful' ),
 			'info'           => esc_html_x( 'Showing _START_ to _END_ of _TOTAL_ entries', 'datatables info', 'helpful' ),
@@ -288,43 +298,46 @@ class Helper
 			'processing'     => esc_html_x( 'Processing...', 'datatables processing', 'helpful' ),
 			'search'         => esc_html_x( 'Search:', 'datatables search', 'helpful' ),
 			'zeroRecords'    => esc_html_x( 'No matching records found', 'datatables zeroRecords', 'helpful' ),
-			'paginate'       => [
+			'paginate'       => array(
 				'first'    => esc_html_x( 'First', 'datatables first', 'helpful' ),
 				'last'     => esc_html_x( 'Last', 'datatables last', 'helpful' ),
 				'next'     => esc_html_x( 'Next', 'datatables next', 'helpful' ),
 				'previous' => esc_html_x( 'Previous', 'datatables previous', 'helpful' ),
-			],
-			'aria'         => [
+			),
+			'aria' => array(
 				'sortAscending'  => esc_html_x( ': activate to sort column ascending', 'datatables sortAscending', 'helpful' ),
 				'sortDescending' => esc_html_x( ': activate to sort column descending', 'datatables sortDescending', 'helpful' ),
-			],
-			'select'       => [
-				'rows' => [
+			),
+			'select' => array(
+				'rows' => array(
+					/* translators: %d amount of rows */
 					'_' => esc_html_x( '%d rows selected', 'datatables previous', 'helpful' ),
 					'0' => esc_html_x( '', 'datatables previous', 'helpful' ),
 					'1' => esc_html_x( '1 row selected', 'datatables previous', 'helpful' ),
-				],
-			],
-			'buttons'     => [
-				'print'       => esc_html_x( 'Print', 'datatables print', 'helpful' ),
-				'colvis'      => esc_html_x( 'Columns', 'datatables colvis', 'helpful' ),
-				'copy'        => esc_html_x( 'Copy', 'datatables copy', 'helpful' ),
-				'copyTitle'   => esc_html_x( 'Copy to clipboard', 'datatables copyTitle', 'helpful' ),
-				'copyKeys'    => esc_html_x(
+				),
+			),
+			'buttons' => array(
+				'print'     => esc_html_x( 'Print', 'datatables print', 'helpful' ),
+				'colvis'    => esc_html_x( 'Columns', 'datatables colvis', 'helpful' ),
+				'copy'      => esc_html_x( 'Copy', 'datatables copy', 'helpful' ),
+				'copyTitle' => esc_html_x( 'Copy to clipboard', 'datatables copyTitle', 'helpful' ),
+				'copyKeys'  => esc_html_x(
 					'Press <i>ctrl</i> or <i>\u2318</i> + <i>C</i> to copy table<br>to temporary storage.<br><br>To cancel, click on the message or press Escape.',
 					'datatables copyKeys',
 					'helpful'
 				),
-				'copySuccess' => [
+				'copySuccess' => array(
+					/* translators: %d amount of rows */
 					'_' => esc_html_x( '%d rows copied', 'datatables copySuccess', 'helpful' ),
 					'1' => esc_html_x( '1 row copied', 'datatables copySuccess', 'helpful' ),
-				],
-				'pageLength' => [
+				),
+				'pageLength' => array(
 					'-1' => esc_html_x( 'Show all rows', 'datatables pageLength', 'helpful' ),
-					'_'  =>  esc_html_x( 'Show %d rows', 'datatables pageLength', 'helpful' ),
-				],
-			],
-		];
+					/* translators: %d amount of rows */
+					'_'  => esc_html_x( 'Show %d rows', 'datatables pageLength', 'helpful' ),
+				),
+			),
+		);
 
 		return apply_filters( 'helpful_datatables_language', $language );
 	}
@@ -334,24 +347,24 @@ class Helper
 	 *
 	 * @return string
 	 */
-	public static function get_disallowed_keys()
-	{
+	public static function get_disallowed_keys() {
+		$options = new Services\Options();
+
 		if ( version_compare( get_bloginfo( 'version' ), '5.5.0' ) >= 0 ) {
-			return trim( get_option( 'disallowed_keys' ) );
+			return trim( $options->get_option( 'disallowed_keys', '', 'esc_attr' ) );
 		}
-		
-		return trim( get_option( 'blacklist_keys' ) );
+
+		return trim( $options->get_option( 'blacklist_keys', '', 'esc_attr' ) );
 	}
 
 	/**
 	 * Checks if the content is set on the internal blacklist of WordPress
-	 * 
+	 *
 	 * @param string $content the content to be checked.
 	 *
 	 * @return bool
 	 */
-	public static function backlist_check( $content )
-	{
+	public static function backlist_check( $content ) {
 		$mod_keys = self::get_disallowed_keys();
 
 		if ( '' === $mod_keys ) {
@@ -384,12 +397,11 @@ class Helper
 	 *
 	 * @return bool
 	 */
-	public static function is_amp()
-	{
+	public static function is_amp() {
 		if ( function_exists( 'ampforwp_is_amp_endpoint' ) && ampforwp_is_amp_endpoint() ) {
 			return true;
 		}
-		
+
 		if ( function_exists( 'is_amp_endpoint' ) && is_amp_endpoint() ) {
 			return true;
 		}
@@ -400,20 +412,19 @@ class Helper
 	/**
 	 * Sets a capability.
 	 *
-	 * @param string $option
-	 * @param string $value
+	 * @param string $option Option name.
+	 * @param string $value Option value.
 	 *
 	 * @return void
 	 */
-	public static function set_capability( $option, $value )
-	{
-		$options = [
+	public static function set_capability( $option, $value ) {
+		$options = array(
 			'helpful_capability',
 			'helpful_settings_capability',
 			'helpful_feedback_capability',
-		];
+		);
 
-		if ( ! in_array( $option, $options ) ) {
+		if ( ! in_array( $option, $options, true ) ) {
 			return;
 		}
 
@@ -430,14 +441,59 @@ class Helper
 	/**
 	 * Checks if the feedback was deactivated by option.
 	 *
+	 * @version 4.4.59
+	 *
 	 * @return bool
 	 */
-	public static function is_feedback_disabled()
-	{
-		if ( 'on' !== get_option( 'helpful_feedback_disabled' ) ) {
-			return false;
+	public static function is_feedback_disabled() {
+		$options = new Services\Options();
+
+		if ( 'on' === $options->get_option( 'helpful_feedback_disabled', 'off', 'on_off' ) ) {
+			return true;
 		}
 
-		return true;
+		return false;
+	}
+
+	/**
+	 * Returns the allowed HTML tags and attributes for the kses function
+	 * that are allowed when saving the settings.
+	 *
+	 * @version 4.4.57
+	 * @since 4.4.56
+	 *
+	 * @return array
+	 */
+	public static function kses_allowed_tags() {
+		$tags = array(
+			'a' => array(
+				'class' => array(),
+				'href'  => array(),
+				'title' => array(),
+			),
+			'br' => array(
+				'class' => array(),
+			),
+			'em' => array(
+				'class' => array(),
+			),
+			'strong' => array(
+				'class' => array(),
+			),
+			'hr' => array(
+				'class' => array(),
+			),
+			'p' => array(
+				'class' => array(),
+			),
+			'div' => array(
+				'class' => array(),
+			),
+			'i' => array(
+				'class' => array(),
+			),
+		);
+
+		return apply_filters( 'helpful/kses/allowed_tags', $tags );
 	}
 }

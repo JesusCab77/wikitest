@@ -1,186 +1,133 @@
 <?php
 /**
- * ...
+ * Starts sessions, installs database tables and makes Helpful work.
  *
- * @package Helpful\Core\Modules
- * @author  Pixelbart <me@pixelbart.de>
- * @version 4.3.0
+ * @package Helpful
+ * @subpackage Core\Modules
+ * @version 4.5.7
+ * @since 4.3.0
  */
+
 namespace Helpful\Core\Modules;
 
-use Helpful\Core\Helpers as Helpers;
 use Helpful\Core\Helper;
+use Helpful\Core\Helpers as Helpers;
+use Helpful\Core\Module;
+use Helpful\Core\Services as Services;
 
 /* Prevent direct access */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Core
-{
-	/**
-	 * Instance
-	 *
-	 * @var Core
-	 */
-	public static $instance;
-
-	/**
-	 * Set instance and fire class
-	 *
-	 * @return Core
-	 */
-	public static function get_instance()
-	{
-		if ( ! isset( self::$instance ) ) {
-			self::$instance = new self();
-		}
-		return self::$instance;
-	}
+/**
+ * ...
+ */
+class Core {
+	use Module;
 
 	/**
 	 * Class constructor
-	 *
-	 * @return void
 	 */
-	public function __construct()
-	{
+	public function __construct() {
 		Helper::set_timezone();
 
-		add_action( 'admin_init', [ &$this, 'setup_helpful_table' ] );
-		add_action( 'admin_init', [ &$this, 'setup_feedback_table' ] );
+		add_action( 'init', array( & $this, 'start_session' ), -1 );
+		add_action( 'init', array( & $this, 'set_user_cookie' ), 1 );
 
-		// Causes problems and was therefore commented out.
-		// add_action( 'init', [ &$this, 'setup_defaults' ] );
+		add_action( 'admin_init', array( & $this, 'setup_tables' ) );
 
-		add_action( 'activated_plugin', [ &$this, 'load_first' ] );
+		add_action( 'init', array( & $this, 'setup_defaults' ) );
 
-		add_filter( 'plugin_row_meta', [ &$this, 'plugin_row_meta' ], 10, 2 );
-		add_filter( 'helpful_debug_fields', [ &$this, 'debug_fields' ] );
+		add_action( 'activated_plugin', array( & $this, 'load_first' ) );
 
-		add_filter( 'helpful_current_tab', [ &$this, 'current_tab' ] );
-		add_filter( 'helpful_editor_settings', [ &$this, 'editor_settings' ] );
+		add_filter( 'plugin_row_meta', array( & $this, 'plugin_row_meta' ), 10, 2 );
+		add_filter( 'helpful_debug_fields', array( & $this, 'debug_fields' ) );
 
-		/**
-		 * Load Elementor Widgets
-		 *
-		 * @since 4.1.2
-		 */
-		add_action( 'elementor/widgets/widgets_registered', [ &$this, 'elementor_widgets' ] );
-		add_action( 'elementor/controls/controls_registered', [ &$this, 'elementor_controls' ] );
-		add_action( 'elementor/elements/categories_registered', [ &$this, 'elementor_categories' ] );
+		add_filter( 'helpful_current_tab', array( & $this, 'current_tab' ) );
+		add_filter( 'helpful_editor_settings', array( & $this, 'editor_settings' ) );
+
+		add_action( 'elementor/widgets/widgets_registered', array( & $this, 'elementor_widgets' ) );
+		add_action( 'elementor/controls/controls_registered', array( & $this, 'elementor_controls' ) );
+		add_action( 'elementor/elements/categories_registered', array( & $this, 'elementor_categories' ) );
+
+		add_action( 'update_option', array( & $this, 'update_option_hook' ), 10, 3 );
+
+		add_action( 'helpful/plugin/updated', array( & $this, 'setup_tables_and_settings' ) );
+
+		add_action( 'upgrader_process_complete', array( & $this, 'on_plugin_update' ), 10, 2 );
+
+		add_action( 'wp_mail_failed', array( & $this, 'log_mailer_errors' ), 10, 1 );
+	}
+
+	/**
+	 * Start sessions
+	 */
+	public function start_session() {
+		$session = new Services\Session();
+		$session->init();
+	}
+
+	/**
+	 * Set users cookie with unique id
+	 */
+	public function set_user_cookie() {
+		if ( ( isset( $GLOBALS['pagenow'] ) && 'wp-login.php' === $GLOBALS['pagenow'] ) || is_admin() ) {
+			return;
+		}
+
+		Helpers\User::set_user();
 	}
 
 	/**
 	 * Set default options.
-	 *
-	 * @return bool
 	 */
-	public function setup_defaults()
-	{
-		$status = intval( get_option( 'helpful_defaults' ) );
-	
-		if ( 1 === $status ) {
-			return false;
+	public function setup_defaults() {
+		$options = new Services\Options();
+
+		if ( $options->get_option( 'helpful_defaults', 0, 'intval' ) ) {
+			return;
 		}
 
 		$this->set_defaults( true );
 
-		update_option( 'helpful_defaults', 1 );
-
-		return true;
+		$options->update_option( 'helpful_defaults', 1 );
 	}
 
 	/**
-	 * Create database table for helpful
-	 *
-	 * @global $wpdb
-	 *
-	 * @return bool
+	 * Create database tables for helpful.
 	 */
-	public function setup_helpful_table()
-	{
-		// Updates database tables.
-		Helpers\Database::update_tables();
+	public function setup_tables() {
+		$transient    = 'helpful/database/setup_tables';
+		$setup_tables = get_transient( $transient );
 
-		if ( false === get_transient( 'setup_helpful_table' ) ) {
-			Helpers\Database::setup_helpful_table();
-			set_transient( 'setup_helpful_table', 1, WEEK_IN_SECONDS );
+		if ( false === $setup_tables ) {
+			Helpers\Database::handle_table_helpful();
+			Helpers\Database::handle_table_feedback();
+			Helpers\Database::handle_table_instances();
+			set_transient( $transient, time(), DAY_IN_SECONDS );
 		}
 	}
 
 	/**
-	 * Create database table for feedback
+	 * Default values for settings.
 	 *
-	 * @global $wpdb
-	 *
-	 * @return bool
-	 */
-	public function setup_feedback_table()
-	{
-		if ( false === get_transient( 'setup_feedback_table' ) ) {
-			Helpers\Database::setup_feedback_table();
-			set_transient( 'setup_feedback_table', 1, WEEK_IN_SECONDS );
-		}
-	}
-
-	/**
-	 * Default values for settings
-	 *
-	 * @param bool $status set true for filling defaults.
+	 * @param bool $status Set true for filling defaults.
 	 *
 	 * @return bool
 	 */
-	public function set_defaults( $status = false )
-	{
+	public function set_defaults( $status = false ) {
 		if ( false === $status ) {
 			return false;
 		}
 
-		ob_start();
-		require_once HELPFUL_PATH . 'templates/feedback-email.php';
-		$feedback_email_content = ob_get_contents();
-		ob_end_clean();
+		$options  = new Services\Options();
+		$defaults = $options->get_defaults_array();
+		$defaults = apply_filters( 'helpful_options', $defaults );
 
-		$options = [
-			'helpful_heading'                => _x( 'Was this post helpful?', 'default headline', 'helpful' ),
-			'helpful_content'                => _x( 'Let us know if you liked the post. That’s the only way we can improve.', 'default description', 'helpful' ),
-			'helpful_exists'                 => _x( 'You have already voted for this post.', 'already voted', 'helpful' ),
-			'helpful_success'                => _x( 'Thank you for voting.', 'text after voting', 'helpful' ),
-			'helpful_error'                  => _x( 'Sorry, an error has occurred.', 'error after voting', 'helpful' ),
-			'helpful_pro'                    => _x( 'Yes', 'text pro button', 'helpful' ),
-			'helpful_contra'                 => _x( 'No', 'text contra button', 'helpful' ),
-			'helpful_column_pro'             => _x( 'Pro', 'column name', 'helpful' ),
-			'helpful_column_contra'          => _x( 'Contra', 'column name', 'helpful' ),
-			'helpful_column_feedback'        => _x( 'Feedback', 'column name', 'helpful' ),
-			'helpful_after_pro'              => _x( 'Thank you for voting.', 'text after voting', 'helpful' ),
-			'helpful_after_contra'           => _x( 'Thank you for voting.', 'text after voting', 'helpful' ),
-			'helpful_after_fallback'         => _x( 'Thank you for voting.', 'text after voting', 'helpful' ),
-			'helpful_feedback_label_message' => _x( 'Message', 'label for feedback form field', 'helpful' ),
-			'helpful_feedback_label_name'    => _x( 'Name', 'label for feedback form field', 'helpful' ),
-			'helpful_feedback_label_email'   => _x( 'Email', 'label for feedback form field', 'helpful' ),
-			'helpful_feedback_label_submit'  => _x( 'Send Feedback', 'label for feedback form field', 'helpful' ),
-			'helpful_feedback_label_cancel'  => _x( 'Cancel', 'label for feedback form field', 'helpful' ),
-			'helpful_post_types'             => [ 'post' ],
-			'helpful_count_hide'             => false,
-			'helpful_credits'                => true,
-			'helpful_uninstall'              => false,
-			'helpful_widget'                 => true,
-			'helpful_widget_amount'          => 3,
-			'helpful_widget_pro'             => true,
-			'helpful_widget_contra'          => true,
-			'helpful_widget_pro_recent'      => true,
-			'helpful_widget_contra_recent'   => true,
-			'helpful_feedback_subject'       => _x( 'There\'s new feedback for you.', 'feedback email subject', 'helpful' ),
-			'helpful_feedback_receivers'     => get_option( 'admin_email' ),
-			'helpful_feedback_email_content' => $feedback_email_content,
-		];
-
-		$options = apply_filters( 'helpful_options', $options );
-
-		foreach ( $options as $slug => $value ) :
-			if ( ! get_option( $slug ) ) {
-				update_option( $slug, $value );
+		foreach ( $defaults as $slug => $value ) :
+			if ( ! $options->get_option( $slug ) ) {
+				$options->update_option( $slug, $value );
 			}
 		endforeach;
 
@@ -188,19 +135,22 @@ class Core
 	}
 
 	/**
-	 * Loads helpful first
-	 *
-	 * @return void
+	 * Tries to load Helpful first so other plugins don't jump the queue in content.
 	 */
-	public function load_first()
-	{
-		if ( ! get_option( 'helpful_plugin_first' ) ) {
+	public function load_first() {
+		$service = new Services\Options();
+
+		if ( 'on' !== $service->get_option( 'helpful_plugin_first', 'off', 'esc_attr' ) ) {
 			return;
 		}
 
-		$path = str_replace( WP_PLUGIN_DIR . '/', '', HELPFUL_FILE );
-		if ( $plugins = get_option( 'active_plugins' ) ) {
-			if ( $key = array_search( $path, $plugins ) ) {
+		$path    = str_replace( WP_PLUGIN_DIR . '/', '', HELPFUL_FILE );
+		$plugins = $service->get_option( 'active_plugins', array(), 'esc_attr' );
+
+		if ( $plugins ) {
+			$key = array_search( $path, $plugins, true );
+
+			if ( $key ) {
 				array_splice( $plugins, $key, 1 );
 				array_unshift( $plugins, $path );
 				update_option( 'active_plugins', $plugins );
@@ -211,14 +161,12 @@ class Core
 	/**
 	 * Method for adding and filtering plugin row meta of Helpful.
 	 *
-	 * @param array  $links default links.
-	 * @param string $file file string.
+	 * @param array  $links Default links.
+	 * @param string $file File string.
 	 *
 	 * @return array
 	 */
-	public function plugin_row_meta( $links, $file )
-	{
-
+	public function plugin_row_meta( $links, $file ) {
 		if ( false !== strpos( $file, basename( HELPFUL_FILE ) ) ) {
 			$links['documentation'] = sprintf(
 				'<a href="%s" target="_blank">%s</a>',
@@ -246,11 +194,8 @@ class Core
 
 	/**
 	 * Register custom elementor widgets
-	 *
-	 * @return void
 	 */
-	public function elementor_widgets()
-	{
+	public function elementor_widgets() {
 		$elementor = \Elementor\Plugin::instance();
 
 		/**
@@ -263,39 +208,32 @@ class Core
 
 	/**
 	 * Register custom elementor controls
-	 *
-	 * @return void
 	 */
-	public function elementor_controls()
-	{
-		// nothing
+	public function elementor_controls() {
+		/* nothing */
 	}
 
 	/**
 	 * Register categories
 	 *
 	 * @param object $elementor elementor object.
-	 *
-	 * @return void
 	 */
-	public function elementor_categories( $elementor )
-	{
-		// nothing
+	public function elementor_categories( $elementor ) {
+		/* nothing */
 	}
 
 	/**
 	 * Fields for Debug Informations.
 	 *
-	 * @param array $fields
+	 * @param array $fields Previous fields.
 	 *
 	 * @return array
 	 */
-	public function debug_fields( $fields )
-	{		
-		$fields['datatables'] = [
+	public function debug_fields( $fields ) {
+		$fields['datatables'] = array(
 			'label' => esc_html_x( 'DataTables version', 'debug field label', 'helpful' ),
 			'value' => '1.10.20',
-		];
+		);
 
 		return $fields;
 	}
@@ -305,12 +243,15 @@ class Core
 	 *
 	 * @return string
 	 */
-	public function current_tab()
-	{
+	public function current_tab() {
 		$tab = 'start';
 
-		if ( isset( $_GET['tab'] ) && '' !== trim( $_GET['tab'] ) ) {
-			$tab = sanitize_text_field( wp_unslash( $_GET['tab'] ) );
+		if ( array_key_exists( 'tab', $_GET ) ) {
+			$string = trim( sanitize_text_field( wp_unslash( $_GET['tab'] ) ) );
+
+			if ( '' !== $string ) {
+				$tab = $string;
+			}
 		}
 
 		return $tab;
@@ -318,19 +259,84 @@ class Core
 
 	/**
 	 * Returns the WP_Editor settings of Helpful.
-	 * 
+	 *
 	 * @return array
 	 */
-	public function editor_settings()
-	{
-		return [	
+	public function editor_settings() {
+		return array(
 			'teeny'         => true,
 			'media_buttons' => false,
 			'textarea_rows' => 5,
 			'tinymce'       => false,
-			'quicktags'     => [
-				'buttons' => 'strong,em,del,ul,ol,li,close,link'
-			],
-		];		
+			'quicktags'     => array(
+				'buttons' => 'strong,em,del,ul,ol,li,close,link',
+			),
+		);
+	}
+
+	/**
+	 * A fallback in case Helpful options are updated with WordPress default options.
+	 *
+	 * @param string $option Option name.
+	 * @param mixed  $old_value Old option value.
+	 * @param mixed  $value New option value.
+	 *
+	 * @return void
+	 */
+	public function update_option_hook( $option, $old_value, $value ) {
+		$service = new Services\Options();
+
+		$options = $service->get_defaults_array( '', true );
+
+		if ( in_array( $option, $options, true ) || strpos( $option, 'helpful_customizer' ) ) {
+			$service->update_option( $option, $value );
+			delete_option( $option );
+		}
+	}
+
+	/**
+	 * Checks if there are changes in the database and synchronizes old settings formats once Helpful has been updated.
+	 */
+	public function setup_tables_and_settings() {
+		delete_transient( 'helpful/database/setup_tables' );
+		$options = new Services\Options();
+		$options->sync_options();
+	}
+
+	/**
+	 * Checks if there are changes in the database and synchronizes old settings formats once Helpful has been updated.
+	 * Initializes a hook that can be controlled by other classes once Helpful has been updated.
+	 *
+	 * @param WP_Upgrader $upgrader WP_Upgrader Object.
+	 * @param array       $hook_extra Type of Upgrade.
+	 */
+	public function on_plugin_update( $upgrader, $hook_extra ) {
+		if ( 'update' === $hook_extra['action'] && 'plugin' === $hook_extra['type'] ) {
+			foreach ( $hook_extra['plugins'] as $plugin_name ) {
+				if ( HELPFUL_BASENAME === $plugin_name ) {
+					do_action( 'helpful/plugin/updated' );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Allows saving the errors that arise from e-mails. Not only for Helpful.
+	 *
+	 * @param WP_Error $wp_error WP_Error Object.
+	 */
+	public function log_mailer_errors( $wp_error ) {
+		if ( ! is_wp_error( $wp_error ) ) {
+			return;
+		}
+
+		$options = new Services\Options();
+
+		if ( 'off' === $options->get_option( 'helpful_log_mailer_errors', 'off', 'on_off' ) ) {
+			return;
+		}
+
+		$message = 'Helpful Email Error: ' . $wp_error->get_error_message();
+		helpful_error_log( $message );
 	}
 }

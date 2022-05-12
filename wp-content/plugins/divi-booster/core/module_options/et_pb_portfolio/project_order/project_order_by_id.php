@@ -28,6 +28,7 @@ function dbdb_portfolio_order_option_by_id_field($fields) {
 		'default' => '',
 		'description' => 'Enter a comma-separated list of project ids. '.divibooster_module_options_credit(),
 		'tab_slug' => 'advanced',
+        'dynamic_content' => 'text',
 		'toggle_slug' => 'layout',
 		'show_if' => array(
 			'db_project_order' => 'by_id',
@@ -38,7 +39,8 @@ function dbdb_portfolio_order_option_by_id_field($fields) {
 
 // === Apply option ===
 
-(new DBDB_portfolio_by_id())->add_filters();
+$option = (new DBDB_portfolio_by_id());
+$option->add_filters();
 
 class DBDB_portfolio_by_id {
 	
@@ -49,7 +51,7 @@ class DBDB_portfolio_by_id {
 	}
 	
 	function add_filters() {
-		add_filter('et_pb_module_shortcode_attributes', array($this, 'add_pre_get_posts_filter'), 10, 3);
+		add_filter('dbdb_et_pb_module_shortcode_attributes', array($this, 'add_pre_get_posts_filter'), 10, 3);
 		add_filter('et_module_shortcode_output', array($this, 'remove_pre_get_posts_filter'));
 	}
 	
@@ -67,6 +69,7 @@ class DBDB_portfolio_by_id {
 	
 	function remove_pre_get_posts_filter($content) {
 		remove_action('pre_get_posts', array($this, 'set_query_order'));
+        $this->projects = new DBDB_idlist(); // Reset the id list
 		return $content;
 	}
 

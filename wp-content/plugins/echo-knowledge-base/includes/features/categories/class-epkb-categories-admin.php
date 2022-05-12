@@ -1,34 +1,34 @@
 <?php
 
 /**
- * Setup hookds for KB Categories
+ * Setup hooks for KB Categories
  */
 class EPKB_Categories_Admin {
 
 	const KB_CATEGORIES_SEQ_META = 'epkb_categories_sequence';
 
-	public function __construct( $pagenow='' ) {
-
-		$kb_id = EPKB_KB_Handler::get_current_kb_id();
-		if ( empty( $kb_id ) ) {
-			return;
-		}
+	public function __construct() {
 
 		// handle KB categories sequence
-		$kb_taxonomy_name = EPKB_KB_Handler::get_category_taxonomy_name( $kb_id);
-		add_action( 'created_' . $kb_taxonomy_name, array( $this, 'update_categories_sequence' ), 10, 2 );
-		add_action( 'edited_' . $kb_taxonomy_name, array( $this, 'update_categories_sequence' ), 10, 2 );
-		add_action( 'delete_' . $kb_taxonomy_name, array( $this, 'update_categories_sequence' ), 10, 2 );
+		add_action( 'created_term', array( $this, 'update_categories_sequence' ), 10, 3 );
+		add_action( 'edited_term', array( $this, 'update_categories_sequence' ), 10, 3 );
+		add_action( 'delete_term', array( $this, 'update_categories_sequence' ), 10, 3 );
 	}
 
 	/**
 	 * After a category is saved, updated or deleted, update categories sequence.
 	 *
-	 * @param $updated_term_id
-	 * @param $taxonomy
-	 * @return false on error
+	 * @param int $updated_term_id
+	 * @param int $taxonomy_id
+	 * @param string $taxonomy_slug
+	 * @return bool
 	 */
-	public function update_categories_sequence( $updated_term_id='', $taxonomy='' ) {
+	public function update_categories_sequence( $updated_term_id=0, $taxonomy_id=0, $taxonomy_slug='' ) {
+
+		// return if the current hook is activated for a non-KB Category
+		if ( empty( $taxonomy_slug ) || strpos( $taxonomy_slug, EPKB_KB_Handler::KB_POST_TYPE_PREFIX ) === false || strpos( $taxonomy_slug, EPKB_KB_Handler::KB_CATEGORY_TAXONOMY_SUFFIX ) === false ) {
+			return false;
+		}
 
 		$kb_id = EPKB_KB_Handler::get_current_kb_id();
 		if ( empty($kb_id) ) {
@@ -36,10 +36,13 @@ class EPKB_Categories_Admin {
 			return false;
 		}
 
+		// add flag for get started page
+		EPKB_Core_Utilities::update_kb_flag( 'edit_articles_categories_visited' );
+
 		// 1. get all KB category ids  ( do not use WP function get_terms() to avoid recursions )
-		$categories_order_method = epkb_get_instance()->kb_config_obj->get_value( 'categories_display_sequence', $kb_id );
+		$categories_order_method = epkb_get_instance()->kb_config_obj->get_value( $kb_id, 'categories_display_sequence' );
 		$order_by =  $categories_order_method == 'created-date' ? 'date' : 'name';  // use order by name as default and temporary for custom order
-		$all_terms = EPKB_Utilities::get_kb_categories_unfiltered( $kb_id, $order_by );
+		$all_terms = EPKB_Core_Utilities::get_kb_categories_unfiltered( $kb_id, $order_by );
 		if ( $all_terms === null ) {
 			return false;
 		}
@@ -88,9 +91,12 @@ class EPKB_Categories_Admin {
 			EPKB_Utilities::save_kb_option( $kb_id, EPKB_Articles_Admin::KB_ARTICLES_SEQ_META, $stored_article_ids, true );
 		}
 
-		//sync article seq 
+		// 5. Sync article seq
 		$article_sequence = new EPKB_Articles_Admin();
 		$article_sequence->update_articles_sequence( $kb_id );
+
+		// 6. Check image icons
+		EPKB_KB_Config_Category::remove_missing_terms_and_images_from_categories_icons( $kb_id );
 
 		return true;
 	}
@@ -230,7 +236,7 @@ class EPKB_Categories_Admin {
 
 		// 1. get all KB category ids  ( do not use WP function get_terms() to avoid recursions )
 		$order_by =  $categories_order_method == 'created-date' ? 'date' : 'name';  // use order by name as default and temporary for custom order
-		$all_terms = EPKB_Utilities::get_kb_categories_unfiltered( $kb_id, $order_by );
+		$all_terms = EPKB_Core_Utilities::get_kb_categories_unfiltered( $kb_id, $order_by );
 		if ( $all_terms === null ) {
 			return false;
 		}

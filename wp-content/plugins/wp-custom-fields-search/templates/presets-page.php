@@ -4,7 +4,6 @@
 <h1><?php echo __("Configure WP Custom Fields Search","wp_custom_fields_search")?></h1>
 <div id='wpcfs-presets-page'>
 </div>
-
 <script>
     jQuery('#wpcfs-presets-page').wp_custom_fields_search_editor({
         'mode': 'presets',

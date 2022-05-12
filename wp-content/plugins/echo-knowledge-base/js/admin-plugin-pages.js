@@ -2,13 +2,285 @@ jQuery(document).ready(function($) {
 
 	var epkb = $( '#ekb-admin-page-wrap' );
 
+	// Set special CSS class to #wpwrap for only KB admin pages
+	if ( $( epkb ).find( '.epkb-admin__content' ).length > 0 ) {
+		$( '#wpwrap' ).addClass( 'epkb-admin__wpwrap' );
+	}
+
+	let remove_message_timeout = false;
+
+
+	/*************************************************************************************************
+	 *
+	 *          KB CONFIGURATION PAGE
+	 *
+	 ************************************************************************************************/
+
 	// KBs DROPDOWN - reload on change
 	$( '#epkb-list-of-kbs' ).on( 'change', function(e) {
-		// var what = e.target.value;
-		var kb_admin_url = $(this).find(":selected").data('kb-admin-url');
-		if ( kb_admin_url ) {
-			window.location.href = kb_admin_url;
+
+		let selected_option = $( this ).find( 'option:selected' );
+
+		// Do nothing for options added by hook (they should execute their own JS)
+		if ( selected_option.attr( 'data-plugin' ) !== 'core' ) {
+			return;
 		}
+
+		// Redirect if user does not have access for the current page in the selected KB
+		if ( selected_option.val() === 'closed' ) {
+			window.location = selected_option.attr( 'data-target' );
+			return;
+		}
+
+		let current_location_href = window.location.href;
+
+		// Handle archived KBs page
+		if ( $( this ).val() === 'archived' ) {
+			let location_parts = window.location.href.split( '#' );
+			window.location = location_parts[0] + '&archived-kbs=on';
+			return;
+		} else {
+			current_location_href = current_location_href.replaceAll( '&archived-kbs=on', '' ).replaceAll( '&epkb_after_kb_setup', '' );
+		}
+
+		// Handle external link - Open link in new tab and stay on the previous item selected in the dropdown
+		let data_link = selected_option.attr( 'data-link' );
+		if ( typeof data_link !== 'undefined' && data_link.length > 0 ) {
+			window.open( data_link, '_blank' );
+			$( this ).val( $( this ).attr( 'data-active-kb-id' ) ).trigger( 'change' );
+			return;
+		}
+
+		let prev_kb_id = $( this ).attr( 'data-active-kb-id' );
+		let kb_id = $( this ).val();
+		if ( kb_id ) {
+			$( this ).attr( 'data-active-kb-id', kb_id );
+			window.location.href = current_location_href.replaceAll( 'epkb_post_type_' + prev_kb_id, 'epkb_post_type_' + kb_id );
+		}
+	});
+
+	// Rename KB
+	$('.epkb-admin__kb-rename .epkb-edit-toggle').on('click', function(){
+		$(this).parent().parent().find('.epkb-admin__kb-rename__edit').slideToggle();
+	});
+
+	// Save Access Control settings
+	$( '#epkb_save_access_control' ).on( 'click', function() {
+		epkb_send_ajax(
+			{
+				action: 'epkb_save_access_control',
+				_wpnonce_epkb_ajax_action: epkb_vars.nonce,
+				epkb_kb_id: $( '#epkb-list-of-kbs' ).val(),
+				admin_eckb_access_need_help_read: $( '#admin_eckb_access_need_help_read input[type="radio"]:checked' ).val(),
+				admin_eckb_access_search_analytics_read: $( '#admin_eckb_access_search_analytics_read input[type="radio"]:checked' ).val(),
+				admin_eckb_access_addons_news_read: $( '#admin_eckb_access_addons_news_read input[type="radio"]:checked' ).val(),
+				admin_eckb_access_order_articles_write: $( '#admin_eckb_access_order_articles_write input[type="radio"]:checked' ).val(),
+				admin_eckb_access_frontend_editor_write: $( '#admin_eckb_access_frontend_editor_write input[type="radio"]:checked' ).val()
+			},
+			function( response ) {
+				$( '.eckb-top-notice-message' ).remove();
+				if ( typeof response.message !== 'undefined' ) {
+					clear_bottom_notifications();
+					$( 'body' ).append( response.message );
+				}
+				clear_message_after_set_time();
+			}
+		);
+	});
+
+	// Update KB Nickname
+	$( '#epkb-admin__kb-rename__form' ).on( 'submit', function( event ) {
+		event.preventDefault();
+
+		let $form = $( this );
+		let new_kb_name = $form.find( 'input[name="epkb_kb_name_input"]' ).val();
+		let kb_id = $form.find( 'input[name="epkb_kb_id"]' ).val();
+		let postData = {
+			action: 'epkb_update_kb_name',
+			_wpnonce_epkb_ajax_action: epkb_vars.nonce,
+			epkb_kb_id: kb_id,
+			epkb_kb_name_input: new_kb_name
+		};
+
+		epkb_send_ajax( postData, function( response ){
+			$( '.eckb-top-notice-message' ).remove();
+			if ( typeof response.message !== 'undefined' ) {
+				clear_bottom_notifications();
+				$( 'body' ).append( response.message );
+			}
+			clear_message_after_set_time();
+			$( '#epkb-admin__kb-rename__value' ).html( new_kb_name );
+			$( '#epkb-list-of-kbs option[value="' + kb_id + '"]' ).html( new_kb_name );
+		} );
+	});
+
+	// open panel
+	$('#epkb-admin__boxes-list__tools .epkb-kbnh__feature-links .epkb-primary-btn').on('click', function(){
+
+		let id = $(this).prop('id');
+
+		if ( id == 'epkb_core_export' ) {
+			$('form.epkb-export-kbs').submit();
+			return false;
+		}
+
+		if ( $('.epkb-kbnh__feature-panel-container--' + id).length == 0 ) {
+			return false;
+		}
+
+		$(this).closest('.epkb-setting-box__list').find('.epkb-kbnh__feature-container').css({'display' : 'none'});
+		$(this).closest('.epkb-setting-box__list').find('.epkb-kbnh__feature-panel-container--' + id).css({'display' : 'block'});
+
+		return false;
+	});
+
+	// back button
+	$(document).on( 'epkb_hide_export_import_panels', function(){
+		$('#epkb-admin__boxes-list__tools .epkb-setting-box__list>.epkb-kbnh__feature-container').css({'display' : 'flex'});
+		$('#epkb-admin__boxes-list__tools .epkb-setting-box__list>.epkb-kbnh__feature-panel-container').css({'display' : 'none'});
+	} );
+
+	$('.epkb-kbnh-back-btn').on('click', function(){
+		$(document).trigger('epkb_hide_export_import_panels');
+		return false;
+	});
+
+	/*************************************************************************************************
+	 *
+	 *          ADMIN PAGES
+	 *
+	 ************************************************************************************************/
+
+	/* Admin Top Panel Items -----------------------------------------------------*/
+	$( '.epkb-admin__top-panel__item' ).on( 'click', function() {
+
+		// Warning for Frontend Editor
+		if ( $( this ).hasClass( 'epkb-article-structure-dialog' ) ) {
+			return;
+		}
+
+		let active_top_panel_item_class = 'epkb-admin__top-panel__item--active';
+		let active_boxes_list_class = 'epkb-admin__boxes-list--active';
+		let active_secondary_panel_class = 'epkb-admin__secondary-panel--active';
+		let active_secondary_item_class = 'epkb-admin__secondary-panel__item--active';
+
+		// Do nothing for already active item, only trigger secondary item to make sure we have correct hash in URL
+		if ( $( this ).hasClass( active_top_panel_item_class ) ) {
+			let active_secondary_item = $( active_secondary_panel_class ).find( '.' + active_secondary_item_class ).length
+				? $( active_secondary_panel_class ).find( '.' + active_secondary_item_class )
+				: $( $( active_secondary_panel_class ).find( '.epkb-admin__secondary-panel__item' )[0] );
+			setTimeout( function () { active_secondary_item.trigger( 'click' ); }, 100 );
+			return;
+		}
+
+		let list_key = $( this ).attr( 'data-target' );
+
+		// Change class for active Top Panel item
+		$( '.epkb-admin__top-panel__item' ).removeClass( active_top_panel_item_class );
+		$( this ).addClass( active_top_panel_item_class );
+
+		// Change class for active Boxes List
+		$( '.epkb-admin__boxes-list' ).removeClass( active_boxes_list_class );
+		$( '#epkb-admin__boxes-list__' + list_key ).addClass( active_boxes_list_class );
+
+		// Change class for active Secondary Panel and trigger click event on active secondary tab to initialize JS and AJAX loading content
+		$( '.epkb-admin__secondary-panel' ).removeClass( active_secondary_panel_class );
+		let active_secondary_panel = $( '#epkb-admin__secondary-panel__' + list_key ).addClass( active_secondary_panel_class );
+		let active_secondary_item = active_secondary_panel.find( '.' + active_secondary_item_class ).length
+			? active_secondary_panel.find( '.' + active_secondary_item_class )
+			: $( active_secondary_panel.find( '.epkb-admin__secondary-panel__item' )[0] );
+		setTimeout( function () { active_secondary_item.trigger( 'click' ); }, 100 );
+
+		// Licenses tab on Add-ons page - support for existing add-ons JS handlers
+		let active_top_panel_item = this;
+		setTimeout( function () {
+			if ( $( active_top_panel_item ).attr( 'id' ) === 'eckb_license_tab' ) {
+				$( '#eckb_license_tab' ).trigger( 'click' );
+			}
+		}, 100 );
+
+		// track event if user visited 'Features' tab first time
+		if ( list_key === 'features' && ! $( this ).hasClass( 'epkb-admin__flag--visited' ) ) {
+			$.ajax( {
+				type: 'POST',
+				dataType: 'json',
+				data: {
+					action: 'epkb_features_tab_visited',
+					_wpnonce_epkb_ajax_action: epkb_vars.nonce
+				},
+				url: ajaxurl
+			} ).done( function() {
+				$( '#epkb-admin__step-cta-box__features .epkb-admin__step-cta-box__header' ).after( '<span class="epkb-admin__step-cta-box__content__icon epkbfa epkbfa-check-circle"></span>' );
+			});
+		}
+
+		// Update anchor
+		window.location.hash = '#' + list_key;
+	});
+
+	// Set correct active tab after the page reloading
+	(function(){
+		let url_parts = window.location.href.split( '#' );
+
+		// Set first item as active if there is no any anchor
+		if ( url_parts.length === 1 ) {
+			$( $( '.epkb-admin__top-panel__item' )[0] ).trigger( 'click' );
+			return;
+		}
+
+		let target_kyes = url_parts[1].split( '__' );
+
+		let target_main_items = $( '.epkb-admin__top-panel__item[data-target="' + target_kyes[0] + '"]' );
+
+		// If no target items was found, then set the first item as active
+		if ( target_main_items.length === 0 ) {
+			$( $( '.epkb-admin__top-panel__item' )[0] ).trigger( 'click' );
+			return;
+		}
+
+		// Change class for active item
+		$( target_main_items[0] ).trigger( 'click' );
+
+		// Key for Secondary item was specified and it is not empty otherwise take the first Secondary item
+		let target_secondary_item_selector = '.epkb-admin__secondary-panel__item[data-target="' + url_parts[1] + '"]';
+		let target_secondary_item = target_kyes.length > 1 && target_kyes[1].length && $( target_secondary_item_selector ).length
+			? $( target_secondary_item_selector )
+			: $( '.epkb-admin__secondary-panel--active' ).find( '.epkb-admin__secondary-panel__item' )[0];
+
+		// Change class for active item
+		setTimeout( function() { $( target_secondary_item ).trigger( 'click' ); }, 100 );
+	})();
+
+	/* Admin Secondary Panel Items -----------------------------------------------*/
+	$( '.epkb-admin__secondary-panel__item' ).on( 'click', function() {
+
+		// Warning for Frontend Editor
+		if ( $( this ).hasClass( 'epkb-article-structure-dialog' ) ) {
+			return;
+		}
+
+		let active_secondary_panel_item_class = 'epkb-admin__secondary-panel__item--active';
+		let active_secondary_boxes_list_class = 'epkb-setting-box__list--active';
+
+		// Do nothing for already active item, only make sure we have correct hash in URL
+		if ( $( this ).hasClass( active_secondary_panel_item_class ) ) {
+			window.location.hash = '#' + $( this ).attr( 'data-target' );
+			return;
+		}
+
+		let list_key = $( this ).attr( 'data-target' );
+		let parent_list_key = list_key.split( '__' )[0];
+
+		// Change class for active Top Panel item
+		$( '#epkb-admin__secondary-panel__' + parent_list_key ).find( '.epkb-admin__secondary-panel__item' ).removeClass( active_secondary_panel_item_class );
+		$( this ).addClass( active_secondary_panel_item_class );
+
+		// Change class for active Boxes List
+		$( '#epkb-admin__boxes-list__' + parent_list_key ).find( '.epkb-setting-box__list' ).removeClass( active_secondary_boxes_list_class );
+		$( '#epkb-setting-box__list-' + list_key ).addClass( active_secondary_boxes_list_class );
+
+		// Update anchor
+		window.location.hash = '#' + list_key;
 	});
 
 	/* Tabs ----------------------------------------------------------------------*/
@@ -27,7 +299,7 @@ jQuery(document).ready(function($) {
 		 * @param tab_nav_container  ( ID/class containing the Navs )
 		 * @param tab_panel_container ( ID/class containing the Panels
 		 */
-	   (function(){
+		(function(){
 			function tab_toggle( tab_nav_container, tab_panel_container ){
 
 				epkb.find( tab_nav_container+ ' > .nav_tab' ).on( 'click', function(){
@@ -55,6 +327,20 @@ jQuery(document).ready(function($) {
 
 	})();
 
+	/* Toggle admin tabs  ----------------------------------------------------------------------*/
+	$('.epkb-header__tab').on('click',function(e){
+
+		let id = $( this ).attr( 'id' );
+
+		// Clear all active classes
+		$( '.epkb-header__tab' ).removeClass( 'epkb-header__tab--active' );
+		$( '.epkb-content__tab' ).removeClass( 'epkb-content__tab--active' );
+		$( this ).addClass( 'epkb-header__tab--active' );
+
+		// Add Class to clicked on tab
+		$( '#'+id+'_content' ).addClass( 'epkb-content__tab--active' );
+
+	});
 
 	/* Misc ----------------------------------------------------------------------*/
 	(function(){
@@ -65,49 +351,30 @@ jQuery(document).ready(function($) {
 			// Remove old messages
 			$('.eckb-top-notice-message').html('');
 
-			var postData = {
+			let postData = {
 				action: 'epkb_toggle_debug',
-				_wpnonce_epkb_toggle_debug: $('#_wpnonce_epkb_toggle_debug').val()
+				_wpnonce_epkb_ajax_action: epkb_vars.nonce
 			};
 
-			var msg;
+			epkb_send_ajax( postData, function() {
+				location.reload();
+			} );
+		});
 
-			$.ajax({
-				type: 'POST',
-				dataType: 'json',
-				url: ajaxurl,
-				data: postData,
-				beforeSend: function (xhr)
-				{
-					epkb_loading_Dialog( 'show', epkb_vars.changing_debug );
-				}
-			}).done(function (response)
-			{
-				response = ( response ? response : '' );
-				if ( response.error || typeof response.message === 'undefined' ) {
-					//noinspection JSUnresolvedVariable,JSUnusedAssignment
-					msg = response.message ? response.message : epkb_admin_notification('', epkb_vars.reload_try_again, 'error');
-					return;
-				}
+		// TOGGLE ADVANCED SEARCH DEBUG
+		epkb.find( '#epkb_enable_advanced_search_debug' ).on( 'click', function() {
 
-				window.location.href = window.location.href + '&epkb-tab=debug';
+			// Remove old messages
+			$('.eckb-top-notice-message').html('');
 
-			}).fail( function ( response, textStatus, error )
-			{
-				//noinspection JSUnresolvedVariable
-				msg = ( error ? ' [' + error + ']' : epkb_vars.unknown_error );
-				//noinspection JSUnresolvedVariable
-				msg = epkb_admin_notification(epkb_vars.error_occurred + '. ' + epkb_vars.msg_try_again, msg, 'error');
-			}).always(function ()
-			{
+			let postData = {
+				action: 'epkb_enable_advanced_search_debug',
+				_wpnonce_epkb_ajax_action: epkb_vars.nonce
+			};
 
-				epkb_loading_Dialog( 'remove', '' );
-
-				if ( msg ) {
-					$('.eckb-top-notice-message').replaceWith(msg);
-					$( "html, body" ).animate( {scrollTop: 0}, "slow" );
-				}
-			});
+			epkb_send_ajax( postData, function() {
+				location.reload();
+			} );
 		});
 
 		// ADD-ON PLUGINS + OUR OTHER PLUGINS - PREVIEW POPUP
@@ -137,25 +404,12 @@ jQuery(document).ready(function($) {
 					'</div>' + '');
 
 				//Close Plugin Preview Popup
-				$('html, body').bind('click.epkb', function(){
+				$('html, body').on('click.epkb', function(){
 					$( '#epkb_image_zoom' ).remove();
-					$('html, body').unbind('click.epkb');
+					$('html, body').off('click.epkb');
 				});
 			});
 		})();
-
-		// Show Character count on Tab Name input field and warning message
-	/*	$( '#kb_name' ).on( 'keyup', function(){
-			var value   = $( this ).val().length;
-			var limit   = 25;
-			var result  = limit - value;
-			$( '#character_value' ).remove();
-
-			if( result < 0 ) {
-				//noinspection JSUnresolvedVariable
-				$( this ).after( '<div id="character_value" class="input_error"><p>' + epkb_vars.reduce_name_size + '</p></div>' );
-			}
-		}); */
 
 		//Info Icon for Licenses
 		$( '#add_on_panels' ).on( 'click', '.ep_font_icon_info', function(){
@@ -165,30 +419,275 @@ jQuery(document).ready(function($) {
 		});
 	})();
 
-	// Clear Messages after set time
-	(function(){
+	// Copy to clipboard button
+	$( '.epkb-kbnh__feature-copy-link' ).on('click', function( e ){
+		e.preventDefault();
+		let textarea = document.createElement( 'textarea' );
+		textarea.value = $( this ).data( 'copy' );
+		textarea.style.position = 'fixed';
+		document.body.appendChild( textarea );
+		textarea.focus();
+		textarea.select();
+		document.execCommand( 'copy' );
+		textarea.remove();
+	});
 
-		var epkb_timeout;
-		if( $('.eckb-bottom-notice-message' ).length > 0 ) {
-			clearTimeout(epkb_timeout);
+	/*************************************************************************************************
+	 *
+	 *          ANALYTICS PAGE
+	 *
+	 ************************************************************************************************/
+	var analytics_container = $( '.epkb-analytics-page-container' );
 
-			//Add fadeout class to notice after set amount of time has passed.
-			epkb_timeout = setTimeout(function () {
-				var bottom_message = $('body').find('.eckb-bottom-notice-message');
-				if ( bottom_message.length ) {
-					bottom_message.addClass('fadeOutDown');
-				}
-			} , 10000);
+	//When Top Nav is clicked on show it's content.
+	analytics_container.find( '.page-icon' ).on( 'click', function(){
+
+		// Do nothing for already active page icon
+		if ( $( this ).closest( '.eckb-nav-section' ).hasClass( 'epkb-active-nav' ) ) {
+			return;
 		}
-	})();
 
-	// Close Button Message if Close Icon clicked
-	$( 'body' ).find( '.epkb-close-notice' ).on( 'click', function(){
-		$( this ).parent().addClass( 'fadeOutDown' );
+		//Reset ( Hide all content, remove all active classes )
+		analytics_container.find( '.eckb-config-content' ).removeClass( 'epkb-active-content' );
+		analytics_container.find( '.eckb-nav-section' ).removeClass( 'epkb-active-nav' );
+
+		//Get ID of Icon
+		var id = $( this ).attr( 'id' );
+
+		//Target Content from icon ID
+		analytics_container.find( '#' + id + '-content').addClass( 'epkb-active-content' );
+
+		//Set this Nav to be active
+		analytics_container.find( this ).parents( '.eckb-nav-section' ).addClass( 'epkb-active-nav' )
+
 	});
 
 
-	/* Dialogs --------------------------------------------------------------------*/
+	/*************************************************************************************************
+	 *
+	 *          CATEGORY ICONS
+	 *
+	 ************************************************************************************************/
+	if ($('.epkb-categories-icons').length) {
+		// Tabs
+		$('.epkb-categories-icons__button').on('click',function(){
+
+			if ($(this).hasClass('epkb-categories-icons__button--active')) {
+				return;
+			}
+
+			$('.epkb-categories-icons__button').removeClass('epkb-categories-icons__button--active');
+			$(this).addClass('epkb-categories-icons__button--active');
+
+
+			$('.epkb-categories-icons__tab-body').slideUp('fast');
+
+			var val = $(this).data('type');
+
+			if ( $('.epkb-categories-icons__tab-body--' + val).length ) {
+				$('.epkb-categories-icons__tab-body--' + val).slideDown('fast');
+			}
+
+			$('#epkb_head_category_icon_type').val(val);
+		});
+
+		// Icon Save
+		$('.epkb-icon-pack__icon').on('click',function(){
+			$('.epkb-icon-pack__icon').removeClass('epkb-icon-pack__icon--checked');
+			$(this).addClass('epkb-icon-pack__icon--checked');
+			$('#epkb_head_category_icon_name').val($(this).data('key'));
+		});
+
+		// Image save
+		$('.epkb-category-image__button').on('click',function(e){
+			e.preventDefault();
+
+			var button = $(this),
+				custom_uploader = wp.media({
+					title: button.data('title'),
+					library : {
+						type : 'image'
+					},
+					multiple: false
+				}).on('select', function() {
+					var attachment = custom_uploader.state().get('selection').first().toJSON();
+
+					$('#epkb_head_category_icon_image').val(attachment.id);
+					$('.epkb-category-image__button').removeClass('epkb-category-image__button--no-image');
+					$('.epkb-category-image__button').addClass('epkb-category-image__button--have-image');
+					$('.epkb-category-image__button').css({'background-image' : 'url('+attachment.url+')'});
+				})
+					.open();
+		});
+
+		// Show/Hide Categories block depends on category parent
+		$('#parent').on( 'change', function(){
+
+			var category_level;
+			var option;
+			var select = $(this);
+			var template = $('#epkb_head_category_template').val();
+			var hide_block = false;
+
+			select.find('option').each(function(){
+				if ( $(this).val() == select.val() ) {
+					option = $(this);
+				}
+			});
+
+			if ( option.val() == '-1' ) {
+				category_level = 1;
+			} else if ( option.hasClass('level-0') ) {
+				category_level = 2;
+			} else {
+				category_level = 3;
+			}
+
+			if ( template == 'Tabs' ) {
+				if ( category_level !== 2 ) {
+					hide_block = true;
+				}
+			} else if ( template == 'Sidebar' ) {
+				hide_block = true;
+			} else {
+				// all else layouts
+				if ( category_level > 1 ) {
+					hide_block = true;
+				}
+			}
+
+			if ( hide_block ) {
+				$('.epkb-categories-icons').hide();
+				$('.epkb-categories-icons+.epkb-term-options-message').show();
+			} else {
+				$('.epkb-categories-icons').show();
+				$('.epkb-categories-icons+.epkb-term-options-message').hide();
+			}
+
+		});
+
+		function epkb_reset_categories_icon_box() {
+			$('#epkb_font_icon').trigger('click');
+			$('#epkb_head_category_thumbnail_size').val( $('#epkb_head_category_thumbnail_size').find('option').eq(0).val() );
+			$('.epkb-category-image__button').addClass('epkb-category-image__button--no-image');
+			$('.epkb-category-image__button').removeClass('epkb-category-image__button--have-image');
+			$('.epkb-category-image__button').css({'background-image' : ''});
+			$('#epkb_head_category_icon_image').val(0);
+			$('div[data-key=ep_font_icon_document]').trigger('click');
+		}
+
+		// look when new category was added
+		$( document ).ajaxComplete(function( event, xhr, settings ) {
+
+			if ( ! settings ) {
+				return;
+			}
+
+			let data = settings.data.split('&');
+			let i;
+
+			for (i = 0; i < data.length; i++) {
+				sParameterName = data[i].split('=');
+
+				if (sParameterName[0] === 'action' && sParameterName[1] === 'add-tag' ) {
+					epkb_reset_categories_icon_box();
+
+					$("html, body").animate({ scrollTop: $('.wp-heading-inline').offset().top }, 300);
+				}
+			}
+		});
+	}
+
+	/*************************************************************************************************
+	 *
+	 *          CATEGORY ORDER LINK
+	 *
+	 ************************************************************************************************/
+	if ( $('#epkb-admin__categories_sorting_link').length ) {
+		$('#epkb-admin__categories_sorting_link').insertAfter('.bulkactions');
+		$('#epkb-admin__categories_sorting_link').css('display', 'block');
+	}
+	/*************************************************************************************************
+	 *
+	 *          AJAX calls
+	 *
+	 ************************************************************************************************/
+
+	// generic AJAX call handler
+	function epkb_send_ajax( postData, refreshCallback, callbackParam, reload, alwaysCallback, $loader ) {
+
+		let errorMsg;
+		let theResponse;
+		refreshCallback = (typeof refreshCallback === 'undefined') ? 'epkb_callback_noop' : refreshCallback;
+
+		$.ajax({
+			type: 'POST',
+			dataType: 'json',
+			data: postData,
+			url: ajaxurl,
+			beforeSend: function (xhr)
+			{
+				if ( typeof $loader == 'undefined' || $loader === false ) {
+					epkb_loading_Dialog('show', '');
+				}
+
+				if ( typeof $loader == 'object' ) {
+					epkb_loading_Dialog('show', '', $loader);
+				}
+			}
+		}).done(function (response)        {
+			theResponse = ( response ? response : '' );
+			if ( theResponse.error || typeof theResponse.message === 'undefined' ) {
+				//noinspection JSUnresolvedVariable,JSUnusedAssignment
+				errorMsg = theResponse.message ? theResponse.message : epkb_admin_notification('', epkb_vars.reload_try_again, 'error');
+			}
+
+		}).fail( function ( response, textStatus, error )        {
+			//noinspection JSUnresolvedVariable
+			errorMsg = ( error ? ' [' + error + ']' : epkb_vars.unknown_error );
+			//noinspection JSUnresolvedVariable
+			errorMsg = epkb_admin_notification(epkb_vars.error_occurred + '. ' + epkb_vars.msg_try_again, errorMsg, 'error');
+		}).always(function() {
+
+			theResponse = (typeof theResponse === 'undefined') ? '' : theResponse;
+
+			if ( typeof alwaysCallback == 'function' ) {
+				alwaysCallback( theResponse );
+			}
+
+			epkb_loading_Dialog('remove', '');
+
+			if ( errorMsg ) {
+				$('.eckb-bottom-notice-message').remove();
+				$('body').append(errorMsg).removeClass('fadeOutDown');
+
+				setTimeout( function() {
+					$('.eckb-bottom-notice-message').addClass( 'fadeOutDown' );
+				}, 10000 );
+				return;
+			}
+
+			if ( typeof refreshCallback === "function" ) {
+
+				if ( typeof callbackParam === 'undefined' ) {
+					refreshCallback(theResponse);
+				} else {
+					refreshCallback(theResponse, callbackParam);
+				}
+			} else {
+				if ( reload ) {
+					location.reload();
+				}
+			}
+		});
+	}
+
+
+	/*************************************************************************************************
+	 *
+	 *          DIALOGS
+	 *
+	 ************************************************************************************************/
 
 	/**
 	  * Displays a Center Dialog box with a loading icon and text.
@@ -232,6 +731,14 @@ jQuery(document).ready(function($) {
 
 	}
 
+	// Close Button Message if Close Icon clicked
+	$( document.body ).on( 'click', '.epkb-close-notice', function() {
+		let bottom_message = $( this ).closest( '.eckb-bottom-notice-message' );
+		bottom_message.addClass( 'fadeOutDown' );
+		setTimeout( function() {
+			bottom_message.html( '' );
+		}, 1000);
+	} );
 
 	// HELP ICON DIALOG
 	// open dialog but re-center when loading finished so that it stays in the center of the screen
@@ -287,7 +794,7 @@ jQuery(document).ready(function($) {
 				});
 
 				// close dialog if user clicks outside of it
-				$( '.ui-widget-overlay' ).bind( 'click', function ()
+				$( '.ui-widget-overlay' ).on( 'click', function ()
 				{
 					$("#epkb-dialog-info-icon").dialog('close')
 				});
@@ -304,46 +811,54 @@ jQuery(document).ready(function($) {
 		autoOpen: false
 	}).hide();
 
+
+	// New ToolTip
+	epkb.on( 'click', '.epkb__option-tooltip__button', function(){
+		let tooltip_on = $( this ).parent().find( '.epkb__option-tooltip__contents' ).css('display') == 'block';
+
+		$('.epkb__option-tooltip__contents').fadeOut();
+
+		if ( ! tooltip_on ) {
+			$( this ).parent().find( '.epkb__option-tooltip__contents' ).fadeIn();
+		}
+	});
+
 	// ToolTip
 	epkb.on( 'click', '.eckb-tooltip-button', function(){
 		$( this ).parent().find( '.eckb-tooltip-contents' ).fadeToggle();
 	});
 
-
-	/* KB Analytics Page -------------------------------------------------------------*/
-
-	var analytics_container = $( '.epkb-analytics-container' );
-
-	//When Top Nav is clicked on show it's content.
-	analytics_container.find( '.page-icon' ).on( 'click', function(){
-
-		//Reset ( Hide all content, remove all active classes )
-		analytics_container.find( '.eckb-config-content' ).removeClass( 'epkb-active-content' );
-		analytics_container.find( '.eckb-nav-section' ).removeClass( 'epkb-active-nav' );
-
-		//Get ID of Icon
-		var id = $( this ).attr( 'id' );
-
-		//Target Content from icon ID
-		analytics_container.find( '#' + id + '-content').addClass( 'epkb-active-content' );
-
-		//Set this Nav to be active
-		analytics_container.find( this ).parents( '.eckb-nav-section' ).addClass( 'epkb-active-nav' )
-
-	});
-
 	// SHOW INFO MESSAGES
 	function epkb_admin_notification( $title, $message , $type ) {
-		return '<div class="eckb-top-notice-message">' +
+		return '<div class="eckb-bottom-notice-message">' +
 			'<div class="contents">' +
 			'<span class="' + $type + '">' +
 			($title ? '<h4>' + $title + '</h4>' : '' ) +
-			($message ? $message : '') +
+			($message ? '<p>' + $message + '</p>': '') +
 			'</span>' +
 			'</div>' +
+			'<div class="epkb-close-notice epkbfa epkbfa-window-close"></div>' +
 			'</div>';
 	}
-	
+
+	function epkb_show_error_notification( $message, $title = '' ) {
+		$('.eckb-bottom-notice-message').remove();
+		$('body').append( epkb_admin_notification( $title, $message, 'error' ) );
+
+		setTimeout( function() {
+			$('.eckb-bottom-notice-message').addClass( 'fadeOutDown' );
+		}, 10000 );
+	}
+
+	function epkb_show_success_notification( $message, $title = '' ) {
+		$('.eckb-bottom-notice-message').remove();
+		$('body').append( epkb_admin_notification( $title, $message, 'success' ) );
+
+		setTimeout( function() {
+			$('.eckb-bottom-notice-message').addClass( 'fadeOutDown' );
+		}, 10000 );
+	}
+
 	/**
 	 * Accordion for the options 
 	 */
@@ -361,207 +876,6 @@ jQuery(document).ready(function($) {
 	});
 
 	$('body').on('click', '#eckb-wizard-main-page-preview a, .epkb-wizard-theme-panel-container a, #eckb-wizard-article-page-preview a', false);
-	
-	/** 
-	 * Categories icons JS
-	 */
-	 
-	if ($('.epkb-categories-icons').length) {
-		// Tabs 
-		$('.epkb-categories-icons__button').click(function(){
-			
-			if ($(this).hasClass('epkb-categories-icons__button--active')) {
-				return;
-			}
-			
-			$('.epkb-categories-icons__button').removeClass('epkb-categories-icons__button--active');
-			$(this).addClass('epkb-categories-icons__button--active');
-			
-			
-			$('.epkb-categories-icons__tab-body').slideUp('fast');
-			
-			var val = $(this).data('type');
-			
-			if ( $('.epkb-categories-icons__tab-body--' + val).length ) {
-				$('.epkb-categories-icons__tab-body--' + val).slideDown('fast');
-			}
-			
-			$('#epkb_head_category_icon_type').val(val); 
-		});
-		
-		// Icon Save 
-		$('.epkb-icon-pack__icon').click(function(){
-			$('.epkb-icon-pack__icon').removeClass('epkb-icon-pack__icon--checked');
-			$(this).addClass('epkb-icon-pack__icon--checked');
-			$('#epkb_head_category_icon_name').val($(this).data('key'));
-		});
-		
-		// Image save 
-		$('.epkb-category-image__button').click(function(e){
-			e.preventDefault();
- 
-    		var button = $(this),
-    		custom_uploader = wp.media({
-				title: button.data('title'),
-					library : {
-						type : 'image'
-					},
-					multiple: false 
-				}).on('select', function() { 
-					var attachment = custom_uploader.state().get('selection').first().toJSON();
-					
-					$('#epkb_head_category_icon_image').val(attachment.id);
-					$('.epkb-category-image__button').removeClass('epkb-category-image__button--no-image');
-					$('.epkb-category-image__button').addClass('epkb-category-image__button--have-image');
-					$('.epkb-category-image__button').css({'background-image' : 'url('+attachment.url+')'});
-				})
-				.open();
-		});
-		
-		// Show/Hide Categories block depends on category parent 
-		$('#parent').change(function(){
-			
-			var category_level;
-			var option;
-			var select = $(this);
-			var template = $('#epkb_head_category_template').val();
-			var hide_block = false;
-			
-			select.find('option').each(function(){
-				if ( $(this).val() == select.val() ) {
-					option = $(this);
-				}
-			});
-			
-			if ( option.val() == '-1' ) {
-				category_level = 1;
-			} else if ( option.hasClass('level-0') ) {
-				category_level = 2;
-			} else {
-				category_level = 3;
-			}
-			
-			if ( template == 'Tabs' ) {
-				if ( category_level !== 2 ) {
-					hide_block = true;
-				}
-			} else if ( template == 'Sidebar' ) {
-				hide_block = true;
-			} else { 
-				// all else layouts 
-				if ( category_level > 1 ) {
-					hide_block = true;
-				}
-			}
-			
-			if ( hide_block ) {
-				$('.epkb-categories-icons').hide();
-				$('.epkb-categories-icons+.epkb-term-options-message').show();
-			} else {
-				$('.epkb-categories-icons').show();
-				$('.epkb-categories-icons+.epkb-term-options-message').hide();
-			}
-			
-		});
-		
-		function epkb_reset_categories_icon_box() {
-			$('#epkb_font_icon').click();
-			$('#epkb_head_category_thumbnail_size').val( $('#epkb_head_category_thumbnail_size').find('option').eq(0).val() );
-			$('.epkb-category-image__button').addClass('epkb-category-image__button--no-image');
-			$('.epkb-category-image__button').removeClass('epkb-category-image__button--have-image');
-			$('.epkb-category-image__button').css({'background-image' : ''});
-			$('#epkb_head_category_icon_image').val(0);
-			$('div[data-key=ep_font_icon_document]').click();
-		}
-		
-		// look when new category was added 
-		$( document ).ajaxComplete(function( event, xhr, settings ) {
-			
-			if ( ! settings ) {
-				return;
-			}
-			
-			let data = settings.data.split('&');
-			let i;
-			
-			for (i = 0; i < data.length; i++) {
-				sParameterName = data[i].split('=');
-
-				if (sParameterName[0] === 'action' && sParameterName[1] === 'add-tag' ) {
-					epkb_reset_categories_icon_box();
-					
-					$("html, body").animate({ scrollTop: $('.wp-heading-inline').offset().top }, 300);
-				}
-			}
-		});
-	}
-	
-	/** KB Manage Page */ 
-	if ( $('.epkb-manage-kb-container').length ) {
-		
-		// Main tabs (left panel)
-		$('.epkb-manage-tabs__button__title').click(function(){
-
-			let kb_id = $(this).data('kb_id');
-
-			if ( kb_id == 'undefined' || !kb_id ) {
-				return true;
-			}
-
-			$('.epkb-manage-tabs__button').removeClass('active');
-			$(this).parent().addClass('active');
-			if ( $(this).attr('href') == '#' ) {
-				$('#epkb-activate-kb').find('.epkb-dialog-box-form').toggleClass( 'epkb-dialog-box-form--active' );
-				return false;
-			}
-
-			epkb_loading_Dialog( 'show', 'Loading...' );
-			
-			$('.epkb-manage-content').removeClass('active');
-			$( $(this).data('target') ).addClass('active');
-
-			return this.href != '#';
-		});
-		
-		// Top panel tabs 
-		$('.epkb-manage-content__tab-button').click(function(){
-			$(this).parent().find('.epkb-manage-content__tab-button').removeClass('active');
-			$(this).addClass('active');
-			
-			$(this).closest('.epkb-manage-content').find('.epkb-manage-content__tab').removeClass('active');
-			$( $(this).data('target') ).addClass('active');
-			
-			return false;
-		});
-		
-		// Delete KB dialog
-		$('.epkb-delete-kbs .error-btn').click(function(){
-			$(this).closest('.epkb-delete-kbs').find( '.epkb-dialog-box-form' ).toggleClass( 'epkb-dialog-box-form--active' );
-			return false;
-		});
-		$('.epkb-delete-kbs .epkb-dbf__footer__accept__btn').click(function(){
-			if ( $(this).closest('form').length ) {
-				$(this).closest('form').submit();
-			}
-		});
-
-		// Activate KB dialog
-		$('#epkb-activate-kb').find('.epkb-dbf__footer__accept__btn').click(function() {
-			let $kb_id = $('.epkb-manage-tabs__button.active').find('.epkb-manage-tabs__button__title').data('kb_id');
-			$('#epkb-activate-kb').find('input[name=emkb_kb_id]').val($kb_id);
-
-			let activate_form = $('#epkb-activate-kb').find('form');
-			activate_form.attr('method','post');
-			activate_form.submit();
-		});
-
-		$('.epkb-dbf__close, .epkb-dbf__footer__cancel__btn').click(function(){
-			$(this).closest( '.epkb-dialog-box-form' ).toggleClass( 'epkb-dialog-box-form--active' );
-			let $kb_id =jQuery('.epkb-manage-content').data('kb_id');
-			$('.epkb-manage-tabs__button').removeClass('active');
-			$('.epkb-manage-tabs__button__title[data-kb_id="'+$kb_id+'"]').parent().addClass('active');
-		});
-	}
 
 	//Admin Notice
 	$('.epkb-notice-remind').on('click',function(e){
@@ -572,7 +886,9 @@ jQuery(document).ready(function($) {
 	//Dismiss ongoing notice
 	$(document).on( 'click', '.epkb-notice-dismiss', function( event ) {
 		event.preventDefault();
-		$('.notice-'+$(this).data('notice-id')).slideUp();
+
+		$('#'+$(this).data('notice-id')).slideUp();
+
 		var postData = {
 			action: 'epkb_dismiss_ongoing_notice',
 			epkb_dismiss_id: $(this).data('notice-id')
@@ -585,29 +901,251 @@ jQuery(document).ready(function($) {
 		});
 	} );
 
-
 	// Editor Disabled dialog if article structure v2
-	$('.epkb-article-structure-dialog').click(function(e){
+	$( '#epkb-editor-disabled .epkb-article-structure-dialog' ).on( 'click',function(e) {
 		e.preventDefault();
-		$(this).closest('#epkb-config-main-info').find( '.epkb-dialog-box-form' ).toggleClass( 'epkb-dialog-box-form--active' );
+		$( '#epkb-editor-disabled' ).find( '.epkb-dialog-box-form' ).toggleClass( 'epkb-dialog-box-form--active' );
 		return false;
 	});
 
-	$('.epkb-dbf__close, .epkb-dialog-box-form .epkb-dbf__footer__cancel').click(function(){
+	// Shared handlers for close buttons of Dialog Box Form
+	$('.epkb-dialog-box-form .epkb-dbf__close, .epkb-dialog-box-form .epkb-dbf__footer__cancel').on('click',function(){
 		$(this).closest( '.epkb-dialog-box-form' ).toggleClass( 'epkb-dialog-box-form--active' );
 	});
+	$('.epkb-dialog-box-form .epkb-dbf__footer__accept__btn').on('click',function(){
+		$(this).closest('.epkb-dialog-box-form').find('form').trigger( 'submit' );
+	});
 
-	$('.epkb-dialog-box-form .epkb-dbf__footer__accept__btn').click(function(){
+	// Reveal Settings ( Edit Button )
+	$( 'body' ).find( '.epkb__header__edit' ).on( 'click', function(){
+		$( this ).parent().parent().find('.epkb-ts__input-container').slideToggle();
+		$( this ).parent().parent().find('.epkb-ts__action-container').slideToggle();
+		$( this ).parents( '.epkb-toggle-setting-container' ).toggleClass( 'epkb-toggle-setting-container--active' );
+	});
 
-		let dialog_form = $('.epkb-dialog-box-form').find('form');
-		dialog_form.attr('method','post');
-		dialog_form.submit();
+
+
+	// Admin Questionnaire item click
+	$( 'body' ).on( 'click', '.eckb-Q__list__item-container', function(){
+
+		$( this ).find('.eckb-Q__item__question__toggle-icon').toggleClass( "epkbfa-plus-square epkbfa-minus-square" );
+
+		if( $( this ).hasClass( "eckb-Q__list__item--active" ) ) {
+
+			$( this ).removeClass( "eckb-Q__list__item--active" );
+
+		} else {
+
+			$( this ).addClass( "eckb-Q__list__item--active" );
+
+		}
 
 	});
 
-	//Manage KB Rename
-	jQuery('.epkb-admin__kb-rename .epkb-edit-toggle').on('click', function(){
-		jQuery(this).parent().parent().find('.epkb-admin__kb-rename_edit').slideToggle();
+	/** Save config WPML settings */
+	$( 'body' ).on( 'change', '#epkb-setting-box__list-settings__various [name=epkb_wpml_enable]', function(){
+		
+		// Remove old messages
+		$('.eckb-top-notice-message').remove();
 
+		let theResponse, msg, postData = {
+			action: 'epkb_wpml_enable',
+			_wpnonce_epkb_wpml_enable: $('#_wpnonce_epkb_wpml_enable').val(),
+			wpml_enable: $(this).prop('checked') ? 'on' : 'off',
+			epkb_kb_id: $('#epkb_wpml_enable_kb_id').val()
+		};
+
+		$.ajax({
+			type: 'POST',
+			dataType: 'json',
+			url: ajaxurl,
+			data: postData,
+			beforeSend: function (xhr)
+			{
+				epkb_loading_Dialog( 'show' );
+			}
+		}).done(function (response)
+		{
+			theResponse = ( response ? response : '' );
+			if ( theResponse.error || typeof theResponse.message === 'undefined' ) {
+				//noinspection JSUnresolvedVariable,JSUnusedAssignment
+				msg = theResponse.message ? theResponse.message : epkb_admin_notification('', epkb_vars.reload_try_again, 'error');
+				return;
+			}
+
+		}).fail( function ( response, textStatus, error )
+		{
+			//noinspection JSUnresolvedVariable
+			msg = ( error ? ' [' + error + ']' : epkb_vars.unknown_error );
+			//noinspection JSUnresolvedVariable
+			msg = epkb_admin_notification(epkb_vars.error_occurred + '. ' + epkb_vars.msg_try_again, msg, 'error');
+		}).always(function ()
+		{
+
+			epkb_loading_Dialog( 'remove', '' );
+
+			if ( typeof theResponse.message !== 'undefined' ) {
+				msg = theResponse.message;
+			}
+
+			if ( msg ) {
+				clear_bottom_notifications();
+				$('body').append(msg);
+			}
+
+			clear_message_after_set_time();
+		});
+			
+	});
+
+	// Confirm button for popup notification
+	$( '.epkb-notification-box-popup__button-confirm' ).on( 'click', function () {
+		if ( $( this ).attr( 'data-target' ).length > 0 ) {
+			$( this ).closest( $( this ).attr( 'data-target' ) ).remove();
+		}
+	});
+
+	// 'Explore Features' button on 'Need Help?' => 'Get Started' page (possibly other similar links)
+	$( '.epkb-admin__step-cta-box__link[data-target]' ).on( 'click', function () {
+
+		// Get target keys
+		let target_keys = $( this ).attr( 'data-target' );
+		if ( typeof target_keys === 'undefined' || target_keys.length === 0 ) {
+			return;
+		}
+		target_keys = target_keys.split( '__' );
+
+		// Top panel item
+		$( '.epkb-admin__top-panel__item[data-target="' + target_keys[0] + '"]' ).trigger( 'click' );
+
+		// Secondary panel item
+		if ( target_keys.length > 1 ) {
+			setTimeout( function () {
+				$( '.epkb-admin__secondary-panel__item[data-target="' + target_keys[1] + '"]' ).trigger( 'click' );
+			}, 100 );
+		}
+	});
+
+	function clear_bottom_notifications() {
+		var bottom_message = $('body').find('.eckb-bottom-notice-message');
+		if ( bottom_message.length ) {
+			bottom_message.addClass( 'fadeOutDown' );
+			setTimeout( function() {
+				bottom_message.html( '' );
+			}, 1000);
+		}
+	}
+
+	function clear_message_after_set_time(){
+
+		if( $('.eckb-bottom-notice-message' ).length > 0 ) {
+			clearTimeout( remove_message_timeout );
+
+			//Add fadeout class to notice after set amount of time has passed.
+			remove_message_timeout = setTimeout(function () {
+				clear_bottom_notifications();
+			} , 10000);
+		}
+	}
+	clear_message_after_set_time();
+
+	// Backend mode scripts
+	$(document).on( 'change', '#editor_backend_mode input', function(){
+
+		// Remove old messages
+		$('.eckb-top-notice-message').remove();
+
+		// Clear Input Active class
+		$( '#editor_backend_mode li' ).removeClass( 'epkb-radio--active' );
+
+		// Set Active class to input
+		$(this).parents( 'li' ).addClass( 'epkb-radio--active' );
+
+		// Show Description
+		switch( $(this).val() ) {
+			case '0':
+				$( '#editor_backend_mode_group .radio-buttons-horizontal-desc' ).addClass( 'radio-buttons-horizontal-desc--show' );
+				break;
+			case '1':
+				$( '#editor_backend_mode_group .radio-buttons-horizontal-desc' ).removeClass( 'radio-buttons-horizontal-desc--show' );
+				break;
+		}
+
+		let theResponse, msg, postData = {
+			action: 'epkb_editor_backend_mode',
+			_wpnonce_epkb_ajax_action: epkb_vars.nonce,
+			editor_backend_mode: $(this).val(),
+		};
+
+		$.ajax({
+			type: 'POST',
+			dataType: 'json',
+			url: ajaxurl,
+			data: postData,
+			beforeSend: function (xhr)
+			{
+				epkb_loading_Dialog( 'show' );
+			}
+		}).done(function (response)
+		{
+			theResponse = ( response ? response : '' );
+			if ( theResponse.error || typeof theResponse.message === 'undefined' ) {
+				//noinspection JSUnresolvedVariable,JSUnusedAssignment
+				msg = theResponse.message ? theResponse.message : epkb_admin_notification('', epkb_vars.reload_try_again, 'error');
+				// set frontend editor if something went wrong
+				$('#editor_backend_mode0').prop('checked', true);
+				$('#editor_backend_mode1').prop('checked', false);
+				return;
+			}
+
+		}).fail( function ( response, textStatus, error )
+		{
+			//noinspection JSUnresolvedVariable
+			msg = ( error ? ' [' + error + ']' : epkb_vars.unknown_error );
+			//noinspection JSUnresolvedVariable
+			msg = epkb_admin_notification(epkb_vars.error_occurred + '. ' + epkb_vars.msg_try_again, msg, 'error');
+
+			// set frontend editor if something went wrong
+			$('#editor_backend_mode0').prop('checked', true);
+			$('#editor_backend_mode1').prop('checked', false);
+		}).always(function ()
+		{
+
+			epkb_loading_Dialog( 'remove', '' );
+
+			if ( typeof theResponse.message !== 'undefined' ) {
+				msg = theResponse.message;
+			}
+
+			if ( msg ) {
+				clear_bottom_notifications();
+				$('body').append(msg);
+			}
+
+			clear_message_after_set_time();
+		});
+	});
+
+	// open iframe with editor
+	$(document).on('click', '.epkb-main-page-editor-link a, .epkb-article-page-editor-link a, .epkb-archive-page-editor-link a, .epkb-search-page-editor-link a', function(){
+		if ( $('#editor_backend_mode input:checked').length == 0 || $('#editor_backend_mode input:checked').val() == 0 ) {
+			return true;
+		}
+
+		$('body').append(`
+			<div class="epkb-editor-popup" id="epkb-editor-popup">
+				<iframe src="${$(this).prop('href')}" ></iframe>
+			</div>
+		`);
+
+		return false;
+	});
+
+	$('body').on('click', '.epkb-editor-popup', function(e){
+		e.stopPropagation()
+	});
+
+	$('body').on('click', function(){
+		$('.epkb-editor-popup').remove();
 	});
 });

@@ -4,16 +4,17 @@
  * Configuration for the front end editor
  */
  
-class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_Base_Config {
+class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_KB_Base_Config {
 
 	/** SEE DOCUMENTATION IN THE BASE CLASS **/
+	protected $page_type = 'archive-page';
 
 	/**
 	 * Archive zone
 	 * @return array
 	 */
 	private static function archive_zone() {
-		// TODO check config, only templates_for_kb_category_archive_page_heading_description tested
+		// TODO check config, only template_category_archive_page_heading_description tested
 		$settings = [
 
 			// Content Tab
@@ -22,19 +23,19 @@ class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_Base_Config {
 				'target_selector' => '.eckb-acll__title',
 				'text' => 1
 			],
-			'templates_for_kb_category_archive_page_heading_description' => [
+			'template_category_archive_page_heading_description' => [
 				'editor_tab' => self::EDITOR_TAB_CONTENT,
 				'target_selector' => '.eckb-category-archive-title-desc',
 				'text' => 1
 			],
-			'templates_for_kb_category_archive_read_more' => [
+			'template_category_archive_read_more' => [
 				'editor_tab' => self::EDITOR_TAB_CONTENT,
-				'target_selector' => '.eckb-article-read-more',
+				'target_selector' => '.eckb-article-read-more-text',
 				'text' => 1
 			],
 
 			// Style Tab
-			'templates_for_kb_category_archive_page_style' => [
+			'template_category_archive_page_style' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'reload' => '1'
 			],
@@ -45,12 +46,16 @@ class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_Base_Config {
 				'reload' => '1',
 				'style'       => 'small',
 			],
+			'archive-show-sub-categories' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1',
+			],
 
 			// Advanced Tab
 			'archive-container-width-units-v2' => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'type' => 'units',
-				'reload' => '1'
+				'target_selector' => '#eckb-categories-archive-container-v2'
 			],
 			'archive-container-width-v2' => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
@@ -62,7 +67,9 @@ class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_Base_Config {
 			],
 			'archive-content-padding-v2' => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
-				'reload' => '1',
+				'target_selector' => '#eckb-categories-archive__body__content',
+				'style_name' => 'padding',
+				'postfix' => 'px',
 				'style'       => 'small',
 
 			],
@@ -76,7 +83,60 @@ class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_Base_Config {
 				'settings'  => $settings
 			]];
 	}
-	
+
+	/**
+	 * Archive Meta zone
+	 * @return array
+	 */
+	private static function archive_meta_zone() {
+		$settings = [
+
+			// Content Tab
+			'template_category_archive_date' => [
+				'editor_tab' => self::EDITOR_TAB_CONTENT,
+				'target_selector' => '.eckb-article-posted-on .eckb-article-meta-name',
+				'text' => 1
+			],
+			'template_category_archive_author' => [
+				'editor_tab' => self::EDITOR_TAB_CONTENT,
+				'target_selector' => '.eckb-article-byline .eckb-article-meta-name',
+				'text' => 1
+			],
+			'template_category_archive_categories' => [
+				'editor_tab' => self::EDITOR_TAB_CONTENT,
+				'target_selector' => '.eckb-article-categories .eckb-article-meta-name',
+				'text' => 1
+			],
+
+			// Features Tab
+			'template_category_archive_date_on' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1',
+			],
+			'template_category_archive_author_on' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1',
+			],
+			'template_category_archive_categories_on' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1',
+			],
+
+		];
+
+		return [
+			'archive_meta' => [
+				'title'     =>  __( 'Archive Meta Data', 'echo-knowledge-base' ),
+				'classes'   => '.eckb-article-metadata',
+				'settings'  => $settings,
+				'disabled_settings' => [
+					'template_category_archive_date_on' => 'off',
+					'template_category_archive_author_on' => 'off',
+					'template_category_archive_categories_on' => 'off'
+				],
+			]];
+	}
+
 	/**
 	 * Categories List zone
 	 * @return array
@@ -86,6 +146,17 @@ class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_Base_Config {
 		$settings = [
 
 			// Content Tab
+			'category_focused_menu_heading_text' => [
+				'editor_tab' => self::EDITOR_TAB_CONTENT,
+				'target_selector' => '.eckb-acll__title',
+				'text' => 1
+			],
+
+			// Style Tab
+			'categories_box_typography' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '.eckb-article-cat-layout-list, .eckb-article-cat-layout-list a',
+			],
 			'category_box_title_text_color' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => ' .eckb-acll__title',
@@ -118,15 +189,7 @@ class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_Base_Config {
 			],
 
 			// Features Tab
-			'categories_box_font_size' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'styles' => [
-					'.eckb-article-cat-layout-list' => 'font-size',
-					'.eckb-article-cat-layout-list a' => 'font-size',
-				],
-				'style' => 'slider',
-				'postfix' => 'px'
-			],
+
 		];
 
 		return [
@@ -139,16 +202,13 @@ class EPKB_Editor_Archive_Page_Config extends EPKB_Editor_Base_Config {
 	
 	/**
 	 * Retrieve Editor configuration
-	 * @param $kb_config
-	 * @return array
 	 */
-	public function get_config( $kb_config ) {
+	public function load_setting_zones() {
 
 		// Result config
-		$editor_config = [];
-		$editor_config += self::archive_zone();
-		$editor_config += self::categories_layout_list_zone();
-
-		return self::get_editor_config( $kb_config, $editor_config, [], 'archive-page' );
+		$this->setting_zones = [];
+		$this->setting_zones += self::archive_zone();
+		$this->setting_zones += self::archive_meta_zone();
+		$this->setting_zones += self::categories_layout_list_zone();
 	}
 }

@@ -44,31 +44,38 @@ class EPKB_Deactivate_Feedback {
 
 		<div id="epkb-deactivate-feedback-dialog-wrapper">
 			<div id="epkb-deactivate-feedback-dialog-header">
-				<span id="epkb-deactivate-feedback-dialog-header-title"><?php echo __( 'Quick Feedback', 'echo-knowledge-base' ); ?></span>
+				<span id="epkb-deactivate-feedback-dialog-header-title"><?php echo esc_html__( 'Quick Feedback', 'echo-knowledge-base' ); ?></span>
 			</div>
 			<form id="epkb-deactivate-feedback-dialog-form" method="post">				<?php
 				wp_nonce_field( '_epkb_deactivate_feedback_nonce' );				?>
 				<input type="hidden" name="action" value="epkb_deactivate_feedback" />
 
-				<div id="epkb-deactivate-feedback-dialog-form-caption"><?php echo __( 'If you have a moment, please share why you are deactivating KB:', 'echo-knowledge-base' ); ?></div>
+				<div id="epkb-deactivate-feedback-dialog-form-caption"><?php echo esc_html__( 'If you have a moment, please share why you are deactivating KB:', 'echo-knowledge-base' ); ?></div>
 				<div id="epkb-deactivate-feedback-dialog-form-body">
-					<div id="epkb-deactivate-feedback-dialog-form-error" style="display:none;"><?php echo __( 'Please Select an Option', 'echo-knowledge-base' ); ?></div>					<?php
+					<div id="epkb-deactivate-feedback-dialog-form-error" style="display:none;"><?php echo esc_html__( 'Please Select an Option', 'echo-knowledge-base' ); ?></div>					<?php
 
-						foreach ( $deactivate_reasons as $reason_key => $reason ) :		?>
+						foreach ( $deactivate_reasons as $reason_key => $reason_escaped_html ) :		?>
 							<div class="epkb-deactivate-feedback-dialog-input-wrapper">
 								<input id="epkb-deactivate-feedback-<?php echo esc_attr( $reason_key ); ?>" class="epkb-deactivate-feedback-dialog-input" type="radio" name="reason_key" value="<?php echo esc_attr( $reason_key ); ?>" />
-								<label for="epkb-deactivate-feedback-<?php echo esc_attr( $reason_key ); ?>" class="epkb-deactivate-feedback-dialog-label"><?php echo esc_html( $reason['title'] ); ?></label>
-								<?php if ( ! empty( $reason['alert'] ) ) : ?>
-									<div class="epkb-feedback-text"><?php echo $reason['alert']; ?></div>
+								<label for="epkb-deactivate-feedback-<?php echo esc_attr( $reason_key ); ?>" class="epkb-deactivate-feedback-dialog-label"><?php echo esc_html( $reason_escaped_html['title'] ); ?></label>
+								<?php if ( ! empty( $reason_escaped_html['escaped_alert_html'] ) ) : ?>
+									<div class="epkb-feedback-text"><?php echo  $reason_escaped_html['escaped_alert_html']; ?></div>
 								<?php endif; ?>
-								<?php if ( ! empty( $reason['input_placeholder'] ) ) : ?>
-											 <input class="epkb-feedback-text" type="text" name="reason_<?php echo esc_attr( $reason_key ); ?>" placeholder="<?php echo esc_attr( $reason['input_placeholder'] ); ?>" />
+								<?php if ( ! empty( $reason_escaped_html['input_placeholder'] ) ) : ?>
+											 <input class="epkb-feedback-text" type="text" name="reason_<?php echo esc_attr( $reason_key ); ?>" placeholder="<?php echo esc_attr( $reason_escaped_html['input_placeholder'] ); ?>" />
 								<?php endif; ?>
-								<?php if ( ! empty( $reason['button'] ) ) : ?>
-									<div class="epkb-feedback-button"><a class="epkb-feedback-button__green" target="_blank" href="<?php echo $reason['button']['url']; ?>"><?php echo $reason['button']['title']; ?></a></div>
+								<?php if ( ! empty( $reason_escaped_html['contact_me'] ) ) : ?>
+									<div class="epkb-feedback-checkbox">
+										<input id="epkb-deactivate-feedback-contact" class="epkb-deactivate-feedback-dialog-input" type="checkbox" name="contact_me_<?php echo esc_attr( $reason_key ); ?>" value="yes" />
+										<label for="epkb-deactivate-feedback-contact" class="epkb-deactivate-feedback-dialog-label"><?php echo esc_html__( 'Contact Me', 'echo-knowledge-base' ); ?></label>
+									</div>
+								<?php endif; ?>
+								<?php if ( ! empty( $reason_escaped_html['button'] ) ) : ?>
+									<div class="epkb-feedback-button"><a class="epkb-feedback-button__green" target="_blank" href="<?php echo esc_url( $reason_escaped_html['button']['url'] ); ?>"><?php echo esc_html( $reason_escaped_html['button']['title'] ); ?></a></div>
 								<?php endif; ?>
 							</div>					<?php
 						endforeach; ?>
+
 				</div>
 			</form>
 		</div>		<?php
@@ -80,13 +87,21 @@ class EPKB_Deactivate_Feedback {
 	public function ajax_epkb_deactivate_feedback() {
 		global $wp_version;
 
-		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], '_epkb_deactivate_feedback_nonce' ) ) {
+		$wpnonce_value = EPKB_Utilities::post( '_wpnonce' );
+		if ( empty( $wpnonce_value ) || ! wp_verify_nonce( $wpnonce_value, '_epkb_deactivate_feedback_nonce' ) ) {
 			wp_send_json_error();
 		}
 
-		$reason_type = empty($_POST['reason_key']) ? 'N/A' : $_POST['reason_key'];
-		$reason_input = empty($_POST[ "reason_{$reason_type}" ]) ? 'N/A' : sanitize_text_field( $_POST[ "reason_{$reason_type}" ] );
-		$first_version = get_option('epkb_version_first');
+		$reason_type = EPKB_Utilities::post( 'reason_key', 'N/A' );
+		$reason_input = EPKB_Utilities::post( "reason_{$reason_type}", 'N/A' );
+		$first_version = get_option( 'epkb_version_first' );
+		$contact_user = isset( $_POST["contact_me_{$reason_type}"] ) ? 'Yes' : 'No';
+
+		$contact_email = '';
+		if ( $contact_user == 'Yes' ) {
+			$user = EPKB_Utilities::get_current_user();
+			$contact_email = empty($user) ? '' : $user->user_email;
+		}
 
 		//Theme Name and Version
 		$active_theme = wp_get_theme();
@@ -94,14 +109,15 @@ class EPKB_Deactivate_Feedback {
 		
 		// send feedback
 		$api_params = array(
-			'epkb_action'      => 'epkb_process_user_feedback',
-			'feedback_type' 	 => $reason_type,
-			'feedback_input'   => $reason_input,
-			'plugin_name'      => 'Echo Knowledge Base',
-			'plugin_version'   => class_exists('Echo_Knowledge_Base') ? Echo_Knowledge_Base::$version : 'N/A',
-			'first_version'    => empty($first_version) ? 'N/A' : $first_version,
-			'wp_version'	 	 => $wp_version,
-			'theme_info'		 => $theme_info,
+			'epkb_action'       => 'epkb_process_user_feedback',
+			'feedback_type'     => $reason_type,
+			'feedback_input'    => $reason_input,
+			'plugin_name'       => 'KB',
+			'plugin_version'    => class_exists('Echo_Knowledge_Base') ? Echo_Knowledge_Base::$version : 'N/A',
+			'first_version'     => empty($first_version) ? 'N/A' : $first_version,
+			'wp_version'        => $wp_version,
+			'theme_info'        => $theme_info,
+			'contact_user'      => $contact_email . ' - ' . $contact_user
 		);
 
 		// Call the API
@@ -114,28 +130,38 @@ class EPKB_Deactivate_Feedback {
 			)
 		);
 
+		if ( $contact_user == 'Yes' ) { 
+			$user = EPKB_Utilities::get_current_user();
+			$first_name = $user->first_name;
+			// not translations
+			$subject = esc_html( 'Plugin Deactivation' );
+			$message =  esc_html( 'Name' ) . ': ' . esc_html( $first_name ) . ' \r\n' .
+				esc_html( 'Email' ) . ': ' . esc_html( $contact_email ) . ' \r\n' .
+				esc_html( 'Feedback Type' ) . ': ' . esc_html( $reason_type ) . ' \r\n' .
+				esc_html( 'Feedback Input' ) . ': ' . esc_html( $reason_input );
+
+			// send the email
+			EPKB_Utilities::send_email( $message, 'support@echoplugins.freshdesk.com', $contact_email, $first_name, $subject );
+		}
+
 		wp_send_json_success();
 	}
 
 	private function get_deactivate_reasons( $type ) {
 
-		$pro_link = 'https://www.echoknowledgebase.com/bundle-pricing/?utm_source=plugin&utm_medium=readme&utm_content=home&utm_campaign=pro-bundle';
 		switch ( $type ) {
 		   case 1:
 		   	    $deactivate_reasons = [
 				  'missing_feature' => [
 					  'title' => __( 'I\'m missing a feature', 'echo-knowledge-base' ),
 					  'input_placeholder' => __( 'Please tell us what is missing', 'echo-knowledge-base' ),
-					  'alert' => EPKB_Deactivate_Feedback::get_features_html(),
+					  'contact_me' => true,
 				  ],
 				  'couldnt_get_the_plugin_to_work' => [
 					  'title' => __( 'I couldn\'t get the plugin to work', 'echo-knowledge-base' ),
 					  'input_placeholder' => __( 'Please share the reason', 'echo-knowledge-base' ),
-					  //'alert' => sprintf( __( 'We can help you, usually within an hour! If this is our bug, we will give you our %s for free.', 'echo-knowledge-base' ), '<a href="' . $pro_link . '" target="_blank">PRO version</a>'),
-					  'button' => [
-						  'title' => __( 'Contact us for Help', 'echo-knowledge-base' ),
-						  'url' => 'https://www.echoknowledgebase.com/deactivation-technical-support/'
-					  ]
+					  //'escaped_alert_html' => sprintf( __( 'We can help you, usually within an hour! If this is our bug, we will give you our %s for free.', 'echo-knowledge-base' ), '<a href="' . $pro_link . '" target="_blank">PRO version</a>'),
+					  'contact_me' => true,
 				  ],
 				  'other' => [
 					  'title' => __( 'Other', 'echo-knowledge-base' ),
@@ -152,15 +178,12 @@ class EPKB_Deactivate_Feedback {
 				$deactivate_reasons = [
 				  'no_longer_needed' => [
 					  'title' => __( 'I no longer need the plugin', 'echo-knowledge-base' ),
-					  'input_placeholder' => '',
-					  'alert' => sprintf( __( 'Did you know we launched a new Elementor plugin for writing posts, articles, and documents? %s', 'echo-knowledge-base' ),
-						                        '<a href="https://www.creative-addons.com/" target="_blank">Learn More <i class="epkbfa epkbfa-external-link"></i></a>'),
-					  
+					  'input_placeholder' => ''
 				  ],
 					'missing_feature' => [
 					   'title' => __( 'I\'m missing a feature', 'echo-knowledge-base' ),
 					   'input_placeholder' => __( 'Please tell us what is missing', 'echo-knowledge-base' ),
-					   'alert' => EPKB_Deactivate_Feedback::get_features_html(),
+						'contact_me' => true,
 					],
 				  'other' => [
 					  'title' => __( 'Other', 'echo-knowledge-base' ),
@@ -175,18 +198,5 @@ class EPKB_Deactivate_Feedback {
 	   }
 
 		return $deactivate_reasons;
-	}
-
-	private function get_features_html() {
-		$features_html = '<div class="epkb-deactivate-features">';
-		$features_html .= '<div class="epkb-deactivate-features__heading">' . __( 'We have these additional features in our addons', 'echo-knowledge-base' ) . '</div>';
-		$features_html .= '<ul>
-								<li><a href="https://www.echoknowledgebase.com/wordpress-plugin/advanced-search/" target="_blank">' . __( 'Advanced Search', 'echo-knowledge-base' ) . ' <i class="epkbfa epkbfa-external-link"></i></a> ' . __( '- analytics, tag search, more settings', 'echo-knowledge-base' ) . '</li>
-								<li><a href="https://www.echoknowledgebase.com/wordpress-plugin/elegant-layouts/" target="_blank">' . __( 'More Layouts', 'echo-knowledge-base' ) . ' <i class="epkbfa epkbfa-external-link"></i></a> ' . __( '- sidebar, grid layout', 'echo-knowledge-base' ) . '</li>
-								<li><a href="https://www.echoknowledgebase.com/wordpress-plugin/access-manager/" target="_blank">' . __( 'Access & Permissions', 'echo-knowledge-base' ) . ' <i class="epkbfa epkbfa-external-link"></i></a> ' . __( '- roles, groups, content restriction', 'echo-knowledge-base' ) . '</li>
-								<li><a href="https://www.echoknowledgebase.com/bundle-pricing/" target="_blank">' . __( 'And more...', 'echo-knowledge-base' ) . ' <i class="epkbfa epkbfa-external-link"></i></a></li>
-						  </ul>';
-		$features_html .= '</div>';
-		return $features_html;
 	}
 }

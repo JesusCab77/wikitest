@@ -8,8 +8,8 @@
 class EPKB_KB_Search {
 
 	public function __construct() {
-		add_action( 'wp_ajax_epkb-search-kb', array($this, 'search_kb') );
-		add_action( 'wp_ajax_nopriv_epkb-search-kb', array($this, 'search_kb') );
+		add_action( 'wp_ajax_epkb-search-kb', array( $this, 'search_kb' ) );
+		add_action( 'wp_ajax_nopriv_epkb-search-kb', array( $this, 'search_kb' ) );  // users not logged-in should be able to search as well
 	}
 
 	/**
@@ -21,7 +21,7 @@ class EPKB_KB_Search {
 
 		$kb_id = EPKB_Utilities::sanitize_get_id( $_GET['epkb_kb_id'] );
 		if ( is_wp_error( $kb_id ) ) {
-			wp_die( json_encode( array( 'status' => 'success', 'search_result' => esc_html__( 'Error occurred. Please try again later.', 'echo-knowledge-base' ) ) ) );
+			wp_die( json_encode( array( 'status' => 'success', 'search_result' => EPKB_Utilities::report_generic_error( 5 ) ) ) );
 		}
 
 		$kb_config = epkb_get_instance()->kb_config_obj->get_kb_config_or_default( $kb_id );
@@ -41,14 +41,18 @@ class EPKB_KB_Search {
 		$result = $this->execute_search( $kb_id, $search_terms );
 		if ( empty($result) ) {
 			$search_result = $kb_config['no_results_found'];
+
+			$not_found_count = EPKB_Utilities::get_kb_option( $kb_id, 'epkb_miss_search_counter', 0 );
+			EPKB_Utilities::save_kb_option( $kb_id, 'epkb_miss_search_counter', $not_found_count + 1, true );
+
 			wp_die( json_encode( array( 'status' => 'success', 'search_result' => $search_result ) ) );
 		}
 
 		// ensure that links have https if the current schema is https
 		set_current_screen('front');
-		$prefix = EPKB_Utilities::is_kb_main_page() ? '' : 'article_';
 
-		$search_result = '<h3>' . esc_html( $kb_config[$prefix . 'search_results_msg'] ) . ' ' . $search_terms . '</h3>';
+		$prefix = EPKB_Core_Utilities::is_kb_main_page() ? '' : 'article_';
+		$search_result = '<div class="epkb-search-results-message">' . esc_html( $kb_config[$prefix . 'search_results_msg'] ) . ' ' . $search_terms . '</div>';
 		$search_result .= '<ul>';
 
 		$title_style = '';
@@ -60,7 +64,7 @@ class EPKB_KB_Search {
 		}
 
 		// display one line for each search result
-		foreach( $result as $post ) {
+		foreach ( $result as $post ) {
 
 			$article_url = get_permalink( $post->ID );
 			if ( empty($article_url) || is_wp_error( $article_url )) {
@@ -74,9 +78,9 @@ class EPKB_KB_Search {
 				$article_title_icon = empty( $article_title_icon ) ? 'epkbfa-file-text-o' : $article_title_icon;
 			}
 
-			// linked articles have open in new tab option
+			// linked articles have the open in new tab option
 			$new_tab = '';
-			if ( class_exists( 'KBLK_Utilities' ) ) {
+			if ( class_exists( 'KBLK_Utilities' ) && method_exists( 'KBLK_Utilities', 'get_postmeta' ) ) {
 				$link_editor_config = KBLK_Utilities::get_postmeta( $post->ID, 'kblk-link-editor-data', [], true );
 				$new_tab            = empty( $link_editor_config['open-new-tab'] ) ? '' : 'target="_blank"';
 			}
@@ -84,16 +88,18 @@ class EPKB_KB_Search {
 			$search_result .=
 				'<li>' .
 					'<a href="' .  esc_url( $article_url ) . '" ' . $new_tab . ' class="epkb-ajax-search" data-kb-article-id="' . $post->ID . '">' .
-						'<span class="eckb-article-title" ' . $title_style . '>' .
-                            '<i class="eckb-article-title-icon epkbfa ' . esc_attr($article_title_icon) . ' ' . $icon_style . '"></i>' .
-							'<span>' . esc_html($post->post_title) . '</span>' .
+						'<span class="epkb_search_results__article-title" ' . $title_style . '>' .
+                            '<span class="epkb_search_results__article-title__icon epkbfa ' . esc_attr($article_title_icon) . ' ' . $icon_style . '"></span>' .
+							'<span class="epkb_search_results__article-title__text">' . esc_html($post->post_title) . '</span>' .
 						'</span>' .
 					'</a>' .
 				'</li>';
 		}
 		$search_result .= '</ul>';
 
-		// we are done here
+		$serach_count = EPKB_Utilities::get_kb_option( $kb_id, 'epkb_hit_search_counter', 0 );
+		EPKB_Utilities::save_kb_option( $kb_id, 'epkb_hit_search_counter', $serach_count + 1, true );
+
 		wp_die( json_encode( array( 'status' => 'success', 'search_result' => $search_result ) ) );
 	}
 
@@ -113,20 +119,25 @@ class EPKB_KB_Search {
 				return $result;
 			}
 		}
-		
-		$post_status_search = class_exists('AM'.'GR_Access_Utilities', false) ? array('publish', 'private') : array('publish');
 
 		$result = array();
 		$search_params = array(
 				's' => $search_terms,
 				'post_type' => EPKB_KB_Handler::get_post_type( $kb_id ),
-				'post_status' => $post_status_search,
 				'ignore_sticky_posts' => true,  // sticky posts will not show at the top
 				'posts_per_page' => 20,         // limit search results
 				'no_found_rows' => true,        // query only posts_per_page rather than finding total nof posts for pagination etc.
 				'cache_results' => false,       // don't need that for mostly unique searches
 				'orderby' => 'relevance'
 		);
+
+		// OLD installation or Access Manager
+		$search_params['post_status'] = array( 'publish' );
+		if ( EPKB_Utilities::is_amag_on() ) {
+			$search_params['post_status'] = array( 'publish', 'private' );
+		} else if ( EPKB_Utilities::is_new_user( '7.4.0' ) && is_user_logged_in() ) {
+			$search_params['post_status'] = array( 'publish', 'private' );
+		}
 
 		$found_posts_obj = new WP_Query( $search_params );
 		if ( ! empty($found_posts_obj->posts) ) {
@@ -148,13 +159,9 @@ class EPKB_KB_Search {
 		if ( EPKB_Utilities::is_advanced_search_enabled( $kb_config ) ) {
 			do_action( 'eckb_advanced_search_box', $kb_config );
 			return;
-		}		?>
+		}
 
-		<script>
-			var ajaxurl = '<?php echo admin_url( 'admin-ajax.php' ); ?>';
-		</script>   <?php
-
-		$prefix = EPKB_Utilities::is_kb_main_page() ? '' : 'article_';
+		$prefix = EPKB_Core_Utilities::is_kb_main_page() ? '' : 'article_';
 
 		// no search box configured or required
 		if ( $kb_config[$prefix . 'search_layout'] == 'epkb-search-form-0' ) {
@@ -174,15 +181,14 @@ class EPKB_KB_Search {
 		$style2 = self::get_inline_style( $kb_config,
 			'background-color:: ' . $prefix . 'search_btn_background_color,
 			 background:: ' . $prefix . 'search_btn_background_color, 
-			 border-width:: ' . $prefix . 'search_input_border_width,
 			 border-color:: ' . $prefix . 'search_btn_border_color'
 			 );
-		$style3 = self::get_inline_style( $kb_config, 'color:: ' . $prefix . 'search_title_font_color, font-size:: search_title_font_size');
+		$style3 = self::get_inline_style( $kb_config, 'color:: ' . $prefix . 'search_title_font_color, typography:: ' . $prefix . 'search_title_typography');
 		$style4 = self::get_inline_style( $kb_config, 'border-width:: ' . $prefix . 'search_input_border_width, border-color:: ' . $prefix . 'search_text_input_border_color,
 											background-color:: ' . $prefix . 'search_text_input_background_color, background:: ' . $prefix . 'search_text_input_background_color' );
 		$class1 = self::get_css_class( $kb_config, 'epkb-search, :: ' . $prefix . 'search_layout' );
 
-		$search_title_tag = empty($kb_config[$prefix . 'search_title_html_tag']) ? 'h2' : $kb_config[$prefix . 'search_title_html_tag'];
+		$search_title_tag = empty($kb_config[$prefix . 'search_title_html_tag']) ? 'div' : $kb_config[$prefix . 'search_title_html_tag'];
 		$search_input_width = $kb_config[$prefix . 'search_box_input_width'];
 		$form_style = self::get_inline_style( $kb_config, 'width:' . $search_input_width . '%' );
 

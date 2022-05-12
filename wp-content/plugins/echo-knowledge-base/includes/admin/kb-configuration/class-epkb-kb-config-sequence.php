@@ -46,6 +46,9 @@ class EPKB_KB_Config_Sequence {
 			$article_admin = new EPKB_Articles_Admin();
 			$article_admin->update_articles_sequence( $kb_id );
 		}
+
+		// add flag for get started page
+		EPKB_Core_Utilities::update_kb_flag( 'edit_articles_categories_visited' );
 	}
 
 	/**
@@ -76,8 +79,12 @@ class EPKB_KB_Config_Sequence {
 			}
 		} else {
 			$category_admin = new EPKB_Categories_Admin();
-			$category_admin->update_categories_sequence();
+			$category_taxonomy_slug = EPKB_KB_Handler::get_category_taxonomy_name( $kb_id );
+			$category_admin->update_categories_sequence( 0, 0, $category_taxonomy_slug );
 		}
+
+		// add flag for get started page
+		EPKB_Core_Utilities::update_kb_flag( 'edit_articles_categories_visited' );
 	}
 
 	/**
@@ -227,6 +234,7 @@ class EPKB_KB_Config_Sequence {
 	public function update_categories_order( $kb_id, $new_sequence, $orig_categories_obj=null ) {
 
 		if ( ! is_array($new_sequence) ) {
+			EPKB_Logging::add_log( "New sequence is empty" );
 			return false;
 		}
 
@@ -234,18 +242,20 @@ class EPKB_KB_Config_Sequence {
         if ( empty($orig_categories_obj) ) {
             $orig_categories_data = EPKB_Utilities::get_kb_option( $kb_id, EPKB_Categories_Admin::KB_CATEGORIES_SEQ_META, null, true );
             if ( $orig_categories_data === null ) {
-                return false;
+	            EPKB_Logging::add_log("orig_categories_data is null" );
+	            return false;
             }
             $orig_categories_obj = new EPKB_Categories_Array( $orig_categories_data ); // normalizes the array as well
         }
 
         // error if the original sequence has data but not new sequence in the Ajax; otherwise just return empty array
-        if ( empty($new_sequence) ) {
+        if ( empty( $new_sequence ) ) {
             return empty($orig_categories_data) ? $orig_categories_obj : false;
         }
 
 		$new_sequence = $this->verify_and_format_new_sequence( $new_sequence );
-		if ( empty($new_sequence) ) {
+		if ( empty( $new_sequence ) ) {
+			EPKB_Logging::add_log("formatted new sequence is empty" );
 			return false;
 		}
 

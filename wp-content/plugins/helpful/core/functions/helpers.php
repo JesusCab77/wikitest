@@ -1,12 +1,14 @@
 <?php
 /**
- * Helpful helpers loaded before helpful classes.
+ * Helper functions for use in other plugins or themes.
  *
  * @package Helpful
- * @author  Pixelbart <me@pixelbart.de>
+ * @since 4.4.50
+ * @since 4.3.0
  */
-use Helpful\Core\Helpers as Helpers;
+
 use Helpful\Core\Helper;
+use Helpful\Core\Helpers as Helpers;
 
 /* Prevent direct access */
 if ( ! defined( 'ABSPATH' ) ) {
@@ -64,7 +66,7 @@ if ( ! function_exists( 'helpful_has_user_voted' ) ) {
 	 *
 	 * @global $post
 	 *
-	 * @param int|null $post_id
+	 * @param int|null $post_id Post id to check.
 	 * @param bool     $bool Returns the vote status (pro, contra, none) if true.
 	 *
 	 * @return bool|string
@@ -80,8 +82,7 @@ if ( ! function_exists( 'helpful_is_amp' ) ) {
 	 *
 	 * @return bool
 	 */
-	function helpful_is_amp()
-	{
+	function helpful_is_amp() {
 		return Helper::is_amp();
 	}
 }

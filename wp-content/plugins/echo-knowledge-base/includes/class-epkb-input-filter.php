@@ -16,6 +16,7 @@ class EPKB_Input_Filter {
 	const TEXT = 'text';                // use Text or Textarea input
 	const CHECKBOX = 'checkbox';
 	const RADIO = 'radio';
+	const EMAIL = 'email';
 
 	// advanced fields
 	const SELECTION = 'select';         // use Dropdown or Radio_buttons_horizontal
@@ -34,6 +35,7 @@ class EPKB_Input_Filter {
 	const INTERNAL_ARRAY = 'internal_array';              // array of stored values
 	const WP_EDITOR = 'wp_editor';          // WP TinyMCE editor or text that contains HTML elements
 	const URL = 'url';      // slug or url
+	const TYPOGRAPHY = 'typography';      // slug or url
 
 	/**
 	 * Validate and sanitize input. If input not in spec then exclude it.
@@ -46,33 +48,22 @@ class EPKB_Input_Filter {
 	 */
 	public function validate_and_sanitize_specs( array $input, array $specification ) {
 
-		if ( empty($input) ) {
-			return new WP_Error('invalid_input', __( 'Empty input', 'echo-knowledge-base' ) );
+		if ( empty( $input ) ) {
+			return new WP_Error('invalid_input', __( 'Error Occurred', 'echo-knowledge-base' ) );
 		}
 
 		$sanitized_input = array();
 		$errors = array();
 
 		// filter each field
-		foreach ($input as $key => $input_value) {
+		foreach ( $input as $key => $input_value ) {
 
-			if ( ! isset($specification[$key]) || $input_value === null ) {
+			if ( ! isset( $specification[$key] ) || $input_value === null ) {
 				continue;
 			}
 
 			$field_spec = $specification[$key];
-
-			$defaults = array(
-				'label'       => __( "Label", 'echo-knowledge-base' ),
-				'type'        => self::TEXT,
-				'mandatory'    => true,
-				'max'         => '20',
-				'min'         => '3',
-				'options'     => array(),
-				'internal'    => false,
-				'default'     => ''
-			);
-			$field_spec = wp_parse_args( $field_spec, $defaults );
+			$field_spec = wp_parse_args( $field_spec, EPKB_KB_Config_Specs::get_defaults() );
 
 			// SANITIZE FIELD
 			$type = empty($field_spec['type']) ? '' : $field_spec['type'];
@@ -100,9 +91,13 @@ class EPKB_Input_Filter {
 				case self::INTERNAL_ARRAY:
 					// no need to sanitize
 					break;
-
+				
+				case self::TYPOGRAPHY:
+					$input_value = self::sanitize_typography( $input_value );
+					break;
+				
 				case self::WP_EDITOR:
-					$input_value = wp_kses_post($input_value);
+					$input_value = wp_kses( $input_value, EPKB_Utilities::get_extended_html_tags() );
 					break;
 
 				case self::TRUE_FALSE:
@@ -114,7 +109,7 @@ class EPKB_Input_Filter {
 					break;
 
 				case self::TEXT:
-					if ( ! empty ($field_spec['allowed_tags']) ) {
+					if ( ! empty($field_spec['allowed_tags']) ) {
 						$input_value = wp_kses( $input_value, $field_spec['allowed_tags'] );
 					} else {
 						$input_value = trim( sanitize_text_field( $input_value ) );
@@ -127,7 +122,7 @@ class EPKB_Input_Filter {
 
 			// validate/sanitize input
 			$result = $this->filter_input_field( $input_value, $field_spec );
-			if ( is_wp_error($result) ) {
+			if ( is_wp_error( $result ) ) {
 
                 EPKB_Logging::add_log( 'Please change the value of ' . $field_spec['label'] . ' field. Current value: "' . $input_value . '" - ' . $result->get_error_message() . ', code: ' . $result->get_error_message(), $result );
 
@@ -135,8 +130,8 @@ class EPKB_Input_Filter {
                 if ( ( empty($field_spec['internal']) && count($errors) > 0 ) || ( defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ) ||
                  ! in_array( $field_spec['type'], array(self::CHECKBOX, self::SELECTION, self::CHECKBOXES_MULTI_SELECT, self::CHECKBOXES_MULTI_SELECT_NOT, self::TRUE_FALSE, self::ENUMERATION) )) {
 
-                    $lang = '<strong style="color:#d5ff8b">' . $field_spec['label'] . '</strong>';
-                    $errors[] = '<div style="padding: 20px 0 20px 0;">'. sprintf( __( 'Please change value of the %s field.', 'echo-knowledge-base' ), $lang ) . ' ' . $result->get_error_message() . '</div>';
+                    $lang = '<strong style="color:#d5ff8b">' . esc_html( $field_spec['label'] ) . '</strong>';
+                    $errors[] = '<div style="padding: 20px 0 20px 0;">'. sprintf( esc_html__( 'Please change value of the %s field.', 'echo-knowledge-base' ), $lang ) . ' ' . $result->get_error_message() . '</div>';
 
                 // internal fields and first error will just use default value
                 } else {
@@ -162,56 +157,51 @@ class EPKB_Input_Filter {
 		switch ( $field_spec['type'] ) {
 
 			case self::TEXT:
-			case self::LICENSE_KEY:
 			case self::URL:
+			case self::EMAIL:
 				return $this->filter_text( $value, $field_spec );
-				break;
 
+			case self::LICENSE_KEY:
+				return $this->filter_license_key( $value, $field_spec );
+				
 			case self::CHECKBOX:
 				return $this->filter_checkbox( $value );
-				break;
 
 			case self::SELECTION:
 				return $this->filter_select( $value, $field_spec );
-				break;
 
 			case self::CHECKBOXES_MULTI_SELECT:
 			case self::CHECKBOXES_MULTI_SELECT_NOT:
 				// no filtering needed;
 				return $value;
-				break;
 
 			case self::NUMBER:
 				return $this->filter_number( $value, $field_spec );
-				break;
 
 			case self::COLOR_HEX:
 				return $this->filter_color_hex( $value, $field_spec );
-				break;
 
 			case self::TRUE_FALSE:
 				return $this->filter_true_false( $value );
-				break;
 
 			case self::ID:
 				return $this->filter_id( $value );
-				break;
 
 			case self::ENUMERATION:
 				return $this->filter_enumeration( $value, $field_spec );
-				break;
 
 			case self::INTERNAL_ARRAY:
 				// no filtering needed
 				return $value;
-				break;
+			
+			case self::TYPOGRAPHY:
+				return $this->filter_typography( $value );
 
 			case self::WP_EDITOR:
 				return $this->filter_wp_editor( $value, $field_spec );
-				break;
 
 			default:
-				return new WP_Error('eckb-invalid-input-type', __( 'unknown input type: ', 'echo-knowledge-base' ) . $field_spec['type']);
+				return new WP_Error('eckb-invalid-input-type', __( 'Error Occurred', 'echo-knowledge-base' ) . ' - ' . $field_spec['type']);
 		}
 	}
 
@@ -247,6 +237,21 @@ class EPKB_Input_Filter {
 	}
 
 	/**
+	 * Sanitize and license key text. Output WP Error if text too big/small
+	 *
+	 * @param $text
+	 * @param $field_spec
+	 *
+	 * @return string|WP_Error returns sanitized and validated text
+	 */
+	private function filter_license_key( $text, $field_spec ) {
+
+		$text = is_string( $text ) ? trim( $text ) : '';
+
+		return $this->filter_text( $text, $field_spec );
+	}
+
+	/**
 	 * Sanitize and validate selection. Output WP Error if text is not in the selection
 	 *
 	 * @param $value
@@ -255,9 +260,9 @@ class EPKB_Input_Filter {
 	 * @return string|WP_Error returns sanitized and validated text
 	 */
 	private function filter_select( $value, $field_spec ) {
-		
+
 		// don't check layouts
-		if ( $field_spec['name'] == 'kb_main_page_layout' || $field_spec['name'] = 'kb_article_page_layout' ) {
+		if ( $field_spec['name'] == 'kb_main_page_layout' || $field_spec['name'] == 'kb_article_page_layout' ) {
 			return $value;
 		}
 		
@@ -328,7 +333,7 @@ class EPKB_Input_Filter {
 			return false;
 		}
 
-		return new WP_Error( 'filter_not_number', sprintf( __( 'The value "%s" is not boolean', 'echo-knowledge-base' ), $boolean ) );
+		return new WP_Error( 'filter_not_number', __( 'Error Occurred', 'echo-knowledge-base' ) . ' (112)' );
 	}
 
 	/**
@@ -342,22 +347,20 @@ class EPKB_Input_Filter {
 	public function filter_color_hex( $value, $field_spec=array() ) {
 
 		// Check for a hex color string '#c1c2b4'
-		if ( preg_match('/^#[a-f0-9]{6}$/i', $value) )
-		{
+		if ( preg_match('/^#[a-f0-9]{6}$/i', $value) ) {
 			return $value;
 		}
 
 		// Check for a hex color string without hash 'c1c2b4'
-		else if(preg_match('/^[a-f0-9]{6}$/i', $value))
-		{
+		else if ( preg_match('/^[a-f0-9]{6}$/i', $value) ) {
 			return '#' . $value;
 		}
 
-		if ( empty($value) && empty($field_spec['mandatory']) ) {
+		if ( empty( $value ) && empty( $field_spec['mandatory'] ) ) {
 			return $value;
 		}
 
-		return new WP_Error('filter_not_color_hex', sprintf( __( 'The value "%s" is not valid HEX color.', 'echo-knowledge-base' ), $value ));
+		return new WP_Error('filter_not_color_hex', sprintf( __( 'The value "%s" is not valid HEX color. Expected format: #xxxxxx', 'echo-knowledge-base' ), $value ));
 	}
 
 	/**
@@ -370,7 +373,7 @@ class EPKB_Input_Filter {
 	private function filter_id( $id ) {
 		$id = EPKB_Utilities::sanitize_get_id( $id );
 		if ( is_wp_error($id) ) {
-			return new WP_Error('filter_not_id', sprintf( __( 'Getting ID "%s" - encountered internal error (%s)', 'echo-knowledge-base' ), $id, $id->get_error_code() ));
+			return new WP_Error('filter_not_id', __( 'Error Occurred', 'echo-knowledge-base' ) . ' - ' . $id . ' - ' . $id->get_error_code() );
 		}
 		return $id;
 	}
@@ -388,7 +391,7 @@ class EPKB_Input_Filter {
 			return $value;
 		}
 
-		return new WP_Error('filter_not_enumeration', sprintf( __( 'The value "%s" is not in enumeration', 'echo-knowledge-base' ), $value ));
+		return new WP_Error('filter_not_enumeration', __( 'Error Occurred', 'echo-knowledge-base' ) . ' - ' . $value );
 	}
 
 	/**
@@ -420,6 +423,59 @@ class EPKB_Input_Filter {
 		}
 
 		return $text;
+	}
+
+	/**
+	 * Typography field. Allow only needed array keys
+	 *
+	 * @param $value
+	 *
+	 * @return mixed - WP_Error | valid value
+	 */
+	private function filter_typography( $value ) {
+
+		if ( ! is_array( $value ) ) {
+			return new WP_Error( 'filter_not_typograghy', __( 'Error Occurred', 'echo-knowledge-base' ) . ' - ' . EPKB_Utilities::get_variable_string( $value ) );
+		}
+
+		$google_fonts = EPKB_Typography::get_google_fonts_family_list();
+
+		if ( ! empty($value['font-family']) && ! in_array($value['font-family'], $google_fonts) ) {
+			$value['font-family'] = EPKB_Typography::$typography_defaults['font-family'];
+		}
+
+		if ( ! empty($value['font-size']) && ( $value['font-size'] < 4 || $value['font-size'] > 100 ) ) {
+			$value['font-size'] = EPKB_Typography::$typography_defaults['font-size'];
+		}
+
+		if ( ! in_array($value['font-size-units'], ['px', 'em']) ) {
+			$value['font-size-units'] = EPKB_Typography::$typography_defaults['font-size-units'];
+		}
+
+		if ( ! empty($value['font-weight']) && ! in_array($value['font-weight'], [100, 200, 300, 400, 500, 600, 700, 800, 900]) ) {
+			$value['font-weight'] = EPKB_Typography::$typography_defaults['font-weight'];
+		}
+
+		return $value;
+	}
+
+	public static function sanitize_typography( $typography ) {
+
+		$typography = is_array($typography) ? $typography : array();
+		$typography = array_merge( EPKB_Typography::$typography_defaults, $typography );
+
+		$typography_filtered = [];
+		$allowed_keys = array_keys( EPKB_Typography::$typography_defaults );
+		foreach ( $typography as $key => $value ) {
+
+			if ( ! in_array( $key, $allowed_keys ) ) {
+				continue;
+			}
+
+			$typography_filtered[$key] = sanitize_text_field( $value );
+		}
+
+		return $typography_filtered;
 	}
 
 	/**
@@ -479,7 +535,10 @@ class EPKB_Input_Filter {
 			}
 
 			// for regular input if it exists then retrieve it
-			if ( isset($submitted_fields[$key]) ) {
+			if ( $spec['type'] == self::TYPOGRAPHY ) {
+				$input_value = is_array($submitted_fields[$key]) ? $submitted_fields[$key] : array();
+
+			} elseif ( isset($submitted_fields[$key]) ) {
 				$input_value = trim( $submitted_fields[ $key ] );
 
 			// if the input is missing then use the original config value
@@ -488,16 +547,21 @@ class EPKB_Input_Filter {
 				$input_value = isset($orig_settings[$key]) ? $orig_settings[$key] :$default_value;
 			}
 
-			$input_value = stripslashes( $input_value );
+			if ( gettype($input_value) !== 'array' ) $input_value = stripslashes( $input_value );
 			
 			if ( $spec['type'] == self::WP_EDITOR ) {
-				$name_values += array( $key => wp_kses_post($input_value) );
+				$name_values += array( $key => wp_kses( $input_value, EPKB_Utilities::get_extended_html_tags() ) );
+
+			} elseif ( $spec['type'] == self::TYPOGRAPHY ) {
+				$name_values += array( $key => self::sanitize_typography( $input_value ) );
+
 			} elseif ( ( $spec['type'] == self::TEXT ) && ! ( empty( $spec['allowed_tags'] ) ) ) {
-				$name_values += array( $key => wp_kses( $input_value, $spec['allowed_tags'] ) );
+				$name_values += array($key => wp_kses($input_value, $spec['allowed_tags']));
+			} else if ( ( $spec['type'] == self::EMAIL ) ) {
+				$name_values += array( $key => sanitize_email( $input_value ) );
 			} else {
-				$name_values += array( $key => sanitize_text_field($input_value) );
+				$name_values += array( $key => sanitize_text_field( $input_value ) );
 			}
-			
 		}
 
 		return $name_values;

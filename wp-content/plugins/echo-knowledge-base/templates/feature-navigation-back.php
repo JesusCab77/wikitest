@@ -31,7 +31,7 @@ $button_style2 = EPKB_Utilities::get_inline_style(
                       padding-left:: back_navigation_padding_left,
                       color:: back_navigation_text_color,
                       background-color:: back_navigation_bg_color,
-                      font-size:: back_navigation_font_size,
+                      typography:: back_navigation_typography,
                       border-radius:: back_navigation_border_radius,
                       border-style:: back_navigation_border,
                       border-width:: back_navigation_border_width,
@@ -42,14 +42,14 @@ echo '<div class="eckb-navigation-back  ' . //$kb_config['back_navigation_hover'
 
 if ( $kb_config['back_navigation_mode'] == 'navigate_kb_main_page' ) {
 	echo '<div class="eckb-navigation-button">';
-    echo '<a tabindex="0" href="' . esc_url(EPKB_KB_Handler::get_first_kb_main_page_url( $kb_config )) . '" ' . $button_style2 . '>' . esc_html($kb_config['back_navigation_text']) .  '</a>';
+    echo '<a tabindex="0" href="' . esc_url( EPKB_KB_Handler::get_first_kb_main_page_url( $kb_config ) ) . '" ' . $button_style2 . '>' . esc_html( $kb_config['back_navigation_text'] ) .  '</a>';
     echo '</div>';
 } else {
 	
-	if (  empty( $_REQUEST['epkb-editor'] ) ) {
-		echo '<div tabindex="0" class="eckb-navigation-button" ' . $button_style2 . ' onclick="history.go(-1);" >' . esc_html($kb_config['back_navigation_text']) . '</div>';
+	if (  empty( $_REQUEST['epkb-editor-page-loaded'] ) ) {
+		echo '<div tabindex="0" class="eckb-navigation-button" ' . $button_style2 . ' onclick="history.go(-1);" >' . esc_html( $kb_config['back_navigation_text'] ) . '</div>';
 	} else {
-		echo '<div tabindex="0" class="eckb-navigation-button" ' . $button_style2 . ' onclick="return false;" >' . esc_html($kb_config['back_navigation_text']) . '</div>';
+		echo '<div tabindex="0" class="eckb-navigation-button" ' . $button_style2 . ' onclick="return false;" >' . esc_html( $kb_config['back_navigation_text'] ) . '</div>';
 	}
 }
 

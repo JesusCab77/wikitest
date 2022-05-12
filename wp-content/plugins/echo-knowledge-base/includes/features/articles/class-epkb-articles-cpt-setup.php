@@ -14,6 +14,10 @@ class EPKB_Articles_CPT_Setup {
 		add_action( 'init', array( $this, 'register_knowledge_base_post_types'), 10 );
 		add_filter( 'post_type_link', array( $this, 'replace_linked_article_permalink' ), 10, 2 );
 
+		if ( self::is_archive_on() ) {
+			add_action( 'template_redirect', array( $this, 'archive_redirect' ) );
+		}
+
 		// only for front-end page display when categories are listed
 		if ( ! defined('WP_ADMIN') ) {
 			add_filter( 'the_category', array( $this, 'output_article_categories' ), 99, 3 );
@@ -53,8 +57,8 @@ class EPKB_Articles_CPT_Setup {
 
 		$kb_id = $kb_config['id'];
 
-		// do not register Archived KB
-		if ( $kb_id !== EPKB_KB_Config_DB::DEFAULT_KB_ID && EPKB_Utilities::is_kb_archived( $kb_config['status'] ) ) {
+		// do not register Archived KB - except of KB Configuration admin page
+		if ( $kb_id !== EPKB_KB_Config_DB::DEFAULT_KB_ID && EPKB_Core_Utilities::is_kb_archived( $kb_config['status'] ) && EPKB_Utilities::post( 'page' ) != 'epkb-kb-configuration' ) {
 			return true;
 		}
 
@@ -70,7 +74,7 @@ class EPKB_Articles_CPT_Setup {
 
 		/** setup Category taxonomy */
 
-		$taxonomy_name = EPKB_KB_Handler::get_category_taxonomy_name( $kb_id );
+		$category_taxonomy_name = EPKB_KB_Handler::get_category_taxonomy_name( $kb_id );
 		$labels = array(
 				'name'              => _x( 'Categories', 'taxonomy general name', 'echo-knowledge-base' ),
 				'singular_name'     => _x( 'Category', 'taxonomy singular name', 'echo-knowledge-base' ),
@@ -89,8 +93,8 @@ class EPKB_Articles_CPT_Setup {
 				'labels'            => $labels,
 				'show_ui'           => $show_post_in_ui,
 				'show_admin_column' => $show_post_in_ui,
-				'show_in_nav_menus' => $show_post_in_ui,
-				'query_var'         => $taxonomy_name,
+				'show_in_nav_menus' => true,
+				'query_var'         => $category_taxonomy_name,
 				'show_in_rest'      => true,
 				'rewrite'           => array(
 											/* translators: do NOT change this translation again. It will break links !!! */
@@ -99,13 +103,13 @@ class EPKB_Articles_CPT_Setup {
 											'hierarchical' => true
 										),
 		);
-		$result = register_taxonomy( $taxonomy_name, array( $kb_post_type ), $args );
+		$result = register_taxonomy( $category_taxonomy_name, array( $kb_post_type ), $args );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
 
 		/** setup Tag taxonomy */
-		$tag_name = EPKB_KB_Handler::get_tag_taxonomy_name( $kb_id );
+		$tag_taxonomy_name = EPKB_KB_Handler::get_tag_taxonomy_name( $kb_id );
 		$labels = array(
 				'name'                       => _x( 'Tags', 'taxonomy general name', 'echo-knowledge-base' ),
 				'singular_name'              => _x( 'Tag', 'taxonomy singular name', 'echo-knowledge-base' ),
@@ -127,9 +131,9 @@ class EPKB_Articles_CPT_Setup {
 				'labels'                => $labels,
 				'show_ui'               => $show_post_in_ui,
 				'show_admin_column'     => $show_post_in_ui,
-				'show_in_nav_menus'     => $show_post_in_ui,
+				'show_in_nav_menus'     => true,
 				'show_tagcloud'         => true,
-				'query_var'             => $tag_name,
+				'query_var'             => $tag_taxonomy_name,
 				'show_in_rest'          => true,
 				'rewrite'               => array(
 												/* translators: do NOT change this translation again. It will break links !!! */
@@ -138,7 +142,7 @@ class EPKB_Articles_CPT_Setup {
 												'hierarchical' => false
 											),
 		);
-		$result = register_taxonomy( $tag_name, array( $kb_post_type ), $args );
+		$result = register_taxonomy( $tag_taxonomy_name, array( $kb_post_type ), $args );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -172,7 +176,7 @@ class EPKB_Articles_CPT_Setup {
 				'rewrite'            => array( 'slug' => $kb_articles_common_path . ( $categories_in_url ? '/%category%' : '' ), 'with_front' => false ), // do not translate
 				'capability_type'    => 'post',
 				'map_meta_cap'       => true,
-				'has_archive'        => false,
+				'has_archive'        => self::is_archive_on() ? $kb_articles_common_path . '-archive' : false,
 				'hierarchical'       => false,
 				'show_in_rest'       => true,
 				'menu_position'      => 5,    // below Posts menu
@@ -195,14 +199,14 @@ class EPKB_Articles_CPT_Setup {
 
 		/** tie taxonomies to the post type */
 
-		$result = register_taxonomy_for_object_type( $taxonomy_name, $kb_post_type );
+		$result = register_taxonomy_for_object_type( $category_taxonomy_name, $kb_post_type );
 		if ( ! $result ) {
-			return new WP_Error( 'register_object_for_tax_failed', "Failed to register taxonomy '$taxonomy_name' for post type '$kb_post_type' for KB ID: $kb_id" );
+			return new WP_Error( 'register_object_for_tax_failed', "Failed to register taxonomy '$category_taxonomy_name' for post type '$kb_post_type' for KB ID: $kb_id" );
 		}
 
-		$result = register_taxonomy_for_object_type( $tag_name, $kb_post_type );
+		$result = register_taxonomy_for_object_type( $tag_taxonomy_name, $kb_post_type );
 		if ( ! $result ) {
-			return new WP_Error( 'register_object_for_tax_failed', "Failed to register taxonomy '$tag_name' for post type '$kb_post_type' for KB ID: $kb_id" );
+			return new WP_Error( 'register_object_for_tax_failed', "Failed to register taxonomy '$tag_taxonomy_name' for post type '$kb_post_type' for KB ID: $kb_id" );
 		}
 
 		return true;
@@ -327,7 +331,7 @@ class EPKB_Articles_CPT_Setup {
 		$ix = 0;
 		foreach ( $articles_seq_data as $category_id => $sub_category_article_list ) {
 			if ( isset($articles_seq_data[$category_id][$post->ID]) && isset($articles_seq_data[$category_id][0]) ) {
-				$thelist .= ( $ix++ == 0 ? '' : $separator ) . '<a href="' . esc_url( get_category_link( $category_id ) ) . '" ' . $rel . '>' . $articles_seq_data[$category_id][0] . '</a>';
+				$thelist .= ( $ix++ == 0 ? '' : $separator ) . '<a href="' . esc_url( EPKB_Utilities::get_term_url( $category_id ) ) . '" ' . $rel . '>' . $articles_seq_data[$category_id][0] . '</a>';
 			}
 		}
 
@@ -341,6 +345,48 @@ class EPKB_Articles_CPT_Setup {
 	 */
 	public static function is_category_in_url( $kb_config ) {
 		return ! empty($kb_config['categories_in_url_enabled']) && $kb_config['categories_in_url_enabled'] == 'on';
+	}
+
+	private static function is_archive_on() {
+		// for now enable only for Elementor users
+		return EPKB_Site_Builders::is_elementor_enabled();
+	}
+
+	/**
+	 * Redirect from KB Archive Page to the KB Main Page
+	 */
+	public static function archive_redirect() {
+		global $wp_query;
+
+		if ( ! self::is_archive_on() ) {
+			return;
+		}
+
+		if ( ! is_post_type_archive() ) {
+			return;
+		}
+
+		if ( empty( $wp_query->query ) || ! is_array( $wp_query->query ) || empty( $wp_query->query['post_type'] ) ) {
+			return;
+		}
+		
+		if ( ! EPKB_KB_Handler::is_kb_post_type( $wp_query->query['post_type'] )  ) {
+			return;
+		}
+		
+		$kb_id = EPKB_KB_Handler::get_kb_id_from_post_type( $wp_query->query['post_type'] );
+		if ( empty($kb_id) || is_wp_error($kb_id) ) {
+			return;
+		}
+		
+		$kb_config = epkb_get_instance()->kb_config_obj->get_kb_config( $kb_id );
+		if ( is_wp_error( $kb_config ) ) {
+			return;
+		}
+		
+		$url = empty( $kb_config['kb_articles_common_path'] ) ? home_url() : home_url( $kb_config['kb_articles_common_path'] );
+		wp_redirect( $url, '301', 'Echo Knowledge Base' );
+		exit();
 	}
 }
 

@@ -10,6 +10,7 @@ class EPKB_Articles_Setup {
 	static $styles = '';
 
 	public function __construct() {
+		add_action( 'wp_ajax_epkb_update_the_content_flag', array( $this, 'epkb_update_the_content_flag' ) );
 		add_filter( 'comments_open', array( $this, 'setup_comments'), 1, 2 );
 	}
 
@@ -78,6 +79,8 @@ class EPKB_Articles_Setup {
 		$article_page_container_classes = apply_filters( 'eckb-article-page-container-classes', array(), $kb_config['id'], $kb_config );  // used for old Widgets KB Sidebar
 		$article_page_container_classes = isset($article_page_container_classes) && is_array($article_page_container_classes) ? $article_page_container_classes : array();
 
+		$article_page_container_classes[] = 'eckb-article-page-content-counter';
+
 		if ( $kb_config['article-left-sidebar-match'] == 'on' ) {
 			$article_page_container_classes[] = 'eckb-article-page--L-sidebar-to-content';
 		}
@@ -100,36 +103,48 @@ class EPKB_Articles_Setup {
 			}
 			
 			self::generate_article_structure_css_v2( $kb_config );
-		}				?>
+		}
 
-		<div id="<?php echo $article_container_structure_version; ?>" class="<?php echo implode(" ", $article_page_container_classes); ?>" >    <?php
+		// add theme name to Div for specific targeting
+		$activeWPTheme = method_exists( 'EPKB_Utilities', 'get_active_theme_classes' ) ? EPKB_Utilities::get_active_theme_classes( 'ap' ) : '';
+		
+		$article_seq_no = empty($_REQUEST['seq_no']) ? '' : EPKB_Utilities::sanitize_int( $_REQUEST['seq_no'] );
+		$article_seq_no = empty($article_seq_no) ? '' : ' data-kb_article_seq_no=' . $article_seq_no;
+
+		$mobile_breakpoint = $kb_config['article-mobile-break-point-v2'];
+		if ( is_numeric( $mobile_breakpoint ) && ! empty( $_REQUEST['epkb-editor-page-loaded'] ) ) {
+			$mobile_breakpoint -= 400;
+		}	?>
+
+		<div id="<?php echo $article_container_structure_version; ?>" class="<?php echo implode(" ", $article_page_container_classes) . ' ' . $activeWPTheme; ?> " data-mobile_breakpoint="<?php echo $mobile_breakpoint; ?>">    <?php
 
 		   self::article_section( 'eckb-article-header', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) ); ?>
 
-		   <div id="eckb-article-body">  <?php
+			<div id="eckb-article-body">  <?php
 
-		       self::article_section( 'eckb-article-left-sidebar', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) ); ?>
+		        self::article_section( 'eckb-article-left-sidebar', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) ); ?>
 
-		       <div id="eckb-article-content">                        <?php
+		        <article id="eckb-article-content" data-article-id="<?php echo $article->ID; ?>" <?php echo $article_seq_no; ?>>                        <?php
 
-		           self::article_section( 'eckb-article-content-header' . $v2_suffix, array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) );
-		           self::article_section( 'eckb-article-content-body',   array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article, 'content' => $content ) );
+		            self::article_section( 'eckb-article-content-header' . $v2_suffix, array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) );
+		            self::article_section( 'eckb-article-content-body', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article, 'content' => $content ) );
+
 		           self::article_section( 'eckb-article-content-footer', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) );                        ?>
 
-		       </div><!-- /#eckb-article-content -->     <?php
+		        </article><!-- /#eckb-article-content -->     <?php
 
-		       self::article_section( 'eckb-article-right-sidebar', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) ); ?>
+		        self::article_section( 'eckb-article-right-sidebar', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) ); ?>
 
-		   </div><!-- /#eckb-article-body -->              <?php
+			</div><!-- /#eckb-article-body -->              <?php
 
-		   self::article_section( 'eckb-article-footer', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) ); ?>
+			self::article_section( 'eckb-article-footer', array( 'id' => $kb_config['id'], 'config' => $kb_config, 'article' => $article ) ); ?>
 
 		</div><!-- /#eckb-article-page-container -->
 		
 		<style id="eckb-article-print-styles">
 			@media print {
 				@page {
-					margin: <?php echo $kb_config['print_button_doc_padding_top'] . 'px ' . $kb_config['print_button_doc_padding_right'] . 'px ' . $kb_config['print_button_doc_padding_bottom'] . 'px ' . $kb_config['print_button_doc_padding_left'] . 'px!important'; ?>
+					margin: <?php echo $kb_config['print_button_doc_padding_top'] . 'px ' . $kb_config['print_button_doc_padding_right'] . 'px ' . $kb_config['print_button_doc_padding_bottom'] . 'px ' . $kb_config['print_button_doc_padding_left'] . 'px!important'; ?>;
 				}
 			}
 		</style>
@@ -153,17 +168,17 @@ class EPKB_Articles_Setup {
 
 		// B. ARTICLE CONTENT - old meta OR header rows
 		if ( $kb_config['article_content_enable_rows'] == 'on' ) {
-			add_action( 'eckb-article-content-header-v2', array('EPKB_Articles_Setup', 'article_content_header'), 9, 3 );
+			add_action( 'eckb-article-content-header-v2', array('EPKB_Articles_Setup', 'article_content_header'), 9 );
 		} else {
-			add_action( 'eckb-article-content-header', array('EPKB_Articles_Setup', 'article_title'), 9, 3 );
-			add_action( 'eckb-article-content-header', array('EPKB_Articles_Setup', 'meta_data_header'), 9, 3 );
-			add_action( 'eckb-article-content-header', array('EPKB_Articles_Setup', 'breadcrumb'), 9, 3 );
-			add_action( 'eckb-article-content-header', array('EPKB_Articles_Setup', 'back_navigation'), 9, 3 );
+			add_action( 'eckb-article-content-header', array('EPKB_Articles_Setup', 'article_title'), 9 );
+			add_action( 'eckb-article-content-header', array('EPKB_Articles_Setup', 'meta_data_header'), 9 );
+			add_action( 'eckb-article-content-header', array('EPKB_Articles_Setup', 'breadcrumb'), 9 );
+			add_action( 'eckb-article-content-header', array('EPKB_Articles_Setup', 'back_navigation'), 9 );
 		}
 
 
 		// C. SIDEBARS + ARTICLE CONTENT BODY
-		add_action( 'eckb-article-content-body', array('EPKB_Articles_Setup', 'article_content_body' ), 10, 4 );
+		add_action( 'eckb-article-content-body', array('EPKB_Articles_Setup', 'article_content_body' ), 10 );
 
 		$sidebar_priority = EPKB_KB_Config_Specs::add_sidebar_component_priority_defaults( $kb_config['article_sidebar_component_priority'] );
 
@@ -178,21 +193,13 @@ class EPKB_Articles_Setup {
 			}
 		}
 
-		// Elegant Layout Navigation
+		// Sidebar (KB/Elegant Layouts)
 		if ( self::is_article_structure_v2( $kb_config ) ) {
-			if ( $sidebar_priority['elay_sidebar_left'] || $kb_config['kb_main_page_layout'] == EPKB_KB_Config_Layouts::SIDEBAR_LAYOUT ) {
-				add_action( 'eckb-article-left-sidebar', array('EPKB_Articles_Setup', 'display_elay_sidebar'), 10 * $sidebar_priority['elay_sidebar_left'] );
-			}
-		}
 
-		// Categories Focused Layout
-		if ( self::is_article_structure_v2( $kb_config ) && $kb_config['kb_main_page_layout'] == EPKB_KB_Config_Layout_Categories::LAYOUT_NAME ) {
-			if ( $sidebar_priority['categories_left'] ) {
-				add_action( 'eckb-article-left-sidebar', array('EPKB_Articles_Setup', 'focused_layout_categories'), 10 * $sidebar_priority['categories_left'], 3 );
-			}
-
-			if ( $sidebar_priority['categories_right'] ) {
-				add_action( 'eckb-article-right-sidebar', array('EPKB_Articles_Setup', 'focused_layout_categories'), 10 * $sidebar_priority['categories_right'], 3 );
+			if ( EPKB_Core_Utilities::get_nav_sidebar_type( $kb_config, 'left' ) != 'eckb-nav-sidebar-none' ) {
+				add_action( 'eckb-article-left-sidebar', array('EPKB_Articles_Setup', 'display_nav_sidebar_left'), 10 * EPKB_Core_Utilities::get_nav_sidebar_priority( $kb_config, 'left' ) );
+			} else if ( EPKB_Core_Utilities::get_nav_sidebar_type( $kb_config, 'right' ) != 'eckb-nav-sidebar-none' ) {
+				add_action( 'eckb-article-right-sidebar', array('EPKB_Articles_Setup', 'display_nav_sidebar_right'), 10 * EPKB_Core_Utilities::get_nav_sidebar_priority( $kb_config, 'right' ) );
 			}
 		}
 
@@ -202,32 +209,32 @@ class EPKB_Articles_Setup {
 
 			// check TOC
 			if ( $sidebar_priority['toc_left'] ) {
-				add_action( 'eckb-article-left-sidebar', array('EPKB_Articles_Setup', 'table_of_content'), 10 * $sidebar_priority['toc_left'], 3 );
+				add_action( 'eckb-article-left-sidebar', array('EPKB_Articles_Setup', 'table_of_content'), 10 * $sidebar_priority['toc_left'] );
 			}
 
-		  $v2_suffix = $kb_config['article_content_enable_rows'] == 'on' ? '-v2' : '';
-		  if ( $sidebar_priority['toc_content'] ) {
-				add_action( 'eckb-article-content-header' . $v2_suffix, array('EPKB_Articles_Setup', 'table_of_content'), 10 * $sidebar_priority['toc_content'], 3 );
+			$v2_suffix = $kb_config['article_content_enable_rows'] == 'on' ? '-v2' : '';
+			if ( $sidebar_priority['toc_content'] ) {
+				add_action( 'eckb-article-content-header' . $v2_suffix, array('EPKB_Articles_Setup', 'table_of_content'), 10 * $sidebar_priority['toc_content'] );
 			}
 
 			if ( $sidebar_priority['toc_right'] ) {
-				add_action( 'eckb-article-right-sidebar', array('EPKB_Articles_Setup', 'table_of_content'), 10 * $sidebar_priority['toc_right'], 3 );
+				add_action( 'eckb-article-right-sidebar', array('EPKB_Articles_Setup', 'table_of_content'), 10 * $sidebar_priority['toc_right'] );
 			}
 
 		}
 		// Version 1: We need to insert the TOC into the Article Body.
 		else {
 			if ( $kb_config['article_toc_enable'] == 'on' ) {
-				add_action( 'eckb-article-content-body', array('EPKB_Articles_Setup', 'table_of_content'), 8, 4 );
+				add_action( 'eckb-article-content-body', array('EPKB_Articles_Setup', 'table_of_content'), 8 );
 			}
 		}
 
 
 		// D. ARTICLE CONTENT FOOTER
-		add_action( 'eckb-article-content-footer', array('EPKB_Articles_Setup', 'meta_data_footer'), 10, 3 );
-		add_action( 'eckb-article-content-footer', array('EPKB_Articles_Setup', 'tags'), 99, 3 );
-		add_action( 'eckb-article-content-footer', array('EPKB_Articles_Setup', 'prev_next_navigation'), 99, 3 );
-		add_action( 'eckb-article-content-footer', array('EPKB_Articles_Setup', 'comments'), 99, 3 );
+		add_action( 'eckb-article-content-footer', array('EPKB_Articles_Setup', 'meta_data_footer'), 10 );
+		add_action( 'eckb-article-content-footer', array('EPKB_Articles_Setup', 'tags'), 99 );
+		add_action( 'eckb-article-content-footer', array('EPKB_Articles_Setup', 'prev_next_navigation'), 99 );
+		add_action( 'eckb-article-content-footer', array('EPKB_Articles_Setup', 'comments'), 99 );
 	}
 
 
@@ -239,29 +246,45 @@ class EPKB_Articles_Setup {
 	 * @param $args
 	 */
 	public static function search_box( $args ) {
-		if ( self::is_article_structure_v2( $args['config'] ) ) {
-			do_action( 'eckb-article-v2-search-box', $args );  // Elegant Layouts hook
+
+		// Advanced Search use its own search box
+		if ( EPKB_Utilities::is_advanced_search_enabled( $args['config'] ) ) {
+			do_action( 'eckb_advanced_search_box', $args['config'] );
+			return;
 		}
+
+		// fallback to KB Core search (KB -> Elegant layouts -> KB) or Linked Articles search
+		if ( EPKB_Utilities::is_elegant_layouts_enabled() ) {
+			do_action( 'eckb-article-v2-search-box', $args );  // Elegant Layouts hook
+			return;
+		}
+
+		// v1 or older users have no search on Article Pages
+		if ( ! self::is_article_structure_v2( $args['config'] ) || ! EPKB_Utilities::is_new_user('7.3.0')  ) {
+			return;
+		}
+
+		EPKB_KB_Search::get_search_form( $args['config'] );
 	}
 
 
-	/***********************   B. ARTICLE CONTENT   *********************/
+	/***********************   B. ARTICLE CONTENT HEADER  *********************/
 
 	public static function article_content_header( $args ) {
 
-	   $kb_config = $args['config'];
+		$kb_config = $args['config'];
 
 		$rows_setup = [ [], [], [], [], [] ];
 
-	   // article title
-	   if ( $kb_config['article_content_enable_article_title'] == 'on' ) {
-	   	$rows_setup[$kb_config['article_title_row']][$kb_config['article_title_alignment']][$kb_config['article_title_sequence']*10] = 'title';
-	   }
+		// article title
+		if ( $kb_config['article_content_enable_article_title'] == 'on' ) {
+		$rows_setup[$kb_config['article_title_row']][$kb_config['article_title_alignment']][$kb_config['article_title_sequence']*10] = 'title';
+		}
 
-	   // back navigation
-	   if ( $kb_config['article_content_enable_back_navigation'] == 'on' ) {
+		// back navigation
+		if ( $kb_config['article_content_enable_back_navigation'] == 'on' ) {
 		   $rows_setup[$kb_config['back_navigation_row']][$kb_config['back_navigation_alignment']][$kb_config['back_navigation_sequence']*10+1] = 'navigation';
-	   }
+		}
 
 		// author
 		if ( $kb_config['article_content_enable_author'] == 'on' ) {
@@ -283,33 +306,38 @@ class EPKB_Articles_Setup {
 			$rows_setup[$kb_config['breadcrumb_row']][$kb_config['breadcrumb_alignment']][$kb_config['breadcrumb_sequence']*10+5] = 'breadcrumb';
 		}
 
-	   // print button
-	   if ( $kb_config['print_button_enable'] == 'on' ) {
+		// print button
+		if ( $kb_config['print_button_enable'] == 'on' ) {
 		   $rows_setup[$kb_config['article_content_toolbar_row']][$kb_config['article_content_toolbar_alignment']][$kb_config['article_content_toolbar_sequence']*10+7] = 'print_button';
-	   }
+		}
 
 		// add config from add-ons if needed
-	   if ( EPKB_Utilities::is_article_rating_enabled() ) {
-	      $add_ons_config = apply_filters( 'eckb_kb_config', $kb_config );
-	      if ( empty($add_ons_config) || is_wp_error($add_ons_config) ) {
-	      	$add_ons_config = [];
-         }
-	   }
+		if ( EPKB_Utilities::is_article_rating_enabled() ) {
+		  $add_ons_config = apply_filters( 'eckb_kb_config', $kb_config );
+		  if ( empty($add_ons_config) || is_wp_error($add_ons_config) ) {
+		    $add_ons_config = [];
+		 }
+		}
 
-      // article rating element
-      if ( ! empty($add_ons_config) && isset($add_ons_config['rating_element_row']) && isset($add_ons_config['article_content_enable_rating_element']) &&
-           $add_ons_config['article_content_enable_rating_element'] == 'on' ) {
-	      $rows_setup[$add_ons_config['rating_element_row']][$add_ons_config['rating_element_alignment']][$add_ons_config['rating_element_sequence']*10+8] = 'rating-element';
-      }
+		// article rating element
+		if ( ! empty($add_ons_config) && isset($add_ons_config['rating_element_row']) && isset($add_ons_config['article_content_enable_rating_element']) &&
+		   $add_ons_config['article_content_enable_rating_element'] == 'on' ) {
+		  $rows_setup[$add_ons_config['rating_element_row']][$add_ons_config['rating_element_alignment']][$add_ons_config['rating_element_sequence']*10+8] = 'rating-element';
+		}
 
-	   // article rating statistics
-	   if ( ! empty($add_ons_config) && isset($add_ons_config['rating_statistics_row']) && isset($add_ons_config['article_content_enable_rating_stats']) &&
-	        $add_ons_config['article_content_enable_rating_stats'] == 'on' ) {
+		// article rating statistics
+		if ( ! empty($add_ons_config) && isset($add_ons_config['rating_statistics_row']) && isset($add_ons_config['article_content_enable_rating_stats']) &&
+		    $add_ons_config['article_content_enable_rating_stats'] == 'on' ) {
 		   $rows_setup[$add_ons_config['rating_statistics_row']][$add_ons_config['rating_statistics_alignment']][$add_ons_config['rating_statistics_sequence']*10+9] = 'rating-statistics';
-	   }
+		}
 
-	   // When the page gets to the size of the user defined Mobile breakpoint set the rows to columns to allows space.
-	   self::$styles .= '@media only screen and (max-width: ' . $kb_config['article-mobile-break-point-v2'] . 'px){
+		$mobile_breakpoint = $kb_config['article-mobile-break-point-v2'];
+		if ( is_numeric( $mobile_breakpoint ) && ! empty( $_REQUEST['epkb-editor-page-loaded'] ) ) {
+			$mobile_breakpoint -= 400;
+		}
+
+		// When the page gets to the size of the user defined Mobile breakpoint set the rows to columns to allows space.
+		self::$styles .= '@media only screen and (max-width: ' . $mobile_breakpoint . 'px){
 					        #eckb-article-content-header-row-1,
 					        #eckb-article-content-header-row-2,
 					        #eckb-article-content-header-row-3,
@@ -319,14 +347,14 @@ class EPKB_Articles_Setup {
 					        }
 						}';
 
-	   // display up to 5 rows
-	   for ( $row = 1; $row < 6; $row++ ) {
+		// display up to 5 rows
+		for ( $row = 1; $row < 6; $row++ ) {
 
 			if ( empty($rows_setup[$row]) ) {
 				continue;
 			}
 
-	      self::$styles .= '#eckb-article-content-header-row-'.$row.'{
+			self::$styles .= '#eckb-article-content-header-row-'.$row.'{
 					        margin-bottom: ' . $kb_config['article_content_enable_rows_' . $row . '_gap'].'px;
 					      }
 				
@@ -335,38 +363,38 @@ class EPKB_Articles_Setup {
 					        align-items: ' . $kb_config['article_content_enable_rows_' . $row . '_alignment'].'; 
 					      }';
 
-	      echo '<div id="eckb-article-content-header-row-' . $row . '">';
+			echo '<div id="eckb-article-content-header-row-' . $row . '">';
 
 			// LEFT alignment
-	      $sequences = isset($rows_setup[$row]['left']) ? $rows_setup[$row]['left'] : [];
-	      ksort ($sequences);
-	      if ( ! empty($sequences) ) {
-	         echo '<div class="eckb-article-content-header-row-left-group">';
-	         foreach ( $sequences as $sequence => $value ) {
-		         self::article_content_header_feature( $args, $rows_setup[$row]['left'][$sequence] );
-	         }
-	         echo '</div>';
-	      }
+			$sequences = isset($rows_setup[$row]['left']) ? $rows_setup[$row]['left'] : [];
+			ksort( $sequences );
+			if ( ! empty($sequences) ) {
+				echo '<div class="eckb-article-content-header-row-left-group">';
+				foreach ( $sequences as $sequence => $value ) {
+					self::article_content_header_feature( $args, $rows_setup[$row]['left'][$sequence] );
+				}
+				echo '</div>';
+			}
 
-		   // help user to see the row in the frontend Editor
-		   if ( EPKB_Utilities::get( 'epkb-editor' ) == '1' ) {
-		   	$alignment = self::is_left_sidebar_on( $kb_config ) ? 'eckb-editor-row--left' : ( self::is_right_sidebar_on( $kb_config ) ? 'eckb-editor-row--right' : 'eckb-editor-row--center' );
-		   	echo '<span class="eckb-editor-row-tag ' . $alignment . '">Row #' . $row . '</span>';
-		   }
+			// help user to see the row in the Editor
+			if ( EPKB_Utilities::get( 'epkb-editor-page-loaded' ) == '1' ) {
+				$alignment = self::is_left_sidebar_on( $kb_config ) ? 'eckb-editor-row--left' : ( self::is_right_sidebar_on( $kb_config ) ? 'eckb-editor-row--right' : 'eckb-editor-row--center' );
+				echo '<span class="eckb-editor-row-tag ' . $alignment . '">Row #' . $row . '</span>';
+			}
 
 			// RIGHT alignment
-	      $sequences = isset($rows_setup[$row]['right']) ? $rows_setup[$row]['right'] : [];
-	      ksort ($sequences);
-	      if ( ! empty($sequences) ) {
-	         echo '<div class="eckb-article-content-header-row-right-group">';
-	         foreach ( $sequences as $sequence => $value ) {
-		         self::article_content_header_feature( $args, $rows_setup[$row]['right'][$sequence] );
-	         }
-	         echo '</div>';
-         }
+			$sequences = isset($rows_setup[$row]['right']) ? $rows_setup[$row]['right'] : [];
+			ksort ($sequences);
+			if ( ! empty($sequences) ) {
+				echo '<div class="eckb-article-content-header-row-right-group">';
+				foreach ( $sequences as $sequence => $value ) {
+					self::article_content_header_feature( $args, $rows_setup[$row]['right'][$sequence] );
+				}
+				echo '</div>';
+			}
 
-	      echo '</div>';
-	   }
+			echo '</div>';
+		}
 
 	}
 
@@ -381,7 +409,7 @@ class EPKB_Articles_Setup {
 				break;
 			case 'author':
 			   $post_author = get_the_author_meta( 'display_name', $args['article']->post_author );
-			   self::meta_data_feature( $args, $feature, 'epkbfa-user', 'author_icon_on', 'author_text', $post_author );
+			   self::meta_data_header_feature( $args, $feature, 'epkbfa-user', 'author_icon_on', 'author_text', $post_author );
 				break;
 			case 'created_date':
 				 $date = sprintf(
@@ -389,7 +417,7 @@ class EPKB_Articles_Setup {
 					 esc_attr( get_the_date( DATE_W3C ) ),
 					 esc_html( get_the_date() )
 				 );
-				self::meta_data_feature( $args, $feature, 'epkbfa-calendar', 'created_date_icon_on', 'created_on_text', $date );
+				self::meta_data_header_feature( $args, $feature, 'epkbfa-calendar', 'created_date_icon_on', 'created_on_text', $date );
 				break;
 			case 'last_updated_date':
 				 $date = sprintf(
@@ -397,7 +425,7 @@ class EPKB_Articles_Setup {
 					 esc_attr( get_the_modified_date( DATE_W3C ) ),
 					 esc_html( get_the_modified_date() )
 				 );
-				 self::meta_data_feature( $args, $feature, 'epkbfa-pencil-square-o', 'last_updated_date_icon_on', 'last_udpated_on_text', $date );
+				 self::meta_data_header_feature( $args, $feature, 'epkbfa-pencil-square-o', 'last_updated_date_icon_on', 'last_updated_on_text', $date );
 				break;
 			case 'breadcrumb':
 			   self::breadcrumb_new( $args, 'eckb-article-content-breadcrumb-container' );
@@ -417,6 +445,23 @@ class EPKB_Articles_Setup {
 		}
 	}
 
+	// META DATA FEATURE
+	private static function meta_data_header_feature( $args, $feature, $icon, $config_icon, $config_text, $value ) {
+		$feature = str_replace('_', '-', $feature);     ?>
+
+		<div class="eckb-article-content-<?php echo $feature; ?>-container">		<?php
+			if ( 'on' == $args['config'][$config_icon] ) {
+				echo '<span class="eckb-meta-data-feature-icon epkbfa ' . $icon . '"></span>';
+			}
+
+			if ( $args['config'][$config_text] && ! empty($value) ) {
+				echo '<span class="eckb-meta-data-feature-text">' . esc_html( $args['config'][$config_text] ) . '</span>';
+			}
+
+			echo '<span class="eckb-meta-data-feature-value">' . $value . '</span>';		   ?>
+		</div> <?php
+	}
+
 	// ARTICLE TITLE
 	public static function article_title( $args ) {
 
@@ -428,15 +473,19 @@ class EPKB_Articles_Setup {
 		$show_title = $args['config']['templates_for_kb'] == 'kb_templates';
 		$article_title = $show_title ? get_the_title( $args['article'] ) : '';
 
-		if ( isset($_POST['epkb-wizard-demo-data']) && $_POST['epkb-wizard-demo-data'] == true ) {
-			$article_title =  __( 'Demo Article', 'echo-knowledge-base' );
-		}
-
 		$tag = $show_title ? 'h1' : 'div';
 		$article_seq_no = empty($_REQUEST['seq_no']) ? '' : EPKB_Utilities::sanitize_int( $_REQUEST['seq_no'] );
 		$article_seq_no = empty($article_seq_no) ? '' : ' data-kb_article_seq_no=' . $article_seq_no;
 
+		$article_title_typography_styles = EPKB_Utilities::get_typography_config( $args['config']['article_title_typography'] );
+		
+		// Both Versions
+		self::$styles .= '#eckb-article-content .eckb-article-title {
+						' . $article_title_typography_styles . '
+						}';
+		
 		echo $args['config']['article_content_enable_rows'] == 'off' ? '' : '<div id="eckb-article-content-title-container">';
+		// TODO remove .kb-article-id and id 
 			echo '<' . $tag . ' class="eckb-article-title kb-article-id" id="' . $args['article']->ID . '"' . $article_seq_no . '>' . $article_title . '</' . $tag . '>';
 		echo $args['config']['article_content_enable_rows'] == 'off' ? '' : '</div>';
 	}
@@ -454,79 +503,6 @@ class EPKB_Articles_Setup {
 			EPKB_Templates::get_template_part( 'feature', 'navigation-back', $args['config'], $args['article'] );
 		}
    }
-
-   // META DATA FEATURE
-	public static function meta_data_feature( $args, $feature, $icon, $config_icon, $config_text, $value ) {
-		$feature = str_replace('_', '-', $feature);     ?>
-
-		<div class="eckb-article-content-<?php echo $feature; ?>-container">		<?php
-			 if ( 'on' == $args['config'][$config_icon] ) {
-				 echo '<span class="eckb-meta-data-feature-icon epkbfa ' . $icon . '"></span>';
-			 }
-
-		   if ( $args['config'][$config_text] && ! empty($value) ) {
-		   	echo '<span class="eckb-meta-data-feature-text">' . esc_html( $args['config'][$config_text] ) . '</span>';
-		   }
-
-		   echo '<span class="eckb-meta-data-feature-value">' . $value . '</span>';		   ?>
-		</div> <?php
-	}
-
-	// AUTHOR
-	public static function author( $args ) {
-
-		$post_author = empty($_POST['epkb-wizard-demo-data']) ? get_the_author_meta( 'display_name', $args['article']->post_author ) : __( 'Admin', 'echo-knowledge-base' );
-
-		echo '<div class="eckb-ach__article-meta__author">';
-		if ( 'on' == $args['config']['article_meta_icon_on'] ) {
-			echo '<span class="eckb-ach__article-meta__author__author-icon epkbfa epkbfa-user"></span>';
-		}
-		if ( $args['config']['author_text'] && ! empty($post_author) ) {
-			echo '<span class="eckb-ach__article-meta__author__text">' . esc_html( $args['config']['author_text'] ) . '</span>';
-		}
-		echo '<span class="eckb-ach__article-meta__author__name">' . $post_author . '</span>';
-	   echo '</div>';
-	}
-
-	// CREATED ON
-	public static function created_on( $args ) {
-		echo '<div class="eckb-ach__article-meta__date-created">';
-		if ( 'on' == $args['config']['article_meta_icon_on'] ) {
-			echo '<span class="eckb-ach__article-meta__date-created__date-icon epkbfa epkbfa-calendar"></span>';
-		}
-		if ( $args['config']['created_on_text'] && ! empty($args['article']->post_date) ) {
-			echo '<span class="eckb-ach__article-meta__date-created__text">' . esc_html( $args['config']['created_on_text'] ) . '</span>';
-		}
-
-		echo '<span class="eckb-ach__article-meta__date-created__date">';
-		printf(
-			'<time class="entry-date" datetime="%1$s">%2$s</time>',
-			esc_attr( get_the_date( DATE_W3C ) ),
-			esc_html( get_the_date() )
-		);
-		echo '</span>';
-		echo '</div>';
-	}
-
-	// LAST UPDATED ON
-	public static function last_updated_on( $args ) {
-		echo '<div class="eckb-ach__article-meta__date-updated">';
-		if ( 'on' == $args['config']['article_meta_icon_on'] ) {
-			echo '<span class="eckb-ach__article-meta__date-updated__date-icon epkbfa epkbfa-pencil-square-o"></span>';
-		}
-		if ( $args['config']['last_udpated_on_text'] && ! empty($args['article']->post_modified) ) {
-			echo '<span class="eckb-ach__article-meta__date-updated__text">' . esc_html( $args['config']['last_udpated_on_text'] ) . '</span>';
-		}
-
-		echo '<span class="eckb-ach__article-meta__date-updated__date">';
-		printf(
-			'<time class="entry-date" datetime="%1$s">%2$s</time>',
-			esc_attr( get_the_modified_date( DATE_W3C ) ),
-			esc_html( get_the_modified_date() )
-		);
-		echo '</span>';
-		echo '</div>';
-	}
 	
 	// BREADCRUMB - for page bar and article content header
 	public static function breadcrumb_new( $args, $location='' ) {
@@ -605,7 +581,7 @@ class EPKB_Articles_Setup {
 	}
 
 	// TOOLBAR BUTTON
-	public static function toolbar_button( $args, $location, $feature, $icon ) {
+	private static function toolbar_button( $args, $location, $feature, $icon ) {
 		$kb_config = $args['config'];
 
 		$icon_html = '<span class="eckb-toolbar-button-icon epkbfa ' . $icon . '"></span>';
@@ -622,79 +598,31 @@ class EPKB_Articles_Setup {
 		</div> <?php
 	}
 
-	// PRINT BUTTON - old article content header - beside meta data
-	private static function print_button( $args ) {    ?>
-		 <span class="eckb-print-button-meta-container">			<?php
-		   if ( 'on' == $args['config']['article_meta_icon_on'] ) {
-			   echo '<span class="eckb-print-button-meta-icon epkbfa epkbfa-print"></span>';
-		   }
-
-		   if ( ! empty($args['config']['print_button_text']) ) { ?>
-				  <span class="eckb-print-button-meta-text"><?php echo $args['config']['print_button_text'];  ?></span>				<?php
-		   }  ?>
-		 </span> <?php
-	}
-
 
 	/***********************   C. ARTICLE CONTENT BODY   *********************/
 
 	public static function article_content_body( $args ) {
+		global $multipage;
+
 		do_action( 'eckb-article-before-content', $args );
 		echo $args['content'];
 		do_action( 'eckb-article-after-content', $args );
+
+		// support for paged articles (with page break)
+		if ( $multipage ) {
+			wp_link_pages( array(
+				'before'           => '<div class="eckb-article-paged-navigation">',
+				'after'            => '</div>',
+				'separator'        => ' | ',
+				'nextpagelink'     => __( 'Next Section', 'echo-knowledge-base' ),
+				'previouspagelink' => __( 'Previous Section', 'echo-knowledge-base' ),
+				'next_or_number'   => 'next'
+			) );
+		}
 	}
 
 
 	/***********************   D. ARTICLE CONTENT FOOTER   *********************/
-
-	/**
-	 * DISPLAY META DATA CONTAINER such as author and creation date
-	 * @param $args
-	 * @param $location
-	 */
-	private static function meta_container( $args, $location ) {
-	   $kb_config = $args['config'];
-
-		$args['output_location'] = $location == 'header' ? 'top' : 'bottom';
-		$args['is_meta_container_on'] = false;
-
-		// Sidebar layout on Main Page should not have meta data
-		if ( ! empty($args['config']['sidebar_welcome']) ) {
-			return;
-		}
-
-		// is meta data container enabled?
-		if ( isset($kb_config['meta-data-' . $location . '-toggle']) && $kb_config['meta-data-' . $location . '-toggle'] == 'off' ) {
-			return;
-		}
-
-		/** below is class eckb-article-content-header__article-meta and eckb-article-content-footer__article-meta */
-		echo '<div class="' . 'eckb-article-content-' . $location . '__article-meta' . '">';
-
-	   $config_name = $location == 'header' ? 'article_content_enable_created_date' : 'created_on_' . $location . '_toggle';
-	   if ( isset($kb_config[$config_name]) && $kb_config[$config_name] != 'off' ) {
-			self::created_on( $args );
-		}
-
-		$config_name = $location == 'header' ? 'article_content_enable_last_updated_date' : 'last_udpated_on_' . $location . '_toggle';
-	   if ( isset($kb_config[$config_name]) && $kb_config[$config_name] != 'off' ) {
-			self::last_updated_on( $args );
-		}
-
-		$config_name = $location == 'header' ? 'article_content_enable_author' : 'author_' . $location . '_toggle';
-		if ( isset($kb_config[$config_name]) && $kb_config[$config_name] != 'off' ) {
-			self::author( $args );
-		}
-
-	    if ( $location == 'header' && $args['config']['print_button_enable'] != 'off' ) {
-		   self::print_button( $args );
-		}
-
-		// output other meta data like Article Rating
-		do_action( 'eckb-article-meta-container-end', $args );
-
-		echo '</div>';
-	}
 
 	// TAGS
 	public static function tags( $args ) {
@@ -708,7 +636,7 @@ class EPKB_Articles_Setup {
 	public static function prev_next_navigation( $args ) {
 		global $eckb_kb_id, $post;
 
-		if ( (empty($post) or ! isset($post->ID) or empty($eckb_kb_id)) and !isset($_POST['epkb-wizard-demo-data']) ) {
+		if ( empty( $post ) or ! isset( $post->ID ) or empty( $eckb_kb_id ) ) {
 			return;
 		}
 
@@ -735,17 +663,17 @@ class EPKB_Articles_Setup {
 		$next_navigation_text = empty($kb_config['next_navigation_text']) ? __( 'Next', 'echo-knowledge-base' ) : $kb_config['next_navigation_text'];
 
 		$demo_prev_link = '<a href="#"><span class="epkb-article-navigation__label">' . $prev_navigation_text . '</span><span class="epkb-article-navigation-article__title">
-									<span class="epkb-article-navigation__previous__icon ep_font_icon_document"></span>' . __( 'Demo Article', 'echo-knowledge-base' ) . '</span></a>';
+									<span class="epkb-article-navigation__previous__icon ep_font_icon_document"></span>' . __( 'Previous Article', 'echo-knowledge-base' ) . '</span></a>';
 		$demo_next_link = '<a href="#"><span class="epkb-article-navigation__label">' . $next_navigation_text . '</span><span class="epkb-article-navigation-article__title">
-									<span class="epkb-article-navigation__next__icon ep_font_icon_document"></span>' . __( 'Demo Article', 'echo-knowledge-base' ) . ' </span></a>';
+									<span class="epkb-article-navigation__next__icon ep_font_icon_document"></span>' . __( 'Next Article', 'echo-knowledge-base' ) . ' </span></a>';
 
-		//Condition To set Demo for admin wizards
-		if ( isset($_POST['epkb-wizard-demo-data']) ) {
+		// Condition To set Demo for admin wizards
+		if ( self::is_configuring_article() ) {
 			self::prev_next_navigation_html ($styles, $demo_prev_link, $demo_next_link );
 			return;
 		}
 
-		//get last category id
+		// get last category id
 		$breadcrumb_tree = EPKB_Templates_Various::get_article_breadcrumb( $kb_config, $post_id );
 		if ( empty($breadcrumb_tree) ) {
 			return;
@@ -767,7 +695,7 @@ class EPKB_Articles_Setup {
 		}
 
 		// for WPML filter categories and articles given active language
-		if ( EPKB_Utilities::is_wpml_enabled( $kb_config ) && ! isset($_POST['epkb-wizard-demo-data']) ) {
+		if ( EPKB_Utilities::is_wpml_enabled( $kb_config ) ) {
 			$category_seq_data = EPKB_WPML::apply_category_language_filter( $category_seq_data );
 			$articles_seq_data = EPKB_WPML::apply_article_language_filter( $articles_seq_data );
 		}
@@ -875,9 +803,6 @@ class EPKB_Articles_Setup {
 			   ';
 		}
 
-		$prev_link = empty( $_POST['epkb-wizard-demo-data'] ) ? $prev_link : $demo_prev_link;
-		$next_link = empty( $_POST['epkb-wizard-demo-data'] ) ? $next_link : $demo_next_link;
-
 		self::prev_next_navigation_html( $styles, $prev_link, $next_link );
 	}
 
@@ -922,6 +847,9 @@ class EPKB_Articles_Setup {
 		}
 	}
 
+
+	/***********************   META DATA HEADER/FOOTER CONTAINER   *********************/
+
 	public static function meta_data_header( $args ) {
 		self::meta_container( $args, 'header' );
 	}
@@ -930,6 +858,125 @@ class EPKB_Articles_Setup {
 		self::meta_container( $args, 'footer' );
 	}
 
+	/**
+	 * DISPLAY META DATA CONTAINER such as author, modification and creation date
+	 * @param $args
+	 * @param $location
+	 */
+	private static function meta_container( $args, $location ) {
+		$kb_config = $args['config'];
+
+		$args['output_location'] = $location == 'header' ? 'top' : 'bottom';
+		$args['is_meta_container_on'] = false;
+
+		// Sidebar layout on Main Page should not have meta data
+		if ( ! empty($args['config']['sidebar_welcome']) ) {
+			return;
+		}
+
+		// is meta data container enabled? for meta-data-header-toggle and meta-data-footer-toggle
+		if ( isset($kb_config['meta-data-' . $location . '-toggle']) && $kb_config['meta-data-' . $location . '-toggle'] == 'off' ) {
+			echo ( self::is_configuring_article() ? '<div class="' . 'eckb-article-content-' . $location . '__article-meta' . '"></div>' : '' );
+			return;
+		}
+
+		/** below is class eckb-article-content-header__article-meta and eckb-article-content-footer__article-meta */
+		echo '<div class="' . 'eckb-article-content-' . $location . '__article-meta' . '">';
+
+		$config_name = $location == 'header' ? 'article_content_enable_created_date' : 'created_on_' . $location . '_toggle';
+		if ( isset($kb_config[$config_name]) && $kb_config[$config_name] != 'off' ) {
+			self::created_on( $args );
+		}
+
+		$config_name = $location == 'header' ? 'article_content_enable_last_updated_date' : 'last_updated_on_' . $location . '_toggle';
+		if ( isset($kb_config[$config_name]) && $kb_config[$config_name] != 'off' ) {
+			self::last_updated_on( $args );
+		}
+
+		$config_name = $location == 'header' ? 'article_content_enable_author' : 'author_' . $location . '_toggle';
+		if ( isset($kb_config[$config_name]) && $kb_config[$config_name] != 'off' ) {
+			self::author( $args );
+		}
+
+		if ( $location == 'header' && $args['config']['print_button_enable'] != 'off' ) {
+			self::print_button( $args );
+		}
+
+		// output other meta data like Article Rating
+		do_action( 'eckb-article-meta-container-end', $args );
+
+		echo '</div>';
+	}
+
+	// CREATED ON
+	public static function created_on( $args ) {
+		echo '<div class="eckb-ach__article-meta__date-created">';
+		if ( 'on' == $args['config']['article_meta_icon_on'] ) {
+			echo '<span class="eckb-ach__article-meta__date-created__date-icon epkbfa epkbfa-calendar"></span>';
+		}
+		if ( $args['config']['created_on_text'] && ! empty($args['article']->post_date) ) {
+			echo '<span class="eckb-ach__article-meta__date-created__text">' . esc_html( $args['config']['created_on_text'] ) . '</span>';
+		}
+
+		echo '<span class="eckb-ach__article-meta__date-created__date">';
+		printf(
+			'<time class="entry-date" datetime="%1$s">%2$s</time>',
+			esc_attr( get_the_date( DATE_W3C ) ),
+			esc_html( get_the_date() )
+		);
+		echo '</span>';
+		echo '</div>';
+	}
+
+	// LAST UPDATED ON
+	public static function last_updated_on( $args ) {
+		echo '<div class="eckb-ach__article-meta__date-updated">';
+		if ( 'on' == $args['config']['article_meta_icon_on'] ) {
+			echo '<span class="eckb-ach__article-meta__date-updated__date-icon epkbfa epkbfa-pencil-square-o"></span>';
+		}
+		if ( $args['config']['last_updated_on_text'] && ! empty($args['article']->post_modified) ) {
+			echo '<span class="eckb-ach__article-meta__date-updated__text">' . esc_html( $args['config']['last_updated_on_text'] ) . '</span>';
+		}
+
+		echo '<span class="eckb-ach__article-meta__date-updated__date">';
+		printf(
+			'<time class="entry-date" datetime="%1$s">%2$s</time>',
+			esc_attr( get_the_modified_date( DATE_W3C ) ),
+			esc_html( get_the_modified_date() )
+		);
+		echo '</span>';
+		echo '</div>';
+	}
+
+	// AUTHOR
+	public static function author( $args ) {
+
+		$post_author = get_the_author_meta( 'display_name', $args['article']->post_author );
+		$post_author = empty($post_author) ? __( 'Demo', 'echo-knowledge-base' ) : $post_author;
+
+		echo '<div class="eckb-ach__article-meta__author">';
+		if ( 'on' == $args['config']['article_meta_icon_on'] ) {
+			echo '<span class="eckb-ach__article-meta__author__author-icon epkbfa epkbfa-user"></span>';
+		}
+		if ( $args['config']['author_text'] && ! empty($post_author) ) {
+			echo '<span class="eckb-ach__article-meta__author__text">' . esc_html( $args['config']['author_text'] ) . '</span>';
+		}
+		echo '<span class="eckb-ach__article-meta__author__name">' . $post_author . '</span>';
+		echo '</div>';
+	}
+
+	// PRINT BUTTON - old article content header - beside meta data
+	private static function print_button( $args ) {    ?>
+		<span class="eckb-print-button-meta-container">			<?php
+			if ( 'on' == $args['config']['article_meta_icon_on'] ) {
+				echo '<span class="eckb-print-button-meta-icon epkbfa epkbfa-print"></span>';
+			}
+
+			if ( ! empty($args['config']['print_button_text']) ) { ?>
+				<span class="eckb-print-button-meta-text"><?php echo $args['config']['print_button_text'];  ?></span>				<?php
+			}  ?>
+		 </span> <?php
+	}
 
 
 	/******************************************************************************
@@ -945,7 +992,7 @@ class EPKB_Articles_Setup {
 	public static function display_kb_widgets_sidebar( $args ) {
 
 		$widget_id = $args['config']['id'] == 1 ? 'eckb_articles_sidebar' : 'eckb_articles_sidebar_' . $args['config']['id'];
-		if ( $args['config']['templates_for_kb_widget_sidebar_defaults'] == 'on' ) {
+		if ( $args['config']['template_widget_sidebar_defaults'] == 'on' ) {
 			$article_widget_sidebar_default_styles = 'eckb-article-widget-sidebar--default-styles';
 		} else {
 			$article_widget_sidebar_default_styles = '';
@@ -960,107 +1007,49 @@ class EPKB_Articles_Setup {
 	}
 
 	/**
-	 * Display Elegant Layout Sidebar
+	 * Display LEFT navigation Sidebar
 	 * @param $args
 	 */
-	public static function display_elay_sidebar( $args ) {
-		do_action( 'eckb-article-v2-elay_sidebar', $args );
+	public static function display_nav_sidebar_left( $args ) {
+
+		$nav_sidebar_type = EPKB_Core_Utilities::get_nav_sidebar_type( $args['config'], 'left' );
+
+		// Categories Focused Layout navigation
+		if ( $nav_sidebar_type == 'eckb-nav-sidebar-categories' ) {
+			self::focused_layout_categories( $args );
+
+		// Elegant Layouts navigation
+		} else if ( $nav_sidebar_type == 'eckb-nav-sidebar-v1' && EPKB_Utilities::is_elegant_layouts_enabled() ) {
+			do_action( 'eckb-article-v2-elay_sidebar', $args );
+
+		// Core Navigation
+		} else if ( $nav_sidebar_type == 'eckb-nav-sidebar-v1' ) {
+			$core_nav_sidebar = new EPKB_Layout_Article_Sidebar();
+			$core_nav_sidebar->display_article_sidebar( $args['config'] );
+		}
 	}
 
 	/**
-	 * Output Table of Content
-	 *
+	 * Display RIGHT navigation Sidebar
 	 * @param $args
 	 */
-	public static function table_of_content( $args ) {
+	public static function display_nav_sidebar_right( $args ) {
 
-		// Both Versions
-		self::$styles .= '
-			#eckb-article-body .eckb-article-toc ul a.active {
-				background-color:   ' . $args['config']['article_toc_active_bg_color'] . ';
-				color:              ' . $args['config']['article_toc_active_text_color'] . ';
-			}
-			#eckb-article-body .eckb-article-toc ul a:hover {
-				background-color:   ' . $args['config']['article_toc_cursor_hover_bg_color'] . ';
-				color:              ' . $args['config']['article_toc_cursor_hover_text_color'] . ';
-			}
-			#eckb-article-body .eckb-article-toc__inner {
-				border-color: ' . $args['config']['article_toc_border_color'] . ';
-				font-size:          ' . $args['config']['article_toc_font_size'] . 'px;
-				background-color:   ' . $args['config']['article_toc_background_color'] . ';
-			}
-			#eckb-article-body .eckb-article-toc__inner a {
-				color:              ' . $args['config']['article_toc_text_color'] . ';
-				font-size:          ' . $args['config']['article_toc_font_size'] . 'px;
-			}
-		';
+		$nav_sidebar_type = EPKB_Core_Utilities::get_nav_sidebar_type( $args['config'], 'right' );
 
-		// Run only for old V1 structure
-		if ( ! self::is_article_structure_v2( $args['config'] ) ) {
+		// Categories Focused Layout navigation
+		if ( $nav_sidebar_type == 'eckb-nav-sidebar-categories' ) {
+			self::focused_layout_categories( $args );
 
-			$media_1_gutter = $args['config']['article_toc_width_1']+$args['config']['article_toc_gutter'] + 25;
-			$media_2_gutter = $args['config']['article_toc_width_2']+$args['config']['article_toc_gutter'] + 25;
-			$toc_gutter = -325 - $args['config']['article_toc_gutter'];
+		// Elegant Layouts navigation
+		} else if ( $nav_sidebar_type == 'eckb-nav-sidebar-v1' && EPKB_Utilities::is_elegant_layouts_enabled() ) {
+			do_action( 'eckb-article-v2-elay_sidebar', $args );
 
-			// Version 1 Only
-			self::$styles .= '
-			#eckb-article-body .eckb-article-toc--position-'.$args['config']['article_toc_position'].' .eckb-article-toc__inner {
-					'.$args['config']['article_toc_position'].': ' . $toc_gutter . 'px;
-				}
-			';
-
-			// Media Queries
-			self::$styles .= '
-				@media only screen and ( max-width: ' . $args['config']['article_toc_media_1'] . 'px ) {
-                    #eckb-article-body .eckb-article-toc .eckb-article-toc__inner {
-                        width:          ' . $args['config']['article_toc_width_1'] . 'px !important;
-                        '.$args['config']['article_toc_position'].': -' . $media_1_gutter . 'px !important;
-                    }
-                }
-                @media only screen and ( max-width: ' . $args['config']['article_toc_media_2'] . 'px ) {
-                    #eckb-article-body .eckb-article-toc .eckb-article-toc__inner {
-                        width:          ' . $args['config']['article_toc_width_2'] . 'px !important;
-                        '.$args['config']['article_toc_position'].': -' . $media_2_gutter . 'px !important;
-                    }
-                }
-                @media only screen and ( max-width: ' . $args['config']['article_toc_media_3'] . 'px ) {
-                
-                    #eckb-article-body .eckb-article-toc {
-                          width:    100% !important;
-					      float:    none !important;
-					      position: relative !important;
-					      height:   auto !important;
-					      height:   fit-content !important;
-                          display:  inline-block;
-                          top:      0 !important;
-                    }
-                    #eckb-article-body .eckb-article-toc .eckb-article-toc__inner {
-                          display:          block;
-					      width:            100% !important;
-					      float:            none !important;
-					      margin-bottom:    20px !important;
-					      left:             0 !important;
-					      position:         relative !important;
-					      
-                    }
-                } ';
+		// Core Navigation
+		} else if ( $nav_sidebar_type == 'eckb-nav-sidebar-v1' ) {
+			$core_nav_sidebar = new EPKB_Layout_Article_Sidebar();
+			$core_nav_sidebar->display_article_sidebar( $args['config'] );
 		}
-
-		$classes = 'eckb-article-toc--position-' . $args['config']['article_toc_position'];
-		$classes .= ' eckb-article-toc--bmode-' . $args['config']['article_toc_border_mode'];
-
-		$title = empty($args['config']['article_toc_title']) ? '' : '<div class="eckb-article-toc__title">' . $args['config']['article_toc_title'] . '</div>';
-
-		$wrap = '
-			<div class="eckb-article-toc ' . $classes . ' eckb-article-toc-reset "				
-				data-offset="' . $args['config']['article_toc_scroll_offset'] . '"
-				data-min="' . $args['config']['article_toc_hx_level'] . '"
-				data-max="' . $args['config']['article_toc_hy_level'] . '"
-				data-exclude_class="' . $args['config']['article_toc_exclude_class'] . '"
-				>' . $title . '</div>
-			';
-
-		echo $wrap;
 	}
 
 	/**
@@ -1069,11 +1058,6 @@ class EPKB_Articles_Setup {
 	 * @param $args
 	 */
 	public static function focused_layout_categories( $args ) {
-
-		// for Category Focused Layout show sidebar with list of top-level categories
-		if ( $args['config']['kb_main_page_layout'] != EPKB_KB_Config_Layout_Categories::LAYOUT_NAME ) {
-			return;
-		}
 
 		$parent_category_id = 0;
 		$active_id = 0;
@@ -1098,6 +1082,63 @@ class EPKB_Articles_Setup {
 		echo EPKB_Categories_DB::get_layout_categories_list( $args['config']['id'], $args['config'], $parent_category_id, $active_id );
 	}
 
+	/**
+	 * Output Table of Content
+	 *
+	 * @param $args
+	 */
+	public static function table_of_content( $args ) {
+
+		// show TOC only on the article page
+		if ( EPKB_Core_Utilities::is_kb_main_page() ) {
+			return;
+		}
+
+		$article_toc_typography_styles = EPKB_Utilities::get_typography_config( $args['config']['article_toc_typography'] );
+		$article_toc_header_typography_styles = EPKB_Utilities::get_typography_config( $args['config']['article_toc_header_typography'] );
+
+		// Both Versions
+		self::$styles .= '
+			#eckb-article-body .eckb-article-toc ul a.active {
+				background-color:   ' . $args['config']['article_toc_active_bg_color'] . ';
+				color:              ' . $args['config']['article_toc_active_text_color'] . ';
+			}
+			#eckb-article-body .eckb-article-toc ul a:hover {
+				background-color:   ' . $args['config']['article_toc_cursor_hover_bg_color'] . ';
+				color:              ' . $args['config']['article_toc_cursor_hover_text_color'] . ';
+			}
+			#eckb-article-body .eckb-article-toc__inner {
+				border-color: ' . $args['config']['article_toc_border_color'] . ';
+				' . $article_toc_typography_styles . '
+				background-color:   ' . $args['config']['article_toc_background_color'] . ';
+			}
+			#eckb-article-body .eckb-article-toc__inner a {
+				color:              ' . $args['config']['article_toc_text_color'] . ';
+				' . $article_toc_typography_styles . '
+			}
+			#eckb-article-body .eckb-article-toc__title {
+				color:              ' . $args['config']['article_toc_title_color'] . ';
+				' . $article_toc_header_typography_styles . '
+			}
+		';
+
+		$classes = 'eckb-article-toc--position-' . $args['config']['article_toc_position'];
+		$classes .= ' eckb-article-toc--bmode-' . $args['config']['article_toc_border_mode'];
+
+		$title = empty($args['config']['article_toc_title']) ? '' : '<div class="eckb-article-toc__title">' . $args['config']['article_toc_title'] . '</div>';
+
+		$wrap = '
+			<div class="eckb-article-toc ' . $classes . ' eckb-article-toc-reset "				
+				data-offset="' . $args['config']['article_toc_scroll_offset'] . '"
+				data-min="' . $args['config']['article_toc_hx_level'] . '"
+				data-max="' . $args['config']['article_toc_hy_level'] . '"
+				data-speed="' . $args['config']['article_toc_scroll_speed'] . '"
+				data-exclude_class="' . $args['config']['article_toc_exclude_class'] . '"
+				>' . $title . '</div>
+			';
+
+		echo $wrap;
+	}
 
 
 	/******************************************************************************
@@ -1130,7 +1171,7 @@ class EPKB_Articles_Setup {
 		}
 
 		if ( empty($this->cached_comments_flag) ) {
-			$this->cached_comments_flag = epkb_get_instance()->kb_config_obj->get_value( 'articles_comments_global', $kb_id, 'off' );
+			$this->cached_comments_flag = epkb_get_instance()->kb_config_obj->get_value( $kb_id, 'articles_comments_global', 'off' );
 		}
 
 		if ( $this->cached_comments_flag == 'article' ) {
@@ -1201,6 +1242,8 @@ class EPKB_Articles_Setup {
 		// Content Settings
 		$article_content_padding                    = $kb_config['article-content-padding-v2'];
 		$article_content_bgColor                    = $kb_config['article-content-background-color-v2'];
+		$article_meta_color                         = $kb_config['article-meta-color'];
+		$article_meta_typography                    = $kb_config['article-meta-typography'];
 
 		// Right Sidebar Settings
 		$article_right_sidebar_padding_top          = $kb_config['article-right-sidebar-padding-v2_top'];
@@ -1236,11 +1279,15 @@ class EPKB_Articles_Setup {
 		$article_left_sidebar_tablet_width      = $kb_config['article-left-sidebar-tablet-width-v2'];
 		$article_content_tablet_width           = $kb_config['article-content-tablet-width-v2'];
 		$article_right_sidebar_tablet_width     = $kb_config['article-right-sidebar-tablet-width-v2'];
-		$theme_class 							= ! empty($kb_config['theme_name']) ? '.eckb-theme-' . $kb_config['theme_name'] : '';
+
 
 		// Mobile Settings
 		$mobile_breakpoint                      = $kb_config['article-mobile-break-point-v2'];
-
+		if ( is_numeric( $mobile_breakpoint ) && ! empty( $_REQUEST['epkb-editor-page-loaded'] ) ) {
+			$mobile_breakpoint -= 400;
+			$tablet_breakpoint -= 400;
+		}
+		
 		// auto-determine whether we need sidebar or let user override it to be displayed
 		$is_left_sidebar_on = self::is_left_sidebar_on( $kb_config );
 		$is_right_sidebar_on = self::is_right_sidebar_on( $kb_config );
@@ -1273,7 +1320,7 @@ class EPKB_Articles_Setup {
 					'article_right_sidebar_width'   => $article_right_sidebar_desktop_width,
 					'breakpoint'                    => 'desktop',
 					'type'                          => 'DESKTOP',
-					'theme_class'                   => $theme_class
+
 			));
 
 			self::article_media_structure( array(
@@ -1288,54 +1335,60 @@ class EPKB_Articles_Setup {
 					'article_right_sidebar_width'   => $article_right_sidebar_tablet_width,
 					'breakpoint'                    => $tablet_breakpoint,
 					'type'                          => 'TABLET',
-					'theme_class'                   => $theme_class
+
 			));			?>
 
 
 			/* SHARED */
-			#eckb-article-page-container-v2<?php echo $theme_class; ?> #eckb-article-left-sidebar {
+			#eckb-article-page-container-v2 #eckb-article-left-sidebar {
 				padding: <?php echo $article_left_sidebar_padding_top . 'px ' . $article_left_sidebar_padding_right . 'px ' . $article_left_sidebar_padding_bottom . 'px ' . $article_left_sidebar_padding_left . 'px; '; ?>;
 				background-color: <?php echo $article_left_sidebar_bgColor.';'; ?>
 				margin-top: <?php echo $article_left_sidebar_starting_position.'px;'; ?>
 			}
 			
-			#eckb-article-page-container-v2<?php echo $theme_class; ?> #eckb-article-left-sidebar:before {
+			#eckb-article-page-container-v2 #eckb-article-left-sidebar:before {
 				height: <?php echo $article_left_sidebar_starting_position.'px;'; ?>
 			}
 			
-			#eckb-article-page-container-v2<?php echo $theme_class; ?> #eckb-article-content {
+			#eckb-article-page-container-v2 #eckb-article-content {
 				padding: <?php echo $article_content_padding.'px;'; ?>;
 				background-color: <?php echo $article_content_bgColor.';'; ?>
 			}
-			#eckb-article-page-container-v2<?php echo $theme_class; ?> #eckb-article-right-sidebar {
+			
+			.eckb-article-content-created-date-container, .eckb-article-content-last-updated-date-container, .eckb-article-content-author-container, .eckb-ach__article-meta__date-created, .eckb-ach__article-meta__author, .eckb-ach__article-meta__date-updated {
+				color: <?php echo $article_meta_color . ';' .
+				EPKB_Utilities::get_typography_config( $article_meta_typography ); ?>
+			}
+			
+			#eckb-article-page-container-v2 #eckb-article-right-sidebar {
 				padding: <?php echo $article_right_sidebar_padding_top . 'px ' . $article_right_sidebar_padding_right . 'px ' . $article_right_sidebar_padding_bottom . 'px ' . $article_right_sidebar_padding_left.'px;'; ?>;
 				background-color: <?php echo $article_right_sidebar_bgColor.';'; ?>
 				margin-top: <?php echo $article_right_sidebar_starting_position.'px;'; ?>
 			}
 			
-			#eckb-article-page-container-v2<?php echo $theme_class; ?> #eckb-article-right-sidebar:before {
+			#eckb-article-page-container-v2 #eckb-article-right-sidebar:before {
 				height: <?php echo $article_right_sidebar_starting_position.'px;'; ?>
 			}
 
 			/* MOBILE - Set all columns to full width. */
 			@media only screen and ( max-width: <?php echo $mobile_breakpoint; ?>px ) {
 
-				#eckb-article-page-container-v2<?php echo $theme_class; ?> {
+				#eckb-article-page-container-v2 {
 					width:100%;
 				}
-				#eckb-article-page-container-v2<?php echo $theme_class; ?> #eckb-article-content {
+				#eckb-article-page-container-v2 #eckb-article-content {
 					grid-column-start: 1;
 					grid-column-end: 4;
 				}
-				#eckb-article-page-container-v2<?php echo $theme_class; ?> #eckb-article-left-sidebar {
+				#eckb-article-page-container-v2 #eckb-article-left-sidebar {
 					grid-column-start: 1;
 					grid-column-end: 4;
 				}
-				#eckb-article-page-container-v2<?php echo $theme_class; ?> #eckb-article-right-sidebar {
+				#eckb-article-page-container-v2 #eckb-article-right-sidebar {
 					grid-column-start: 1;
 					grid-column-end: 4;
 				}
-				#eckb-article-page-container-v2<?php echo $theme_class; ?> .eckb-article-toc {
+				#eckb-article-page-container-v2 .eckb-article-toc {
 					position: relative;
 					float: left;
 					width: 100%;
@@ -1380,21 +1433,21 @@ class EPKB_Articles_Setup {
 			'article_right_sidebar_width'   => '',
 			'breakpoint'                    => '',
 			'type'                          => '',
-			'theme_class'                   => ''
 		);
 		$args = array_merge( $defaults, $settings );
 
 
 		$article_length = ' /* ' . $args[ 'type' ] . ' */ ' . PHP_EOL ;
+		
 		if( $args[ 'breakpoint' ]  != 'desktop' ) {
 			$article_length .= '@media only screen and ( max-width: '.$args[ 'breakpoint' ].'px ) {';
 		}
 
 		$article_length .=
-			'#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' {
+			'#eckb-article-page-container-v2  {
 				width: '.$args[ 'article_container_width' ] . $args[ 'article_container_width_units'].' }';
 		$article_length .=
-			'#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-body {
+			'#eckb-article-page-container-v2 #eckb-article-body {
 				width: '.$args[ 'article_body_width' ] . $args[ 'article_body_width_units'].' }';
 
 		/**
@@ -1405,13 +1458,13 @@ class EPKB_Articles_Setup {
 		if ( ! $args[ 'is_left_sidebar_on' ]  ) {
 			$article_length .= '
 		        /* NO LEFT SIDEBAR */
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-body {
+				#eckb-article-page-container-v2 #eckb-article-body {
 				      grid-template-columns:  0 ' . $args[ 'article_content_width' ] . '% '.$args[ 'article_right_sidebar_width' ].'%;
 				}
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-left-sidebar {
+				#eckb-article-page-container-v2 #eckb-article-left-sidebar {
 						display:none;
 				}
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-content {
+				#eckb-article-page-container-v2 #eckb-article-content {
 						grid-column-start: 1;
 						grid-column-end: 3;
 					}
@@ -1426,14 +1479,14 @@ class EPKB_Articles_Setup {
 		if ( ! $args[ 'is_right_sidebar_on' ] ) {
 			$article_length .= '
 				/* NO RIGHT SIDEBAR */
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-body {
+				#eckb-article-page-container-v2 #eckb-article-body {
 				      grid-template-columns: '.$args[ 'article_left_sidebar_width' ].'% ' . $args[ 'article_content_width' ] . '% 0 ;
 				}
 				
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-right-sidebar {
+				#eckb-article-page-container-v2 #eckb-article-right-sidebar {
 						display:none;
 				}
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-content {
+				#eckb-article-page-container-v2 #eckb-article-content {
 						grid-column-start: 2;
 						grid-column-end: 4;
 					}
@@ -1443,16 +1496,16 @@ class EPKB_Articles_Setup {
 		// If No Sidebars Expand the Article Content 1 - 4
 		if ( ! $args[ 'is_left_sidebar_on']  && ! $args[ 'is_right_sidebar_on' ] ) {
 			$article_length .= '
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-body {
+				#eckb-article-page-container-v2 #eckb-article-body {
 				      grid-template-columns: 0 ' . $args[ 'article_content_width' ] . '% 0;
 				}
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-left-sidebar {
+				#eckb-article-page-container-v2 #eckb-article-left-sidebar {
 						display:none;
 				}
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-right-sidebar {
+				#eckb-article-page-container-v2 #eckb-article-right-sidebar {
 						display:none;
 				}
-				#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-content {
+				#eckb-article-page-container-v2 #eckb-article-content {
 						grid-column-start: 1;
 						grid-column-end: 4;
 					}
@@ -1465,7 +1518,7 @@ class EPKB_Articles_Setup {
 		 */
 		if ( $args[ 'is_left_sidebar_on' ]  && $args[ 'is_right_sidebar_on' ] ) {
 			$article_length .= '
-					#eckb-article-page-container-v2' . $args[ 'theme_class' ] . ' #eckb-article-body {
+					#eckb-article-page-container-v2 #eckb-article-body {
 					      grid-template-columns: ' . $args[ 'article_left_sidebar_width' ] . '% ' . $args[ 'article_content_width' ] . '% ' . $args[ 'article_right_sidebar_width' ] . '%;
 					}
 					';
@@ -1492,10 +1545,10 @@ class EPKB_Articles_Setup {
 	 * @param $widget_id
 	 */
 	private static function wizard_widget_demo_data( $widget_id ) {
-		if ( ! empty( $_POST['epkb-wizard-demo-data'] ) && ! is_active_sidebar( $widget_id ) ) { ?>
+		if ( self::is_configuring_article() && ! is_active_sidebar( $widget_id ) ) { ?>
 			  <div class="eckb-no-widget">
 			   <?php _e( 'No widgets', 'echo-widgets' ); ?><br>
-				  <a href="<?php echo admin_url( 'widgets.php' ); ?>"><?php _e( 'Add your widgets here', 'echo-widgets' ); ?></a>
+				  <a class="eckb-redirect-link" href="<?php echo admin_url( 'widgets.php' ); ?>" target="_blank"><?php _e( 'Add your widgets here', 'echo-widgets' ); ?></a>
 			  </div> <?php
 		}
 	}
@@ -1535,5 +1588,31 @@ class EPKB_Articles_Setup {
 		$str = str_replace("\n", "", $str);
 		$str = preg_replace("/([0-9]*px(?!;))/", "$1 ", $str);
 		return $str;
+	}
+
+	private static function is_configuring_article() {
+		return EPKB_Utilities::get( 'epkb-editor-page-loaded' ) == '1';
+	}
+
+	/**
+	 * Update flag value if we have errors with duplicated article issue. No need to send any text, it is the silent ajax request
+	 */
+	public static function epkb_update_the_content_flag() {
+
+		// check capability author, editor, admin
+		if ( ! EPKB_Admin_UI_Access::is_user_admin_editor_author() ) {
+			EPKB_Utilities::ajax_show_error_die( '' );
+		}
+
+		// check wpnonce
+		$wp_nonce = EPKB_Utilities::post( '_wpnonce_epkb_ajax_action' );
+		if ( empty( $wp_nonce ) || ! wp_verify_nonce( $wp_nonce, '_wpnonce_epkb_ajax_action' ) ) {
+			EPKB_Utilities::ajax_show_error_die( '' );
+		}
+
+		EPKB_Core_Utilities::update_kb_flag( 'epkb_the_content_fix' );
+
+		// we are done here
+		EPKB_Utilities::ajax_show_info_die( '' );
 	}
 }

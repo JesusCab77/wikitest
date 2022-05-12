@@ -54,7 +54,7 @@ function epkbShowErrorNotices() {
 
 	}
 
-	jQuery('.epkb-js-error-close').click(function(){
+	jQuery('.epkb-js-error-close').on('click',function(){
 		jQuery(this).closest('.epkb-js-error-notice').hide('fast');
 	});
 }

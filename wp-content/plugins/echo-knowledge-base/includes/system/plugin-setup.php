@@ -31,18 +31,23 @@ function epkb_activate_plugin_do() {
 
 	// true if the plugin was activated for the first time since installation
 	$plugin_version = get_option( 'epkb_version' );
-	if ( empty($plugin_version) ) {
+	if ( empty( $plugin_version ) ) {
 
-		set_transient( '_epkb_plugin_installed', true, WEEK_IN_SECONDS );
+		set_transient( '_epkb_plugin_installed', true, HOUR_IN_SECONDS );
+		set_transient( '_epkb_plugin_installed_today', true, DAY_IN_SECONDS );
 
-		$new_kb_main_page_title = __( 'Knowledge Base', 'echo-knowledge-base' );
-		EPKB_KB_Handler::add_new_knowledge_base( EPKB_KB_Config_DB::DEFAULT_KB_ID, $new_kb_main_page_title );  // ignore errors
+		EPKB_Utilities::save_wp_option( 'epkb_run_setup', true, true );
 
+		// prepare KB configuration
+		$kb_config = epkb_get_instance()->kb_config_obj->get_kb_config_or_default( EPKB_KB_Config_DB::DEFAULT_KB_ID );
+		epkb_get_instance()->kb_config_obj->update_kb_configuration( EPKB_KB_Config_DB::DEFAULT_KB_ID, $kb_config );
+
+		// update KB versions
 		EPKB_Utilities::save_wp_option( 'epkb_version', Echo_Knowledge_Base::$version, true );
 		EPKB_Utilities::save_wp_option( 'epkb_version_first', Echo_Knowledge_Base::$version, true );
 	}
 
-	set_transient( '_epkb_plugin_activated', true, 3600 );
+	set_transient( '_epkb_plugin_activated', true, HOUR_IN_SECONDS );
 
 	// Clear permalinks
 	update_option( 'epkb_flush_rewrite_rules', true );

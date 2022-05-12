@@ -1,15 +1,15 @@
 @charset "UTF-8";
-/* Echo Plugins Fonts */
 @font-face {
-  font-family: 'ep_icons';
-  src: url("fonts/ep_icons.eot?9ohdyt");
-  src: url("fonts/ep_icons.eot?9ohdyt#iefix") format("embedded-opentype"), url("fonts/ep_icons.ttf?9ohdyt") format("truetype"), url("fonts/ep_icons.woff?9ohdyt") format("woff"), url("fonts/ep_icons.svg?9ohdyt#ep_icons") format("svg");
+  font-family: "ep_icons";
+  src: url("fonts/ep_icons.eot?e3s9pc");
+  src: url("fonts/ep_icons.eot?e3s9pc#iefix") format("embedded-opentype"), url("fonts/ep_icons.ttf?e3s9pc") format("truetype"), url("fonts/ep_icons.woff?e3s9pc") format("woff"), url("fonts/ep_icons.svg?e3s9pc#ep_icons") format("svg");
   font-weight: normal;
-  font-style: normal; }
+  font-style: normal;
+  font-display: block; }
 [class^="ep_font_"], [class*=" ep_font_"] {
   /* use !important to prevent issues with browser extensions that change fonts */
-  font-family: 'ep_icons' !important;
-  speak: none;
+  font-family: "ep_icons" !important;
+  speak: never;
   font-style: normal;
   font-weight: normal;
   font-variant: normal;
@@ -19,188 +19,227 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale; }
 
-.ep_font_icon_xmark:before {
-  content: "\e93b"; }
-
-.ep_font_icon_checkmark:before {
-  content: "\e93c"; }
-
-.ep_font_icon_minus_box:before {
-  content: "\e900"; }
-
-.ep_font_icon_money:before {
-  content: "\e901"; }
-
-.ep_font_icon_paperclip:before {
-  content: "\e902"; }
-
-.ep_font_icon_pencil:before {
-  content: "\e903"; }
-
-.ep_font_icon_people:before {
-  content: "\e904"; }
-
-.ep_font_icon_person:before {
-  content: "\e905"; }
-
-.ep_font_icon_plus:before {
-  content: "\e906"; }
-
-.ep_font_icon_plus_box:before {
-  content: "\e907"; }
-
-.ep_font_icon_question:before {
-  content: "\e908"; }
-
-.ep_font_icon_right_arrow:before {
-  content: "\e909"; }
-
-.ep_font_icon_screen:before {
-  content: "\e90a"; }
-
-.ep_font_icon_screw_driver:before {
-  content: "\e90b"; }
-
-.ep_font_icon_search:before {
-  content: "\e90c"; }
-
-.ep_font_icon_shopping_cart:before {
-  content: "\e90d"; }
-
-.ep_font_icon_tag:before {
-  content: "\e90e"; }
-
-.ep_font_icon_tools:before {
-  content: "\e90f"; }
-
-.ep_font_icon_up_arrow:before {
-  content: "\e910"; }
-
-.ep_font_icon_wrench:before {
-  content: "\e911"; }
-
-.ep_font_icon_arrow_carrot_down:before {
-  content: "\e912"; }
-
-.ep_font_icon_arrow_carrot_down_circle:before {
-  content: "\e913"; }
-
-.ep_font_icon_arrow_carrot_left:before {
-  content: "\e914"; }
-
-.ep_font_icon_arrow_carrot_left_circle:before {
-  content: "\e915"; }
-
-.ep_font_icon_arrow_carrot_right:before {
-  content: "\e916"; }
+.ep_font_icon_arrow_carrot_up_circle:before {
+  content: ""; }
 
 .ep_font_icon_arrow_carrot_right_circle:before {
-  content: "\e917"; }
+  content: ""; }
+
+.ep_font_icon_arrow_carrot_down_circle:before {
+  content: ""; }
+
+.ep_font_icon_arrow_carrot_left_circle:before {
+  content: ""; }
 
 .ep_font_icon_arrow_carrot_up:before {
-  content: "\e918"; }
+  content: ""; }
 
-.ep_font_icon_arrow_carrot_up_circle:before {
-  content: "\e919"; }
+.ep_font_icon_arrow_carrot_right:before {
+  content: ""; }
 
-.ep_font_icon_book:before {
-  content: "\e91a"; }
+.ep_font_icon_arrow_carrot_down:before {
+  content: ""; }
 
-.ep_font_icon_brief_case:before {
-  content: "\e91b"; }
+.ep_font_icon_arrow_carrot_left:before {
+  content: ""; }
 
-.ep_font_icon_building:before {
-  content: "\e91c"; }
+.ep_font_icon_up_arrow:before {
+  content: ""; }
 
-.ep_font_icon_clip_board:before {
-  content: "\e91d"; }
-
-.ep_font_icon_comment:before {
-  content: "\e91e"; }
-
-.ep_font_icon_credit_card:before {
-  content: "\e91f"; }
-
-.ep_font_icon_data_report:before {
-  content: "\e920"; }
-
-.ep_font_icon_document:before {
-  content: "\e921"; }
-
-.ep_font_icon_documents:before {
-  content: "\e922"; }
+.ep_font_icon_right_arrow:before {
+  content: ""; }
 
 .ep_font_icon_down_arrow:before {
-  content: "\e923"; }
-
-.ep_font_icon_empty_star:before {
-  content: "\e924"; }
-
-.ep_font_icon_error_circle:before {
-  content: "\e925"; }
-
-.ep_font_icon_error_oct:before {
-  content: "\e926"; }
-
-.ep_font_icon_error_sheild:before {
-  content: "\e927"; }
-
-.ep_font_icon_error_triangle:before {
-  content: "\e928"; }
-
-.ep_font_icon_external_link:before {
-  content: "\e929"; }
-
-.ep_font_icon_flow_chart:before {
-  content: "\e92a"; }
-
-.ep_font_icon_folder:before {
-  content: "\e92b"; }
-
-.ep_font_icon_folder_add:before {
-  content: "\e92c"; }
-
-.ep_font_icon_folder_open:before {
-  content: "\e92d"; }
-
-.ep_font_icon_full_star:before {
-  content: "\e92e"; }
-
-.ep_font_icon_gear:before {
-  content: "\e92f"; }
-
-.ep_font_icon_gears:before {
-  content: "\e930"; }
-
-.ep_font_icon_half_star:before {
-  content: "\e931"; }
-
-.ep_font_icon_hour_glass:before {
-  content: "\e932"; }
-
-.ep_font_icon_house:before {
-  content: "\e933"; }
-
-.ep_font_icon_info:before {
-  content: "\e934"; }
+  content: ""; }
 
 .ep_font_icon_left_arrow:before {
-  content: "\e935"; }
+  content: ""; }
+
+.ep_font_icon_book:before {
+  content: ""; }
+
+.ep_font_icon_folder:before {
+  content: ""; }
+
+.ep_font_icon_document:before {
+  content: ""; }
+
+.ep_font_icon_documents:before {
+  content: ""; }
+
+.ep_font_icon_clip_board:before {
+  content: ""; }
+
+.ep_font_icon_brief_case:before {
+  content: ""; }
+
+.ep_font_icon_building:before {
+  content: ""; }
+
+.ep_font_icon_checkmark:before {
+  content: ""; }
+
+.ep_font_icon_xmark:before {
+  content: ""; }
+
+.ep_font_icon_full_star:before {
+  content: ""; }
+
+.ep_font_icon_half_star:before {
+  content: ""; }
+
+.ep_font_icon_empty_star:before {
+  content: ""; }
+
+.ep_font_icon_comment:before {
+  content: ""; }
+
+.ep_font_icon_credit_card:before {
+  content: ""; }
+
+.ep_font_icon_data_report:before {
+  content: ""; }
+
+.ep_font_icon_info:before {
+  content: ""; }
+
+.ep_font_icon_error_circle:before {
+  content: ""; }
+
+.ep_font_icon_error_oct:before {
+  content: ""; }
+
+.ep_font_icon_error_sheild:before {
+  content: ""; }
+
+.ep_font_icon_error_triangle:before {
+  content: ""; }
+
+.ep_font_icon_question:before {
+  content: ""; }
+
+.ep_font_icon_external_link:before {
+  content: ""; }
+
+.ep_font_icon_flow_chart:before {
+  content: ""; }
+
+.ep_font_icon_folder_add:before {
+  content: ""; }
+
+.ep_font_icon_folder_minus:before {
+  content: ""; }
+
+.ep_font_icon_folder_open:before {
+  content: ""; }
+
+.ep_font_icon_gear:before {
+  content: ""; }
+
+.ep_font_icon_gears:before {
+  content: ""; }
+
+.ep_font_icon_hour_glass:before {
+  content: ""; }
+
+.ep_font_icon_house:before {
+  content: ""; }
 
 .ep_font_icon_life_saver:before {
-  content: "\e936"; }
+  content: ""; }
 
 .ep_font_icon_light_bulb:before {
-  content: "\e937"; }
+  content: ""; }
 
 .ep_font_icon_loading:before {
-  content: "\e938"; }
+  content: ""; }
 
 .ep_font_icon_map:before {
-  content: "\e939"; }
+  content: ""; }
+
+.ep_font_icon_money:before {
+  content: ""; }
+
+.ep_font_icon_paperclip:before {
+  content: ""; }
+
+.ep_font_icon_pencil:before {
+  content: ""; }
+
+.ep_font_icon_people:before {
+  content: ""; }
+
+.ep_font_icon_person:before {
+  content: ""; }
+
+.ep_font_icon_plus:before {
+  content: ""; }
 
 .ep_font_icon_minus:before {
-  content: "\e93a"; }
+  content: ""; }
+
+.ep_font_icon_plus_box:before {
+  content: ""; }
+
+.ep_font_icon_minus_box:before {
+  content: ""; }
+
+.ep_font_icon_screen:before {
+  content: ""; }
+
+.ep_font_icon_search:before {
+  content: ""; }
+
+.ep_font_icon_shopping_cart:before {
+  content: ""; }
+
+.ep_font_icon_tag:before {
+  content: ""; }
+
+.ep_font_icon_screw_driver:before {
+  content: ""; }
+
+.ep_font_icon_tools:before {
+  content: ""; }
+
+.ep_font_icon_wrench:before {
+  content: ""; }
+
+.ep_font_icon_faq_icons:before {
+  content: ""; }
+
+.ep_font_icon_help_dialog:before {
+  content: "";
+  color: #000000; }
+
+.ep_font_icon_help_dialog-background:before {
+  content: "";
+  color: #000000; }
+
+.ep-help-dialog-icon {
+  position: relative;
+  display: inline-block;
+  background-color: #7B00A6;
+  height: 59px;
+  width: 59px;
+  border-radius: 50px;
+  margin-bottom: -4px; }
+  .ep-help-dialog-icon .ep_font_icon_help_dialog {
+    position: absolute;
+    top: 15px;
+    left: 11px;
+    z-index: 5;
+    font-size: 30px; }
+    .ep-help-dialog-icon .ep_font_icon_help_dialog:before {
+      color: #7B00A6; }
+  .ep-help-dialog-icon .ep_font_icon_help_dialog-background {
+    position: absolute;
+    top: 14px;
+    left: 10px;
+    z-index: 1;
+    font-size: 32px; }
+    .ep-help-dialog-icon .ep_font_icon_help_dialog-background:before {
+      color: #fff; }
 
 /*!
  *  Font Awesome 4.7.0 by @davegandy - http://fontawesome.io - @fontawesome
@@ -217,6 +256,7 @@
 .epkbfa {
   display: inline-block;
   font: normal normal normal 14px/1 FontAwesome;
+  font-family: FontAwesome;
   font-size: inherit;
   text-rendering: auto;
   -webkit-font-smoothing: antialiased;
@@ -2622,6 +2662,8 @@
       display: none; }
     #epkb-deactivate-feedback-modal .epkb-deactivate-feedback-dialog-input:not(:checked) ~ .epkb-feedback-button {
       display: none; }
+    #epkb-deactivate-feedback-modal .epkb-deactivate-feedback-dialog-input:not(:checked) ~ .epkb-feedback-checkbox {
+      display: none; }
   #epkb-deactivate-feedback-modal .epkb-deactivate-feedback-dialog-label {
     display: block;
     font-size: 13px;
@@ -2634,8 +2676,10 @@
     box-shadow: none;
     background-color: #fff;
     width: 92%; }
+  #epkb-deactivate-feedback-modal .epkb-feedback-checkbox {
+    margin: 10px 0 0 30px; }
   #epkb-deactivate-feedback-modal .epkb-feedback-button {
-    margin: 10px 0 0 35px; }
+    margin: 10px 0 0 30px; }
     #epkb-deactivate-feedback-modal .epkb-feedback-button .epkb-feedback-button__green {
       background: #008000;
       display: inline-block;
@@ -2652,7 +2696,9 @@
       #epkb-deactivate-feedback-modal div.epkb-feedback-text .epkb-deactivate-features ul {
         margin-bottom: 0; }
       #epkb-deactivate-feedback-modal div.epkb-feedback-text .epkb-deactivate-features li {
-        color: #0073aa; }
+        color: #000; }
+      #epkb-deactivate-feedback-modal div.epkb-feedback-text .epkb-deactivate-features a {
+        text-decoration: none; }
       #epkb-deactivate-feedback-modal div.epkb-feedback-text .epkb-deactivate-features .epkb-deactivate-features__heading {
         font-size: 18px; }
   #epkb-deactivate-feedback-modal .epkb-dialog-submit.epkb-loading:before {

@@ -4,16 +4,34 @@
  * Configuration for the front end editor
  */
  
-class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
+class EPKB_Editor_Article_Page_Config extends EPKB_Editor_KB_Base_Config {
 
 	/** SEE DOCUMENTATION IN THE BASE CLASS **/
-
+	protected $page_type = 'article-page';
+	
 	/**
 	 * Article Page zone
+	 *
+	 * @param $kb_config
 	 * @param bool $with_presets
+	 *
 	 * @return array
 	 */
-	public static function page_zone( $with_presets = false ) {
+	public static function page_zone( $kb_config, $with_presets = false ) {
+
+		$theme = EPKB_Utilities::get_wp_option( 'stylesheet', 'unknown' );
+
+		// use theme-specific text
+		$default_width_info_text = '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> ' .
+				             __('If your width is not expanding the way you want, it is because the theme is controlling the total width. ' .
+				                'You have two options: either try switch to the KB Template option or check your theme settings to expand the width.', 'echo-knowledge-base') .
+				                ' <a href="https://www.echoknowledgebase.com/documentation/current-theme-template-vs-kb-template/" target="_blank">' .
+		                           __( 'Learn More', 'echo-knowledge-base' ) . '</a> <span class="epkbfa epkbfa-external-link"></span></div>';
+		if ( $theme == 'astra' ) {
+			$default_width_info_text = '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> ' .
+			         __( 'Astra theme is controlling the total width of the Article page. To increase the width, first configure the Astra setting for the page.', 'echo-knowledge-base' ) .
+			         ' <a href="https://www.echoknowledgebase.com/documentation/astra-theme/" target="_blank">' . __( 'Learn More', 'echo-knowledge-base' ) . '</a> <span class="epkbfa epkbfa-external-link"></span></div>';
+		}
 
 		$settings = [
 
@@ -25,26 +43,19 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'article-container-desktop-width-units-v2' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'type' => 'units',
-				'reload' => 1
+				'target_selector' => '#eckb-article-page-container-v2',
 			],
 			'article-container-desktop-width-v2' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'postfix' => 'article-container-desktop-width-units-v2',
 				'styles' => [
 					'#eckb-article-page-container-v2' => 'width',
-					//'#eckb-article-body' => 'width',
 				]
 			],
 			'article-width_info'                               => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'type' => 'raw_html',
-				'toggler' => [
-					'templates_for_kb' => 'current_theme_templates',
-				],
-				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> ' .
-				             __('We have detected that you are using the Current Theme Template option. If your width is not expanding the way you want, it is because the theme is controlling the total width. ' .
-				                'You have two options: either switch to the KB Template option or check your theme settings to expand the width..', 'echo-knowledge-base') .
-				             ' <a href="https://www.echoknowledgebase.com/documentation/current-theme-template-vs-kb-template/" target="_blank"><span class="epkbfa epkbfa-external-link"></span></a></div>'
+				'content' => $default_width_info_text
 			],
 			
 			'article-container-tablet-width-units-v2' => [
@@ -80,7 +91,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'article-body-desktop-width-units-v2' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'type' => 'units',
-				'reload' => 1
+				'target_selector' => '#eckb-article-page-container-v2 #eckb-article-body'
 			],
 			'article-body-desktop-width-v2' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
@@ -93,52 +104,65 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'article-body-tablet-width-units-v2' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'type' => 'units',
-				'reload' => 1
 			],
 			'article-body-tablet-width-v2' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'postfix' => 'article-body-tablet-width-units-v2',
-				'styles' => [
-					'#eckb-article-page-container-v2 #eckb-article-body' => 'width',
-				]
 			],
 
 			// Advanced Tab
-			'templates_for_kb_article_padding_group' => [
+			'template_article_padding_group' => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'group_type' => self::EDITOR_GROUP_DIMENSIONS,
 				'label' => __( 'Padding', 'echo-knowledge-base' ),
+				'units' => 'px',
 				'subfields' => [
-					'templates_for_kb_article_padding_left' => [
+					'template_article_padding_left' => [
 						'style_name' => 'padding-left',
+						'postfix' => 'px',
+						'target_selector' => '.eckb-kb-template',
 					],
-					'templates_for_kb_article_padding_top' => [
+					'template_article_padding_top' => [
 						'style_name' => 'padding-top',
+						'postfix' => 'px',
+						'target_selector' => '.eckb-kb-template',
 					],
-					'templates_for_kb_article_padding_right' => [
+					'template_article_padding_right' => [
 						'style_name' => 'padding-right',
+						'postfix' => 'px',
+						'target_selector' => '.eckb-kb-template',
 					],
-					'templates_for_kb_article_padding_bottom' => [
+					'template_article_padding_bottom' => [
 						'style_name' => 'padding-bottom',
+						'postfix' => 'px',
+						'target_selector' => '.eckb-kb-template',
 					],
 				]
 			],
-			'templates_for_kb_article_margin_group' => [
+			'template_article_margin_group' => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'group_type' => self::EDITOR_GROUP_DIMENSIONS,
 				'label' => __( 'Margin', 'echo-knowledge-base' ),
+				'units' => 'px',
 				'subfields' => [
-					'templates_for_kb_article_margin_left' => [
+					'template_article_margin_left' => [
 						'style_name' => 'margin-left',
+						'postfix' => 'px',
+						'target_selector' => '.eckb-kb-template',
 					],
-					'templates_for_kb_article_margin_top' => [
+					'template_article_margin_top' => [
 						'style_name' => 'margin-top',
+						'postfix' => 'px',
+						'target_selector' => '.eckb-kb-template',
 					],
-					'templates_for_kb_article_margin_right' => [
+					'template_article_margin_right' => [
 						'style_name' => 'margin-right',
+						'postfix' => 'px',
+						'target_selector' => '.eckb-kb-template',
 					],
-					'templates_for_kb_article_margin_bottom' => [
+					'template_article_margin_bottom' => [
 						'style_name' => 'margin-bottom',
+						'postfix' => 'px',
+						'target_selector' => '.eckb-kb-template',
 					],
 				]
 			],
@@ -148,14 +172,16 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			$preset_options = [];
 			$preset_options['current'] = __( 'Current', 'echo-knowledge-base' );
 			
-			foreach ( EPKB_KB_Wizard_Themes::get_all_presets() as $theme_slug => $theme_data ) {
-				$preset_options[$theme_data['theme_category']][$theme_slug] = $theme_data['kb_name'];
+			foreach ( EPKB_KB_Wizard_Themes::get_all_presets( $kb_config ) as $theme_slug => $theme_data ) {
+				$preset_options[$theme_data['kb_main_page_layout']][$theme_slug] = $theme_data['kb_name'];
 			}
 
 			$settings = array('theme_presets' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'default' => 'current',
-				'label' => __( 'Theme Presets', 'echo-knowledge-base' ),
+				'label' => __( 'Pre-made KB Designs', 'echo-knowledge-base' ),
+				'description' => __( 'These designs are predefined styles and colors to help you quickly set up your initial KB look. Please note that these designs use sample icons and images. ' .
+				                     'The actual frontend page will show either your saved icons or default icons, not the samples.', 'echo-knowledge-base' ),  // same as in KB Main Page
 				'name' => 'theme',
 				'options' => $preset_options,
 				'type' => 'select'
@@ -165,28 +191,36 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 		return [
 			'content_zone' => [
 				'title'     =>  __( 'Page Content', 'echo-knowledge-base' ),
-				'classes'   => '#eckb-article-page-container-v2',
+				'classes'   => '#epkb-main-page-container, #eckb-article-page-container-v2, #elay-grid-layout-page-container',
 				'settings'  => $settings,
 				'parent_zone_tab_title' => __( 'Page Content', 'echo-knowledge-base' )
 			]];
 	}
 
 	/**
-	 * Serach Box zone
+	 * Search Box zone
 	 * @return array
 	 */
 	private static function article_search_box_zone() {
 
 		$settings = [
-			'article_search_layout' => [
-				'editor_tab' => self::EDITOR_TAB_CONTENT,
-				'reload' => '1',
-			],
+
+			// Content Tab
+
+			// Style Tab
 			'article_search_background_color' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.epkb-doc-search-container',
 				'style_name' => 'background-color'
 			],
+
+			// Features Tab
+			'article_search_layout' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1',
+			],
+
+			// Advanced Tab
 			'article_search_box_padding' => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'group_type' => self::EDITOR_GROUP_DIMENSIONS,
@@ -254,6 +288,8 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 	private static function article_search_title_zone() {
 
 		$settings = [
+
+			// Content Tab
 			'article_search_title' => [
 				'editor_tab' => self::EDITOR_TAB_CONTENT,
 				'target_selector' => '.epkb-doc-search-container__title',
@@ -266,12 +302,11 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'reload' => 1,
 				'text_style' => 'inline'
 			],
-			'article_search_title_font_size' => [
+
+			// Style Tab
+			'article_search_title_typography' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.epkb-doc-search-container__title',
-				'style_name' => 'font-size',
-				'style' => 'slider',
-				'postfix' => 'px'
 			],
 			'article_search_title_font_color' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
@@ -295,6 +330,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 	private static function article_search_input_zone() {
 
 		$settings = [
+			// Content Tab
 			'article_search_box_hint' => [
 				'editor_tab' => self::EDITOR_TAB_CONTENT,
 				'target_selector' => '#epkb_search_terms',
@@ -309,31 +345,37 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'min_search_word_size_msg' => [
 				'editor_tab' => self::EDITOR_TAB_CONTENT,
 			],
+
+			// Style Tab
+			'article_search_box_input_width' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '#epkb_search_form',
+				'style_name' => 'width',
+				'postfix' => '%'
+			],
 			'article_search_input_border_width' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.epkb-search-box input[type=text]',
 				'style_name' => 'border-width',
-				'postfix' => 'px'
+				'postfix' => 'px',
+				'style'       => 'small',
 			],
 			'article_search_text_input_border_color' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.epkb-search-box input[type=text]',
-				'style_name' => 'border-color'
+				'style_name' => 'border-color',
+				'description' => __( 'The color appears only if the border width is larger than zero.', 'echo-knowledge-base' ),
 			],
 			'article_search_text_input_background_color' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.epkb-search-box input[type=text]',
 				'style_name' => 'background-color'
 			],
+
+			// Advanced Tab
 			'article_search_box_results_style' => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'target_selector' => '#epkb_article_search_results',
-			],
-			'article_search_box_input_width' => [
-				'editor_tab' => self::EDITOR_TAB_ADVANCED,
-				'target_selector' => '#epkb_search_form',
-				'style_name' => 'width',
-				'postfix' => '%'
 			],
 		];
 
@@ -346,7 +388,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 	}
 
 	/**
-	 * Serach Button zone
+	 * Search Button zone
 	 * @return array
 	 */
 	private static function article_search_button_zone() {
@@ -396,21 +438,10 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'4' => '4',
 			'5' => '5'
 		);
-		$options2 = array(
-			'1' => '1',
-			'2' => '2',
-			'3' => '3',
-			'4' => '4',
-			'5' => '5'
-		);
 
 		$settings = [
 
 			// Content Tab
-			'article-left-sidebar-toggle'                => [
-				'editor_tab' => self::EDITOR_TAB_CONTENT,
-				'reload' => '1'
-			],
 
 			// Style Tab
 			'article-left-sidebar-background-color-v2' => [
@@ -419,32 +450,84 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'style_name' => 'background-color'
 			],
 
-			// Features Tab
-			'article-left-sidebar-match'                => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'reload' => '1'
-			],
 			'article-left-sidebar-starting-position'    => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '#eckb-article-page-container-v2 #eckb-article-left-sidebar',
 				'style_name' => 'margin-top',
 				'postfix' => 'px',
 				'reload' => '1',
 				'style_important' => 0
 			],
+
 			'article-left-sidebar-header-desktopWidth'  => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'type' => 'header',
-				'content' => 'Sidebar Width'
+				'content' => __( 'Sidebar Width', 'echo-knowledge-base' ),
 			],
+
 			'article-left-sidebar-desktop-width-v2'     => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'style' => 'slider',
 				'max' => 40
 			],
+
 			'article-left-sidebar-tablet-width-v2'      => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'reload' => '1'
+			],
+
+			// Features Tab
+			'article-left-sidebar-toggle'                => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'reload' => '1'
+			],
+
+			'article-left-sidebar-header-navigationType'  => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'type' => 'header_desc',
+				'title' => __( 'Navigation Sidebar', 'echo-knowledge-base' ),
+				'desc' => __( 'Number 1 places element first, 2 below it, and so on.', 'echo-knowledge-base' )
+			],
+
+			'nav_sidebar_left' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'            => __( 'Navigation Location', 'echo-knowledge-base' ),
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'style'       => 'small',
+				'options'    => $options,
+				'default'     => '0',
+				'reload' => '1'
+			],
+
+			'article_nav_sidebar_type_left' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'            => __( 'Navigation Type', 'echo-knowledge-base' ),
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'style'       => 'large',
+				'reload' => '1'
+			],
+
+			// sidebar components priority
+			'article-left-sidebar-header-locations'  => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'type' => 'header',
+				'content' => __( 'Widget Sidebar', 'echo-knowledge-base' ),
+			],
+
+			'kb_sidebar_left' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'            => __( 'Widgets', 'echo-knowledge-base' ),
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'style'       => 'small',
+				'options'    => $options,
+				'default'     => '0',
+				'reload' => '1'
+			],
+
+			'article-left-sidebar-match'                => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1',
+				'separator_above'   => 'yes',
 			],
 
 			// Advanced Tab
@@ -476,55 +559,16 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 					],
 				]
 			],
-
-			// sidebar components priority
-			'article-left-sidebar-header-locations'  => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'type' => 'header_desc',
-				'title' => 'Elements Locations',
-				'desc' => 'Number 1 places the element at the top, 2 below it, and so on.'
-			],
-			'categories_left' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'label'            => __( 'Category Layout Location', 'echo-knowledge-base' ),
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'options'    => $options,
-				'default'     => '0',
-				'reload' => '1'
-			],
-			'elay_sidebar_left' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'label'      => __( 'Navigation Menu', 'echo-knowledge-base' ),
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'style'       => 'small',
-				'options'    => ( $kb_config['kb_main_page_layout'] == 'Sidebar' ? $options2 : $options ),
-				'default'     => '1',
-				'reload' => '1'
-			],
-			'toc_left' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'label'            => __( 'TOC', 'echo-knowledge-base' ),
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'style'       => 'small',
-				'options'    => $options,
-				'default'     => '0',
-				'reload' => '1'
-			],
-			'kb_sidebar_left' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'label'            => __( 'Widgets', 'echo-knowledge-base' ),
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'style'       => 'small',
-				'options'    => $options,
-				'default'     => '0',
-				'reload' => '1'
-			],
 		];
 
 		return [
 			'left_sidebar' => [
-				'title'     =>  __( 'Left Sidebar', 'echo-knowledge-base' ),
+				'title'     =>  is_rtl() ? __( 'Right Sidebar', 'echo-knowledge-base' ) : __( 'Left Sidebar', 'echo-knowledge-base' ),
 				'classes'   => '#eckb-article-left-sidebar',
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/article-sidebars/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Sidebars', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 				'settings'  => $settings,
 				'parent_zone_tab_title' => __( 'Sidebar', 'echo-knowledge-base' ),
 				'disabled_settings' => [
@@ -544,12 +588,22 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			// Content Tab
 
 			// Style Tab
+			'article-meta-typography'           => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '.eckb-article-content-created-date-container, .eckb-article-content-last-updated-date-container, .eckb-article-content-author-container, ' .
+				                     '.eckb-ach__article-meta__date-created, .eckb-ach__article-meta__author, .eckb-ach__article-meta__date-updated',
+			],
+			'article-meta-color'           => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '.eckb-article-content-created-date-container, .eckb-article-content-last-updated-date-container, .eckb-article-content-author-container, ' .
+				                     '.eckb-ach__article-meta__date-created, .eckb-ach__article-meta__author, .eckb-ach__article-meta__date-updated',
+				'style_name' => 'color'
+			],
 			'article-content-background-color-v2'           => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '#eckb-article-content',
 				'style_name' => 'background-color'
 			],
-
 			'article_content_enable_rows_1_header'          => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'type' => 'header_desc',
@@ -576,7 +630,6 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 					'#eckb-article-content-header-row-1 .eckb-article-content-header-row-right-group' => 'align-items',
 				]
 			],
-
 			'article_content_enable_rows_2_header'          => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'toggler'           => 'article_content_enable_rows',
@@ -703,21 +756,6 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'title' => 'Other',
 				'desc' => ''
 			],
-			'toc_content'                                   => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'label'            => __( 'TOC Above the Article', 'echo-knowledge-base' ),
-				'default'     => '0',
-				'reload' => '1',
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'options'    => array(
-					'0' => __( 'Not displayed', 'echo-knowledge-base' ),
-					'1' => '1',
-					'2' => '2',
-					'3' => '3',
-					'4' => '4',
-					'5' => '5'
-				),
-			],
 			'article-content-desktop-width-v2'              => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'type' => 'hidden'
@@ -740,7 +778,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'style' => 'slider',
 				'postfix' => 'px'
 			],
-			'templates_for_kb_article_reset_header'         => [
+			'template_article_reset_header'         => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'type' => 'header_desc',
 				'title' => 'Content Styling',
@@ -763,6 +801,9 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'article_content' => [
 				'title'     =>  __( 'Article Content', 'echo-knowledge-base' ),
 				'classes'   => '#eckb-article-content',
+				'disabled_settings' => [
+					'article_content_enable_rows' => 'off'
+				],
 				'settings'  => $settings
 			]];
 	}
@@ -785,10 +826,6 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 		$settings = [
 
 			// Content Tab
-			'article-right-sidebar-toggle'                => [
-				'editor_tab' => self::EDITOR_TAB_CONTENT,
-				'reload' => '1'
-			],
 
 			// Style Tab
 			'article-right-sidebar-background-color-v2' => [
@@ -797,33 +834,83 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'style_name' => 'background-color'
 			],
 
-			// Features Tab
-			'article-right-sidebar-match'               => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'reload' => '1',
-			],
-
 			'article-right-sidebar-starting-position'   => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'reload' => '1',
+				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '#eckb-article-page-container-v2 #eckb-article-right-sidebar',
 				'style_name' => 'margin-top',
 				'postfix' => 'px',
+				'reload' => '1',
 				'style_important' => 0
 			],
-			'article-left-sidebar-header-desktopWidth'  => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
+
+			'article-right-sidebar-header-desktopWidth'  => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'type' => 'header',
-				'content' => 'Sidebar Width'
+				'content' => __( 'Sidebar Width', 'echo-knowledge-base' ),
 			],
+
 			'article-right-sidebar-desktop-width-v2'    => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'style' => 'slider',
 				'max' => 40
 			],
+
 			'article-right-sidebar-tablet-width-v2'     => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'reload' => '1'
+			],
+
+			// Features Tab
+			'article-right-sidebar-toggle'                => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1'
+			],
+			'article-right-sidebar-header-navigationType'  => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'type' => 'header_desc',
+				'title' => __( 'Navigation Sidebar', 'echo-knowledge-base' ),
+				'desc' => __( 'Number 1 places element first, 2 below it, and so on.', 'echo-knowledge-base' )
+			],
+
+			'nav_sidebar_right' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'            => __( 'Navigation Location', 'echo-knowledge-base' ),
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'style'       => 'small',
+				'options'    => $options,
+				'default'     => '0',
+				'reload' => '1'
+			],
+
+			'article_nav_sidebar_type_right' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'      => __( 'Navigation Type', 'echo-knowledge-base' ),
+				'type'       => EPKB_Input_Filter::SELECTION,
+				'style'      => 'medium',
+				'reload' => '1'
+			],
+
+			// sidebar components priority
+			'article-right-sidebar-header-locations'  => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'type' => 'header',
+				'content' => __( 'Widget Sidebar', 'echo-knowledge-base' ),
+			],
+
+			'kb_sidebar_right' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'            => __( 'Widgets', 'echo-knowledge-base' ),
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'style'       => 'small',
+				'options'    => $options,
+				'default'     => '0',
+				'reload' => '1'
+			],
+
+			'article-right-sidebar-match'               => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'reload' => '1',
+				'separator_above'   => 'yes',
 			],
 
 			// Advanced Tab
@@ -855,49 +942,18 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 					],
 				]
 			],
-
-			// sidebar components priority
-			'article-right-sidebar-header-locations'  => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'type' => 'header_desc',
-				'title' => 'Element Locations',
-				'desc' => 'Number 1 places the element at the top, 2 below it, and so on.'
-			],
-			'categories_right' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'label'            => __( 'Category Layout', 'echo-knowledge-base' ),
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'style'       => 'small',
-				'options'    => $options,
-				'default'     => '0',
-				'reload' => '1'
-			],
-			'toc_right' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'label'            => __( 'TOC', 'echo-knowledge-base' ),
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'style'       => 'small',
-				'options'    => $options,
-				'default'     => '1',
-				'reload' => '1'
-			],
-			'kb_sidebar_right' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'label'            => __( 'Widgets', 'echo-knowledge-base' ),
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'style'       => 'small',
-				'options'    => $options,
-				'default'     => '0',
-				'reload' => '1'
-			],
 		];
 
 		return [
 			'right_sidebar' => [
-				'title'     =>  __( 'Right Sidebar', 'echo-knowledge-base' ),
-				'parent_zone_tab_title' => __( 'Sidebar', 'echo-knowledge-base' ), // example
+				'title'     =>  is_rtl() ? __( 'Left Sidebar', 'echo-knowledge-base' ) : __( 'Right Sidebar', 'echo-knowledge-base' ),
 				'classes'   => '#eckb-article-right-sidebar',
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/article-sidebars/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Sidebars', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 				'settings'  => $settings,
+				'parent_zone_tab_title' => __( 'Sidebar', 'echo-knowledge-base' ),
 				'disabled_settings' => [
 					'article-right-sidebar-toggle' => 'off'
 				]
@@ -913,7 +969,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 		$settings = [
 
 			// Content Tab
-			'last_udpated_on_text' => [
+			'last_updated_on_text' => [
 				'editor_tab' => self::EDITOR_TAB_CONTENT,
 				'target_selector' => '.eckb-ach__article-meta__date-updated__text',
 				'target_attr' => 'value',
@@ -960,6 +1016,10 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'meta_data_header' => [
 				'title'     =>  __( 'Top Author and Dates', 'echo-knowledge-base' ),
 				'classes'   => '.eckb-article-content-header__article-meta',
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/created-on-updated-on-author-meta/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Author & Dates', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 				'settings'  => $settings,
 				'disabled_settings' => [
 					'meta-data-header-toggle' => 'off',
@@ -984,6 +1044,20 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			],
 
 			// Style Tab
+			'article_toc_header' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'type' => 'header',
+				'content' => __( 'TOC Title', 'echo-knowledge-base' )
+			],
+			'article_toc_header_typography' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '#eckb-article-body .eckb-article-toc__title',
+			],
+			'article_toc_title_color' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '#eckb-article-body .eckb-article-toc__title',
+				'style_name' => 'color'
+			],
 			'article_toc_background_color' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.eckb-article-toc__inner',
@@ -994,10 +1068,14 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'target_selector' => '.eckb-article-toc__inner',
 				'style_name' => 'border-color'
 			],
-			'article_toc_header' => [
+			'article_toc_headings' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'type' => 'header',
-				'content' => 'Article'
+				'content' => __( 'TOC Headings', 'echo-knowledge-base' )
+			],
+			'article_toc_typography' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '#eckb-article-body .eckb-article-toc__inner, #eckb-article-body .eckb-article-toc__inner a',
 			],
 			'article_toc_text_color' => [
 				'editor_tab'        => self::EDITOR_TAB_STYLE,
@@ -1026,18 +1104,61 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			],
 
 			// Features Tab
-			'article_toc_font_size'     => [
+			'toc_left' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'            => is_rtl() ? __( 'Display on the Right', 'echo-knowledge-base' ) : __( 'Display on the Left', 'echo-knowledge-base' ),
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'style'       => 'small',
+				'description' => __( 'Number 1 places the element at the top, 2 below it, and so on.', 'echo-knowledge-base' ),
+				'options'    => array(
+					'0' => __( 'Not displayed', 'echo-knowledge-base' ),
+					'1' => '1',
+					'2' => '2',
+					'3' => '3',
+					'4' => '4',
+					'5' => '5'
+				),
+				'default'     => '0',
 				'reload' => '1'
 			],
-			'article_toc_border_mode'   => [
+			'toc_content'               => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'            => __( 'Display Above the Article', 'echo-knowledge-base' ),
+				'default'     => '0',
+				'reload' => '1',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'    => array(
+					'0' => __( 'Not displayed', 'echo-knowledge-base' ),
+					'1' => __( 'Displayed', 'echo-knowledge-base' )
+				),
+			],
+			'toc_right' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'label'            => is_rtl() ? __( 'Display on the Left', 'echo-knowledge-base' ) : __( 'Display on the Right', 'echo-knowledge-base' ),
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'style'       => 'small',
+				'description' => __( 'Number 1 places the element at the top, 2 below it, and so on.', 'echo-knowledge-base' ),
+				'options'    => array(
+					'0' => __( 'Not displayed', 'echo-knowledge-base' ),
+					'1' => '1',
+					'2' => '2',
+					'3' => '3',
+					'4' => '4',
+					'5' => '5'
+				),
+				'default'     => '1',
 				'reload' => '1'
+			],
+			'article_toc_scroll_speed'      => [
+				'label'       => __( 'Scroll Time, (ms)', 'echo-knowledge-base' ),
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1',
+				'style'             => 'slider',
 			],
 			'article_toc_lvl_header'    => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'type' => 'header',
-				'content' => 'Header Range'
+				'content' => __( 'Header Range', 'echo-knowledge-base' )
 			],
 			'article_toc_hx_level'      => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
@@ -1047,10 +1168,14 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'reload' => '1'
 			],
-			'article_toc_scroll_offset' => [
+			'article_toc_border_mode'   => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'reload' => '1',
 				'separator_above'   => 'yes',
+			],
+			'article_toc_scroll_offset' => [
+				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'reload' => '1',
 			],
 
 			//Advanced Tab
@@ -1062,30 +1187,13 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'article_toc_width_header'  => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'type' => 'header',
-				'content' => 'Container Width'
-			],
-			'article_toc_width_1'       => [
-				'editor_tab' => self::EDITOR_TAB_ADVANCED,
-			],
-			'article_toc_width_2'       => [
-				'editor_tab' => self::EDITOR_TAB_ADVANCED,
+				'content' => __( 'Container Width', 'echo-knowledge-base' )
 			],
 
 			'article_toc_resolutions_header'  => [
 				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'type' => 'header',
-				'content' => 'Starting Resolutions for Widths'
-			],
-
-			'article_toc_media_1' => [
-				'editor_tab' => self::EDITOR_TAB_ADVANCED,
-			],
-
-			'article_toc_media_2' => [
-				'editor_tab' => self::EDITOR_TAB_ADVANCED,
-			],
-			'article_toc_media_3' => [
-				'editor_tab' => self::EDITOR_TAB_ADVANCED,
+				'content' => __( 'Starting Resolutions for Widths', 'echo-knowledge-base' )
 			],
 		];
 
@@ -1094,6 +1202,15 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'title'     =>  __( 'TOC', 'echo-knowledge-base' ),
 				'zone_tab_title'     =>  __( 'TOC', 'echo-knowledge-base' ), // example
 				'classes'   => '.eckb-article-toc',
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/table-of-content/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'TOC Zone', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
+				'disabled_settings' => [
+					'toc_left' => '0',
+					'toc_content' => '0',
+					'toc_right' => '0'
+				],
 				'settings'  => $settings
 			]];
 	}
@@ -1107,14 +1224,18 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 		$settings = [
 
 			// Style Tab
+			'article_title_typography' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '#eckb-article-content .eckb-article-title',
+			],
 			'link_to_article_content_style'                      => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'type' => 'raw_html',
 				'toggler'           => 'article_content_enable_rows',
 				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content" 
-								class="epkb-editor-navigation__link">Edit the row style under the Article Content here</a></div>'
+								class="epkb-editor-navigation__link">' . __( 'Edit the row style under the Article Content here' , 'echo-knowledge-base' ) . '</a></div>'
 			],
-
+			
 			// Features Tab
 			'article_content_enable_article_title'          => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
@@ -1144,6 +1265,10 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'title'     =>  __( 'Article Title', 'echo-knowledge-base' ),
 				'classes'   => '#eckb-article-content-title-container',
 				'settings'  => $settings,
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/article-title/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Article Title', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 				'disabled_settings' => [
 					'article_content_enable_article_title' => 'off'
 				],
@@ -1167,6 +1292,12 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			],
 
 			// Style Tab
+			'back_navigation_typography' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '
+				#eckb-article-back-navigation-container .eckb-navigation-button a, 
+				#eckb-article-back-navigation-container .eckb-navigation-button',
+			],
 			'back_navigation_text_color'    => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '
@@ -1193,7 +1324,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'type' => 'raw_html',
 				'toggler'           => 'article_content_enable_rows',
 				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content" 
-								class="epkb-editor-navigation__link">Edit the row style under the Article Content here</a></div>'
+								class="epkb-editor-navigation__link">' . __( 'Edit the row style under the Article Content here', 'echo-knowledge-base' ) . '</a></div>'
 			],
 
 			// Features Tab
@@ -1223,15 +1354,6 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'back_navigation_mode'          => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 			],
-			'back_navigation_font_size'     => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'target_selector' => '
-				#eckb-article-back-navigation-container .eckb-navigation-button a, 
-				#eckb-article-back-navigation-container .eckb-navigation-button',
-				'style_name' => 'font-size',
-				'postfix' => 'px'
-			],
-
 			'back_navigation_border'        => [
 				'editor_tab'        => self::EDITOR_TAB_FEATURES,
 				'target_selector' => '#eckb-article-back-navigation-container  .eckb-navigation-button',
@@ -1342,7 +1464,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'type' => 'raw_html',
 				'toggler'           => 'article_content_enable_rows',
 				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content" 
-								class="epkb-editor-navigation__link">Edit the row style under the Article Content here/a></div>'
+								class="epkb-editor-navigation__link">' . __( 'Edit the row style under the Article Content here', 'echo-knowledge-base' ) . '</a></div>'
 			],
 
 			// Features Tab
@@ -1380,7 +1502,11 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'settings'  => $settings,
 				'disabled_settings' => [
 					'article_content_enable_author' => 'off'
-				]
+				],
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/created-on-updated-on-author-meta/#articleTOC_3" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Author Zone', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 			]];
 	}
 
@@ -1406,7 +1532,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'type' => 'raw_html',
 				'toggler'           => 'article_content_enable_rows',
 				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content" 
-								class="epkb-editor-navigation__link">Edit the row style under the Article Content here</a></div>'
+								class="epkb-editor-navigation__link">'. __( 'Edit the row style under the Article Content here' , 'echo-knowledge-base' ) .'</a></div>'
 			],
 
 			// Features Tab
@@ -1443,7 +1569,11 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'settings'  => $settings,
 				'disabled_settings' => [
 					'article_content_enable_created_date' => 'off'
-				]
+				],
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/created-on-updated-on-author-meta/#articleTOC_1" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Created Date Zone', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 			]];
 	}
 
@@ -1456,7 +1586,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 		$settings = [
 
 			//Content Tab
-			'last_udpated_on_text' => [
+			'last_updated_on_text' => [
 				'editor_tab' => self::EDITOR_TAB_CONTENT,
 				'target_selector' => '.eckb-article-content-last-updated-date-container .eckb-meta-data-feature-text',
 				'target_attr' => 'value',
@@ -1469,7 +1599,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'type' => 'raw_html',
 				'toggler'           => 'article_content_enable_rows',
 				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content" 
-								class="epkb-editor-navigation__link">Edit the row style under the Article Content here</a></div>'
+								class="epkb-editor-navigation__link">' . __( 'Edit the row style under the Article Content here', 'echo-knowledge-base' ). '</a></div>'
 			],
 
 			// Features Tab
@@ -1507,7 +1637,11 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'settings'  => $settings,
 				'disabled_settings' => [
 					'article_content_enable_last_updated_date' => 'off'
-				]
+				],
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/created-on-updated-on-author-meta/#articleTOC_2" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Last Updated Date', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 			]];
 	}
 
@@ -1532,19 +1666,23 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'target_attr' => 'value',
 				'text' => '1',
 			],
+
+			// Style Tab
+			'breadcrumb_typography' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '.eckb-breadcrumb, .eckb-breadcrumb li',
+			],
 			'breadcrumb_text_color' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.eckb-breadcrumb-link span:not(.eckb-breadcrumb-link-icon)',
 				'style_name' => 'color'
 			],
-
-			// Style Tab
 			'link_to_article_content_style'                      => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'type' => 'raw_html',
 				'toggler'           => 'article_content_enable_rows',
 				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content"
-                           class="epkb-editor-navigation__link">Edit the row style under the Article Content here</a></div>'
+                           class="epkb-editor-navigation__link">' . __( 'Edit the row style under the Article Content here', 'echo-knowledge-base' ) .'</a></div>'
 			],
 
 			// Features Tab
@@ -1573,10 +1711,6 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			],
 			'breadcrumb_icon_separator' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'reload' => '1'
-			],
-			'breadcrumb_font_size' => [
-				'editor_tab' => self::EDITOR_TAB_ADVANCED,
 				'reload' => '1'
 			],
 			'breadcrumb_padding_group' => [
@@ -1671,6 +1805,10 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'breadcrumb' => [
 				'title'     =>  __( 'Breadcrumb', 'echo-knowledge-base' ),
 				'classes'   => '.eckb-breadcrumb',
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/article-breadcrumb/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Breadcrumbs', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 				'settings'  => $settings,
 				'disabled_settings' => [
 					'breadcrumb_enable' => 'off'
@@ -1732,10 +1870,11 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'postfix' => 'px',
 				'target_selector' => '.eckb-article-content-toolbar-button-container .eckb-toolbar-button-icon',
 			],
-			'article_content_toolbar_border_color'                       => [
+			'article_content_toolbar_border_width'                       => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.eckb-article-content-toolbar-button-container',
-				'style_name' => 'border-color',
+				'style_name' => 'border-width',
+				'postfix' => 'px',
 			],
 			'article_content_toolbar_border_radius'                      => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
@@ -1743,18 +1882,18 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'style_name' => 'border-radius',
 				'postfix' => 'px',
 			],
-			'article_content_toolbar_border_width'                       => [
+			'article_content_toolbar_border_color'                       => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => '.eckb-article-content-toolbar-button-container',
-				'style_name' => 'border-width',
-				'postfix' => 'px',
+				'style_name' => 'border-color',
+				'description' => __( 'The color appears only if the border width is larger than zero', 'echo-knowledge-base' ),
 			],
 			'link_to_article_content_style'                              => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'type' => 'raw_html',
 				'toggler'           => 'article_content_enable_rows',
 				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content" 
-							class="epkb-editor-navigation__link">Edit the row style under the Article Content here</a></div>'
+							class="epkb-editor-navigation__link">' . __( 'Edit the row style under the Article Content here', 'echo-knowledge-base' ) . '</a></div>'
 			],
 
 			// Features Tab
@@ -1845,6 +1984,10 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'article_content_toolbar' => [
 				'title'     =>  __( 'Article Content Toolbar', 'echo-knowledge-base' ),
 				'classes'   => '#eckb-article-content-toolbar-container',
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/article-title-author-breadcrumbs-dates/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Placement of Top Features', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 				'settings'  => $settings,
 				'parent_zone_tab_title' => __( 'Article Content Toolbar', 'echo-knowledge-base' ),
 				'disabled_settings' => [
@@ -1877,7 +2020,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'type' => 'raw_html',
 				'toggler'           => 'article_content_enable_rows',
-				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content_toolbar" class="epkb-editor-navigation__link">Edit the toolbar style here</a></div>'
+				'content' => '<div class="epkb-editor__info"><span class="epkbfa epkbfa-info-circle"></span> <a href="#" data-zone="article_content_toolbar" class="epkb-editor-navigation__link">' . __( 'Edit the toolbar style here', 'echo-knowledge-base' ) . '</a></div>'
 			],
 
 			// Features tab
@@ -1920,6 +2063,10 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'print_button' => [
 				'title'     =>  __( 'Print Button', 'echo-knowledge-base' ),
 				'classes'   => '.eckb-print-button-container, .eckb-print-button-meta-container',
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/print-button/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Print Button', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 				'settings'  => $settings,
 				'disabled_settings' => [
 					'print_button_enable' => 'off'
@@ -1944,7 +2091,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'reload' => '1'
 			],
-			'last_udpated_on_footer_toggle' => [
+			'last_updated_on_footer_toggle' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
 				'reload' => '1'
 			],
@@ -1958,7 +2105,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			],
 
 			// text
-			'last_udpated_on_text' => [
+			'last_updated_on_text' => [
 				'editor_tab' => self::EDITOR_TAB_CONTENT,
 				'target_selector' => '.eckb-ach__article-meta__date-updated__text',
 				'target_attr' => 'value',
@@ -2041,6 +2188,10 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 			'prev_next' => [
 				'title'     =>  __( 'Prev/Next Navigation', 'echo-knowledge-base' ),
 				'classes'   => '.epkb-article-navigation-container',
+				'docs_html' => sprintf( '%s %s <a href="https://www.echoknowledgebase.com/documentation/previous-next-page-navigation/" target="_blank">%s</a>',
+					esc_html__( 'Read documentation about', 'echo-knowledge-base' ),
+					esc_html__( 'Previous / Next Page Navigation Zone', 'echo-knowledge-base' ),
+					esc_html__( 'here.', 'echo-knowledge-base' ) ),
 				'settings'  => $settings,
 				'disabled_settings' => [
 					'prev_next_navigation_enable' => 'off'
@@ -2054,7 +2205,29 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 	 */
 	private static function categories_layout_list_zone() {
 
+		$options = array(
+			'0' => __( 'Not displayed', 'echo-knowledge-base' ),
+			'1' => '1',
+			'2' => '2',
+			'3' => '3',
+			'4' => '4',
+			'5' => '5'
+		);
+
 		$settings = [
+
+			// Content Tab
+			'category_focused_menu_heading_text' => [
+				'editor_tab' => self::EDITOR_TAB_CONTENT,
+				'target_selector' => '.eckb-acll__title',
+				'text' => 1
+			],
+
+			// Style Tab
+			'categories_box_typography' => [
+				'editor_tab' => self::EDITOR_TAB_STYLE,
+				'target_selector' => '.eckb-article-cat-layout-list, .eckb-article-cat-layout-list a, body .eckb-acll__cat-item__name',
+			],
 			'category_box_title_text_color' => [
 				'editor_tab' => self::EDITOR_TAB_STYLE,
 				'target_selector' => ' .eckb-acll__title',
@@ -2085,18 +2258,12 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				'target_selector' => '.eckb-acll__cat-item__count',
 				'style_name' => 'border-color'
 			],
+
+			// Features Tab
 			'categories_layout_list_mode' => [
 				'editor_tab' => self::EDITOR_TAB_FEATURES,
+				'description' => __( 'These are the categories that will show in the navigation for Article Pages and Category Archive Pages', 'echo-knowledge-base' ),
 				'reload' => '1'
-			],
-			'categories_box_font_size' => [
-				'editor_tab' => self::EDITOR_TAB_FEATURES,
-				'styles' => [
-					'.eckb-article-cat-layout-list' => 'font-size',
-					'.eckb-article-cat-layout-list a' => 'font-size',
-				],
-				'style' => 'slider',
-				'postfix' => 'px'
 			],
 		];
 
@@ -2110,55 +2277,57 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 
 	/**
 	 * Retrieve Editor configuration
-	 * @param $kb_config
-	 * @return array
 	 */
-	public function get_config( $kb_config ) {
+	public function load_setting_zones() {
 
 		// Result config
-		$editor_config = [];
+		$this->setting_zones = [];
 
 		// Advanced Search has its own search box settings so exclude the KB core ones
 		if ( ! $this->is_asea ) {
-			$editor_config += self::article_search_box_zone();
-			$editor_config += self::article_search_title_zone();
-			$editor_config += self::article_search_input_zone();
-			$editor_config += self::article_search_button_zone();
+			$this->setting_zones += self::article_search_box_zone();
+			$this->setting_zones += self::article_search_title_zone();
+			$this->setting_zones += self::article_search_input_zone();
+			$this->setting_zones += self::article_search_button_zone();
 		}
 		
-		$editor_config += self::page_zone();
+		$this->setting_zones += self::page_zone( $this->config );
 
 		// Left Sidebar
-		$editor_config += self::left_sidebar_zone( $kb_config );
-		$editor_config += self::categories_layout_list_zone();
+		$this->setting_zones += self::left_sidebar_zone( $this->config );
+		$this->setting_zones += self::categories_layout_list_zone();
 
-		// Article Content
-		$editor_config += self::article_content_zone();
-
-		// Right Sidebar
-		$editor_config += self::right_sidebar_zone();
-		$editor_config += self::toc_zone();
-
-		// Article Content Header
-		if ( $kb_config['article_content_enable_rows'] == 'off' ) {
-			$editor_config += self::meta_data_header_zone();
-		} else {
-			$editor_config += self::article_title_zone();
-			$editor_config += self::author_zone();
-			$editor_config += self::created_date_zone();
-			$editor_config += self::last_updated_date_zone();
-			$editor_config += self::article_content_toolbar_zone();
+		if ( ! $this->is_elay ) {
+			$this->setting_zones += EPKB_Editor_Sidebar_Config::get_config();
 		}
 
-		$editor_config += self::print_button_zone();
-		$editor_config += self::back_navigation_zone();
-		$editor_config += self::breadcrumb_zone();
+		// Article Content
+		$this->setting_zones += self::article_content_zone();
+
+		// Right Sidebar
+		$this->setting_zones += self::right_sidebar_zone();
+		$this->setting_zones += self::toc_zone();
+
+		// Article Content Header
+		if ( $this->config['article_content_enable_rows'] == 'off' ) {
+			$this->setting_zones += self::meta_data_header_zone();
+		} else {
+			$this->setting_zones += self::article_title_zone();
+			$this->setting_zones += self::author_zone();
+			$this->setting_zones += self::created_date_zone();
+			$this->setting_zones += self::last_updated_date_zone();
+			$this->setting_zones += self::article_content_toolbar_zone();
+		}
+
+		$this->setting_zones += self::print_button_zone();
+		$this->setting_zones += self::back_navigation_zone();
+		$this->setting_zones += self::breadcrumb_zone();
 
 		// Article Footer
-		$editor_config += self::meta_data_footer_zone();
-		$editor_config += self::prev_next_zone();
+		$this->setting_zones += self::meta_data_footer_zone();
+		$this->setting_zones += self::prev_next_zone();
 
-		$unset_settings = [];
+		$this->unset_settings = [];
 
 		// new users can't switch to old meta data
 		$plugin_first_version = EPKB_Utilities::get_wp_option( 'epkb_version_first', '7.0.0' );
@@ -2171,24 +2340,7 @@ class EPKB_Editor_Article_Page_Config extends EPKB_Editor_Base_Config {
 				}</style>';
 		}
 
-		// only Categories Layout has categories sidebar
-		if ( ! $this->is_categories_main_page ) {
-			$unset_settings = array_merge($unset_settings, [
-				'categories_left',
-				'categories_right',
-			]);
-		}
-
-		if ( ! EPKB_Utilities::is_elegant_layouts_enabled() ) {
-			$unset_settings = array_merge($unset_settings, [
-				'elay_sidebar_left',
-			]);
-		}
-
 		// Article Content Toolbar
-		// TODO future with more buttons - if all buttons off then disable toolbar
-		$kb_config['article_content_toolbar_enable'] = $kb_config['print_button_enable'];
-
-		return self::get_editor_config( $kb_config, $editor_config, $unset_settings, 'article-page' );
+		$this->config['article_content_toolbar_enable'] = $this->config['print_button_enable'];
 	}
 }

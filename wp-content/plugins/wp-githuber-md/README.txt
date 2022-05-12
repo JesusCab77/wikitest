@@ -2,15 +2,15 @@
 Contributors: terrylin
 Tags: markdown, markdown editor, katex, mermaid, flow chart, github
 Requires at least: 4.0
-Tested up to: 5.5.3
-Stable tag: 1.15.2
+Tested up to: 5.8.1
+Stable tag: 1.16.1
 Requires PHP: 5.3.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl.html
 
 == Description ==
 
-An all-in-on WordPress Markdown Plugin provides a variety of features such as Markdown editor, live-preivew, image-paste, HTML-to-Markdown helper, and more..
+An all-in-on WordPress Markdown Plugin provides a variety of features such as Markdown editor, live-preview, image-paste, HTML-to-Markdown helper, and more..
 
 Read detailed document, please visit [https://github.com/terrylinooo/githuber-md](https://github.com/terrylinooo/githuber-md).
 
@@ -22,7 +22,7 @@ The Video shows you the following steps:
 
 1. Convert HTML to Markdown by using `HTML to Markdown` tool.
 2. Cut up a selection area of an image and copy it from Photoshop, then paste it to Markdown Editor.
-3. Click "Update" button to save Markdown to `post_content_filtered` and save HTML to `post_content` (it is what you will see in result). 
+3. Click "Update" button to save Markdown to `post_content_filtered` and save HTML to `post_content` (it is what you will see in result).
 4. View the result.
 
 == How it works ==
@@ -56,9 +56,10 @@ If you're planning to use this plugin in an existing blog, be sure to:
 * Enable / disable Markdown for single post.
 * Support Gutenberg editor.
 * Support custom post types.
-* HTML-to-Markdown helper
+* Support Markdown extra syntax.
+* HTML-to-Markdown tool.
 * Image copy & paste (support uploading to Imgur.com and sm.ms)
-* Syntax highlight.
+* Highlight code syntax. (prism.js or hightlight.js)
 * Flow chart.
 * KaTex.
 * Sequence diagram.
@@ -66,8 +67,9 @@ If you're planning to use this plugin in an existing blog, be sure to:
 * MathJax.
 * Emoji.
 * Github flavored Markdown task list.
-* Markdown extra...
+* Fetch remote images.
 * Keyword suggestion tool.
+* and more...
 
 == Frequently Asked Questions ==
 
@@ -76,13 +78,13 @@ You'll find answers to many of your questions on [Report issues](https://github.
 == Translations ==
 
 Traditional Chinese (zh_TW) by [Alex Lion](https://www.alexclassroom.com/).
-Simplified Chinese (zh_CN) by Terry Lin.
+Simplified Chinese (zh_CN) by [Terry Lin](https://terryl.in/zh/).
 
 == Screenshots ==
 
 1. HTML-to-Markdown tool.
 2. Image copy and paste.
-3. Update post and see result. 
+3. Update post and see result.
 4. Syntax Highlighing
 5. Mermaid.
 6. KaTex.
@@ -294,7 +296,7 @@ GNU General Public License for more details.
 
 = 1.11.5
 
-- Jetpack compatibility #80, #81, thanks @jeherve 
+- Jetpack compatibility #80, #81, thanks @jeherve
 - Fix issue #92
 - Remove donation information.
 
@@ -365,6 +367,23 @@ GNU General Public License for more details.
 = 1.15.2
 
 - Fix errors in WP CLI.
+
+= 1.16.0
+
+- Fix issue #209 - HTML unescaped in code blocks.
+- Fix issue #210 - Inline MathJax is not displayed.
+- Upgrade Mermaid JavaScript library from 8.0.0 to 8.9.0
+- Upgrade KaTax JavaScript library from 0.11.1 to 0.12.0
+- Upgrade Flowchart.js JavaScript library from 1.11.3 to 1.14.1
+
+= 1.16.1
+
+- Fix issue #253 - KaTax... by xxNull-lsk
+- Fix issue #252 - Bulk action... by hmaragy
+- Improve #252 Update composer.json to allow bedrock installs by jawngee
+- Fix issue #230 - jsdeliver url by Bronya0
+- Test up to WordPress 5.8.1
+- Test up to PHP 8.0
 
 == Upgrade Notice ==
 

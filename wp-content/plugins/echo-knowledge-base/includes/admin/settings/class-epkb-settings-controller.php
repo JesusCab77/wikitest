@@ -9,8 +9,12 @@ class EPKB_Settings_Controller {
 
 	public function __construct() {
 		add_action( 'admin_init', array( $this, 'download_debug_info' ) );
+
 		add_action( 'wp_ajax_epkb_toggle_debug', array( $this, 'toggle_debug' ) );
-		add_action( 'wp_ajax_nopriv_epkb_toggle_debug', array( $this, 'user_not_logged_in' ) );
+		add_action( 'wp_ajax_nopriv_epkb_toggle_debug', array( 'EPKB_Utilities', 'user_not_logged_in' ) );
+
+		add_action( 'wp_ajax_epkb_enable_advanced_search_debug', array( $this, 'enable_advanced_search_debug' ) );
+		add_action( 'wp_ajax_nopriv_epkb_enable_advanced_search_debug', array( 'EPKB_Utilities', 'user_not_logged_in' ) );
 	}
 
 	/**
@@ -18,15 +22,8 @@ class EPKB_Settings_Controller {
 	 */
 	public function toggle_debug() {
 
-		// verify that request is authentic
-		if ( ! isset( $_REQUEST['_wpnonce_epkb_toggle_debug'] ) || !wp_verify_nonce( $_REQUEST['_wpnonce_epkb_toggle_debug'], '_wpnonce_epkb_toggle_debug' ) ) {
-			EPKB_Utilities::ajax_show_error_die( __( 'Refresh your page', 'echo-knowledge-base' ) . ' (152)' );
-		}
-
-		// ensure user has correct permissions
-		if ( ! current_user_can( 'manage_options' ) ) {
-			EPKB_Utilities::ajax_show_error_die( __( 'You do not have permission.', 'echo-knowledge-base' ) . ' (153)' );
-		}
+		// wp_die if nonce invalid or user does not have correct permission
+		EPKB_Utilities::ajax_verify_nonce_and_admin_permission_or_error_die();
 
 		$is_debug_on = EPKB_Utilities::get_wp_option( EPKB_Settings_Controller::EPKB_DEBUG, false );
 
@@ -34,8 +31,26 @@ class EPKB_Settings_Controller {
 
 		EPKB_Utilities::save_wp_option( EPKB_Settings_Controller::EPKB_DEBUG, $is_debug_on, true );
 
+		if ( ! $is_debug_on ) {
+			delete_transient( '_epkb_advanced_search_debug_activated' );
+		}
+
 		// we are done here
 		EPKB_Utilities::ajax_show_info_die( __( 'Debug is now ' . ( $is_debug_on ? 'on' : 'off' ), 'echo-knowledge-base' ) );
+	}
+
+	/**
+	 * Triggered when user clicks to toggle Advanced Search debug.
+	 */
+	public function enable_advanced_search_debug() {
+
+		// wp_die if nonce invalid or user does not have correct permission
+		EPKB_Utilities::ajax_verify_nonce_and_admin_permission_or_error_die();
+
+		set_transient( '_epkb_advanced_search_debug_activated', true, HOUR_IN_SECONDS );
+
+		// we are done here
+		EPKB_Utilities::ajax_show_info_die( __( 'Debug for Advanced Search temporarily activated.', 'echo-knowledge-base' ) );
 	}
 
 	/**
@@ -47,15 +62,8 @@ class EPKB_Settings_Controller {
 			return;
 		}
 
-		// verify that the request is authentic
-		if ( ! isset( $_REQUEST['_wpnonce_epkb_download_debug_info'] ) || ! wp_verify_nonce( $_REQUEST['_wpnonce_epkb_download_debug_info'], '_wpnonce_epkb_download_debug_info' ) ) {
-			EPKB_Utilities::ajax_show_error_die(__( 'Debug not loaded. First refresh your page', 'echo-knowledge-base' ) . ' (154)');
-		}
-
-		// ensure user has correct permissions - only admin can download info
-		if ( ! current_user_can( 'manage_options' ) ) {
-			EPKB_Utilities::ajax_show_error_die(__( 'You do not have permission to access this page', 'echo-knowledge-base' ) . ' (155)');
-		}
+		// wp_die if nonce invalid or user does not have correct permission
+		EPKB_Utilities::ajax_verify_nonce_and_admin_permission_or_error_die( '_wpnonce_epkb_download_debug_info' );
 
 		EPKB_Utilities::save_wp_option( EPKB_Settings_Controller::EPKB_DEBUG, false, true);
 
@@ -68,9 +76,5 @@ class EPKB_Settings_Controller {
 		echo wp_strip_all_tags( $output );
 
 		die();
-	}
-
-	public function user_not_logged_in() {
-		EPKB_Utilities::ajax_show_error_die( '<p>' . __( 'You are not logged in. Refresh your page and log in.', 'echo-knowledge-base' ) . '</p>', __( 'Cannot save your changes', 'echo-knowledge-base' ) . ' (156)' );
 	}
 }

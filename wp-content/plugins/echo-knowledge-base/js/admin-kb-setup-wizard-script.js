@@ -7,6 +7,8 @@ jQuery(document).ready(function($) {
 		return;
 	}
 
+	let admin_report_error_form = $( '.epkb-admin__error-form__container' );
+
 	/**
 	 * Handle Setup Wizard Apply Button
 	 */
@@ -18,11 +20,12 @@ jQuery(document).ready(function($) {
 			action: 'epkb_apply_setup_wizard_changes',
 			_wpnonce_apply_wizard_changes: $('#_wpnonce_apply_wizard_changes').val(),
 			epkb_wizard_kb_id: $('#epkb_wizard_kb_id').val(),
+			sidebar: '0'
 		};
 
 		let theme_name = $('input[name="epkp-theme"]:checked').val();
 		if ( typeof theme_name == 'undefined' ) {
-			theme_name = 'theme_standard'
+			theme_name = 'current'
 		}
 
 		if ( $('.epkb-menu-checkbox input[type=checkbox]:checked').length ) {
@@ -31,37 +34,27 @@ jQuery(document).ready(function($) {
 			});
 		}
 
+		if ( $('.epkb-setup-wizard-sidebar input[type=radio]:checked').length ) {
+			postData.sidebar = $('.epkb-setup-wizard-sidebar input[type=radio]:checked').eq(0).val();
+		}
+
 		postData.theme_name = theme_name;
 		postData.kb_name = $('.epkb-wizard-name input').val();
 		postData.kb_slug = $('.epkb-wizard-slug input').val();
 		postData.menu_ids = menu_ids;
 
-		epkb_send_ajax ( postData, function( response ) {
-			// after ajax function
-			if ( ! response.error && typeof response.message !== 'undefined' ) {
-				$('#epkb-wsb-step-2-panel').removeClass('epkb-wc-step-panel--active');
-				$('#epkb-wsb-step-3-panel').addClass('epkb-wc-step-panel--active').show();
-				$('#epkb-wsb-step-2').removeClass('epkb-wsb-step epkb-wsb-step--active').addClass('epkb-wsb-step epkb-wsb-step--completed');
-				$('#epkb-wsb-step-3').addClass('epkb-wsb-step epkb-wsb-step--active');
-				$('.epkb_main_page_link').attr('href',response.kb_main_page_link);
-				$( '.epkb-wizard-top-bar' ).hide();
-				$( '.epkb-wizard-footer' ).hide();
-			}
 
-			$('.epkb-wizard-button-container').hide();
-
-		}, false, epkb_vars.save_config);
-
+		epkb_send_ajax ( postData );
 	});
 
 	/**
-	 * Button JS for next Step.
+	 * Button JS for next and prev Step.
 	 */
-	wizard.find( '.epkb-setup-wizard-button-next' ).on( 'click' , function(e){
+	wizard.find( '.epkb-setup-wizard-button-next, .epkb-setup-wizard-button-prev' ).on( 'click' , function(e){
 		e.preventDefault();
 
 		// Get the Step values
-		let nextStep = Number( wizard.find( '#epkb-setup-wizard-button-next' ).val() );
+		let nextStep = Number( $(this).val() );
 
 		// Remove all Active Step classes in Step Status Bar.
 		$( '.epkb-wsb-step' ).removeClass( 'epkb-wsb-step--active' );
@@ -78,36 +71,13 @@ jQuery(document).ready(function($) {
 		$( '.epkb-wsb-step-'+nextStep+'-panel-button' ).addClass( 'epkb-wc-step-panel-button--active' );
 		$( '.epkb-wizard-top-bar' ).show();
 
+		// Check if we have different headers to the steps
+		if ( $('.epkb-setup-wizard-theme-header__info__title[data-title-id]').length ) {
+			$('.epkb-setup-wizard-theme-header__info__title[data-title-id]').addClass('hidden');
+			$('.epkb-setup-wizard-theme-header__info__title[data-title-id='+nextStep+']').removeClass('hidden');
+		}
 
 		setup_wizard_status_bar_highlight_completed_steps( nextStep );
-		wizard_scroll_to_top();
-	});
-
-	/**
-	 * Button JS for prev Step.
-	 */
-	wizard.find( '.epkb-setup-wizard-button-prev' ).on( 'click' , function(e){
-		e.preventDefault();
-
-		// Get the Step values
-		let prevStep = Number( wizard.find( '#epkb-setup-wizard-button-prev' ).val() );
-
-		// Remove all Active Step classes in Step Status Bar.
-		$( '.epkb-wsb-step' ).removeClass( 'epkb-wsb-step--active' );
-
-		// Add Active class to next Step in Status Bar.
-		$( '#epkb-wsb-step-'+prevStep ).addClass( 'epkb-wsb-step--active' );
-
-		// Remove all active class from panels.
-		$( '.epkb-wc-step-panel' ).removeClass( 'epkb-wc-step-panel--active' );
-		$( '.epkb-wc-step-panel-button' ).removeClass( 'epkb-wc-step-panel-button--active' );
-
-		// Add Active class to next panel in the steps.
-		$( '#epkb-wsb-step-'+prevStep+'-panel' ).addClass( 'epkb-wc-step-panel--active' );
-		$( '.epkb-wsb-step-'+prevStep+'-panel-button' ).addClass( 'epkb-wc-step-panel-button--active' );
-		$( '.epkb-wizard-top-bar' ).hide();
-
-		setup_wizard_status_bar_highlight_completed_steps( prevStep );
 		wizard_scroll_to_top();
 	});
 
@@ -140,6 +110,25 @@ jQuery(document).ready(function($) {
 	function wizard_scroll_to_top(){
 		$("html, body").animate({ scrollTop: 0 }, 0);
 	}
+
+	/**
+	 * Highlight selected theme
+	 */
+	$( '.epkb-setup-option__option__label' ).on( 'click', function () {
+		$( '.epkb-setup-option-container' ).removeClass( 'epkb-setup-option-container--active' );
+		$( this ).closest( '.epkb-setup-option-container' ).addClass( 'epkb-setup-option-container--active' );
+	});
+
+	// For wizard step 3: click on image will turn on the radio input
+	$('#epkb-wsb-step-3-panel .epkb-setup-option__featured-img-container').on( 'click', function(){
+		$(this).closest('.epkb-setup-option__selection').find('label').trigger('click');
+	});
+	/**
+	 * Live change of KB Main Page slug
+	 */
+	$( '.epkb-wizard-slug input[type="text"]' ).on( 'input', function () {
+		$( '#epkb-wizard-slug-target' ).text( $( this ).val() );
+	});
 
 
 	/*************************************************************************************************
@@ -223,9 +212,15 @@ jQuery(document).ready(function($) {
 			}
 		}).done(function (response)        {
 			theResponse = ( response ? response : '' );
+
+			// Error in response
 			if ( theResponse.error || typeof theResponse.message === 'undefined' ) {
 				//noinspection JSUnresolvedVariable,JSUnusedAssignment
 				errorMsg = theResponse.message ? theResponse.message : epkb_admin_notification('', epkb_vars.reload_try_again, 'error');
+
+				// Success in response - redirect to 'Need Help?' page
+			} else if ( theResponse.redirect_to_url && theResponse.redirect_to_url.length > 0 ) {
+				window.location = theResponse.redirect_to_url;
 			}
 
 		}).fail( function ( response, textStatus, error )        {
@@ -239,18 +234,12 @@ jQuery(document).ready(function($) {
 			}
 
 			if ( errorMsg ) {
-				$('.eckb-bottom-notice-message').replaceWith(errorMsg);
-				$("html, body").animate({scrollTop: 0}, "slow");
+				$( admin_report_error_form ).find( '.epkb-admin__error-form__title' ).text( epkb_vars.setup_wizard_error_title );
+				$( admin_report_error_form ).find( '.epkb-admin__error-form__desc' ).text( epkb_vars.setup_wizard_error_desc );
+				$( admin_report_error_form ).find( '#epkb-admin__error-form__message' ).val( $( errorMsg ).text().trim() );
+				$( admin_report_error_form ).css( 'display', 'block', 'important' );
+
 			} else {
-				if ( ! silent_mode ) {
-					if ( ! theResponse.error && typeof theResponse.message !== 'undefined' ) {
-
-						$('.eckb-bottom-notice-message').replaceWith(
-							epkb_admin_notification('', theResponse.message, 'success')
-						);
-					}
-				}
-
 				if ( typeof refreshCallback === "function" ) {
 					theResponse = (typeof theResponse === 'undefined') ? '' : theResponse;
 					refreshCallback(theResponse);
@@ -266,7 +255,7 @@ jQuery(document).ready(function($) {
 	// PREVIEW POPUP
 	(function(){
 		//Open Popup larger Image
-		wizard.find( '.epkb-setup-option__featured-img-container' ).on( 'click', function( e ){
+		wizard.find( '.eckb-wizard-step-2 .epkb-setup-option__featured-img-container' ).on( 'click', function( e ){
 
 			e.preventDefault();
 			e.stopPropagation();
@@ -290,10 +279,79 @@ jQuery(document).ready(function($) {
 				'</div>' + '');
 
 			//Close Plugin Preview Popup
-			$('html, body').bind('click', function(){
+			$('html, body').on('click', function(){
 				$( '#epkb_image_zoom' ).remove();
-				$('html, body').unbind('click');
+				$('html, body').off('click');
 			});
 		});
 	})();
+
+	// Close Button Message if Close Icon clicked
+	$(document).on( 'click', '.epkb-close-notice', function(){
+		$( this ).parent().addClass( 'fadeOutDown' );
+	});
+
+
+	/**
+	 * Report the Report Error Form
+	 */
+	// Close Error Submit Form if Close Icon or Close Button clicked
+	$( admin_report_error_form ).on( 'click', '.epkb-close-notice, .epkb-admin__error-form__btn-cancel', function(){
+		window.location = epkb_vars.need_help_url;
+	});
+
+	// Submit the Report Error Form
+	$( admin_report_error_form ).find( '#epkb-admin__error-form' ).on( 'submit', function ( event ) {
+		event.preventDefault();
+
+		let $form = $(this);
+		let app = event.data;
+
+		$.ajax({
+			type: 'POST',
+			dataType: 'json',
+			url: ajaxurl,
+			data: $form.serialize(),
+			beforeSend: function (xhr) {
+				// block the form and add loader
+				$( admin_report_error_form ).find( 'input, textarea' ).prop( 'disabled', 'disabled' );
+				$( admin_report_error_form ).find( '.epkb-admin__error-form__response' ).html( epkb_vars.sending_error_report );
+			}
+		}).done(function (response) {
+			// success message
+			if ( typeof response.success !== 'undefined' && response.success == false ) {
+				$( admin_report_error_form ).find( '.epkb-admin__error-form__response' ).html( response.data );
+			} else if ( typeof response.success !== 'undefined' && response.success == true ) {
+				$( admin_report_error_form ).find( '.epkb-admin__error-form__response' ).html( response.data );
+			} else {
+				// something went wrong
+				$( admin_report_error_form ).find( '.epkb-admin__error-form__response' ).html( epkb_vars.send_report_error );
+			}
+		}).fail(function (response, textStatus, error) {
+			// something went wrong
+			$( admin_report_error_form ).find( '.epkb-admin__error-form__response' ).html( epkb_vars.send_report_error );
+		}).always(function () {
+			// remove form loader
+			$( admin_report_error_form ).find( 'input, textarea' ).prop( 'disabled', false );
+			setTimeout( function() {
+				window.location = epkb_vars.need_help_url;
+			}, 1000 );
+		});
+	});
+
+	//Dismiss ongoing notice
+	$(document).on( 'click', '.epkb-notice-dismiss', function( event ) {
+		event.preventDefault();
+		$('.notice-'+$(this).data('notice-id')).slideUp();
+		var postData = {
+			action: 'epkb_dismiss_ongoing_notice',
+			epkb_dismiss_id: $(this).data('notice-id')
+		};
+		$.ajax({
+			type: 'POST',
+			dataType: 'json',
+			url: ajaxurl,
+			data: postData
+		});
+	} );
 });

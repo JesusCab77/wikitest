@@ -22,73 +22,52 @@ class EPKB_Admin_Notices {
 	 */
 	public function show_admin_notices() {
 
+		// show notices on KB pages only or on Page edit screen
 		$is_kb_request = EPKB_KB_Handler::is_kb_request();
+		if ( ! $is_kb_request ) {
+			return;
+		}
+
+		// only editors and admins should see the notice messages
+		if ( ! EPKB_Admin_UI_Access::is_user_admin_editor() ) {
+			return;
+		}
 
 		// ONE TIME notice is deleted right after it is displayed
 		$notices = get_option( 'epkb_one_time_notices', array() );
-		if ( ! empty($notices) && $is_kb_request ) {
+		if ( ! empty($notices) ) {
 			delete_option( 'epkb_one_time_notices' );
 		}
 
 		// display ONE TIME and LONG notices
 		$notice = get_option( 'epkb_ongoing_notices', array() );
-		if ( ! empty($notice) ) {
+		if ( ! empty( $notice ) ) {
 			$notices += $notice;
 		}
 
 		$update_notices = false;
 		foreach ( $notices as $key => $notice ) {
 
-			if ( ! isset($notice['type']) ) {
-				unset($notices[$key]);
+			if ( ! isset( $notice['type'] ) ) {
+				unset( $notices[ $key ] );
 				$update_notices = true;
 				continue;
 			}
 
-			if ( isset($notice['id']) && in_array($notice['id'], self::$ongoing_notice_removal) ) {
-				unset($notices[$key]);
+			if ( isset( $notice['id'] ) && in_array( $notice['id'], self::$ongoing_notice_removal ) ) {
+				unset( $notices[ $key ] );
 				$update_notices = true;
 				continue;
 			}
 
-			// show notices on KB pages only
-			if ( ! $is_kb_request ) {
-				continue;
-			}
+            EPKB_HTML_Forms::notification_box_top( array(
+                'type'              => $notice['type'],
+                'id'                => $notice['id'],
+                'title'             => $notice['title'],
+                'desc'              => $notice['text'],
+                'button_confirm'    => 'Dismiss',
+            ) );
 
-			// only editors and admins should see the notice messages
-			// $user = EPKB_Utilities::get_current_user();
-			if ( function_exists('wp_get_current_user') && ! current_user_can('editor') && ! current_user_can('administrator') ) {
-				continue;
-			}
-
-			if ( $notice['type'] == 'large-notice' || $notice['type'] == 'large-info' ) { ?>
-				<div
-					class="epkb-notice epkb-notice-large-box notice  notice-<?php echo $notice['type']; ?> notice-<?php echo $notice['id']; ?>">
-					<div class="epkb-notice-icon"><?php echo $notice['icon']; ?></div>
-					<div class="epkb-notice-text">
-						<h3><?php echo $notice['title']; ?></h3>
-						<p><?php echo $notice['text']; ?></p> <?php
-						if ( ! empty( $notice['id'] ) ) { ?>
-							<!-- TODO <a href="#" class="epkb-notice-remind epkb-notice-btn btn-green"><?php _e( 'Remind Me Later', 'echo-knowledge-base' ); ?></a> -->
-							<a href="#" class="epkb-notice-dismiss epkb-notice-btn btn-grey" data-notice-id="<?php echo $notice['id']; ?>">
-								 <?php _e( 'Dismiss', 'echo-knowledge-base' ); ?></a>                        <?php
-						} ?>
-					</div>
-				</div>      <?php
-			} else { ?>
-				<div
-					class="epkb-notice notice notice-<?php echo $notice['type']; ?> notice-<?php echo $notice['id']; ?>"
-					style="display:block;">
-					<p>                        <?php
-						echo $notice['text'];
-						if ( ! empty( $notice['id'] ) ) { ?>
-							&nbsp;
-							<a href="#" class="epkb-notice-dismiss" data-notice-id="<?php echo $notice['id']; ?>"><?php _e( 'Dismiss', 'echo-knowledge-base' ); ?></a>                        <?php
-						} ?>
-					</p>
-				</div>      <?php
-			}
 		}
 
 		// some notices are not valid any more or there have invalid data so remove them
@@ -177,9 +156,10 @@ class EPKB_Admin_Notices {
 	 * User dismissed ongoing notice so record it
 	 */
 	public static function ajax_dismiss_ongoing_notice() {
-		if ( isset($_POST['epkb_dismiss_id']) ) {
-			update_user_meta( get_current_user_id(), $_POST['epkb_dismiss_id'], 1 );
-		   self::dismiss_ongoing_notice( $_POST['epkb_dismiss_id'] );
+		$dismiss_id = EPKB_Utilities::post( 'epkb_dismiss_id' );
+		if ( ! empty( $dismiss_id ) ) {
+			update_user_meta( get_current_user_id(), $dismiss_id, 1 );
+		   self::dismiss_ongoing_notice( $dismiss_id );
 		}
 	}
 

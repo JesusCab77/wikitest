@@ -1,30 +1,34 @@
 <?php
 /**
- * ...
+ * Provides an Elementor widget which can then be freely placed.
  *
- * @package Helpful\Core\Modules
- * @author  Pixelbart <me@pixelbart.de>
- * @version 4.3.0
+ * @package Helpful
+ * @subpackage Core\Modules
+ * @version 4.4.59
+ * @since 4.3.0
  */
+
 namespace Helpful\Core\Modules;
 
-use Helpful\Core\Helpers as Helpers;
 use Helpful\Core\Helper;
+use Helpful\Core\Helpers as Helpers;
+use Helpful\Core\Services as Services;
 
 /* Prevent direct access */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Elementor_Widget extends \Elementor\Widget_Base
-{
+/**
+ * ...
+ */
+class Elementor_Widget extends \Elementor\Widget_Base {
 	/**
 	 * Get widget name.
 	 *
 	 * @return string widget name.
 	 */
-	public function get_name()
-	{
+	public function get_name() {
 		return 'helpful-widget';
 	}
 
@@ -33,8 +37,7 @@ class Elementor_Widget extends \Elementor\Widget_Base
 	 *
 	 * @return string widget title.
 	 */
-	public function get_title()
-	{
+	public function get_title() {
 		return esc_html_x( 'Helpful', 'elementor widget name', 'helpful' );
 	}
 
@@ -43,8 +46,7 @@ class Elementor_Widget extends \Elementor\Widget_Base
 	 *
 	 * @return string widget icon.
 	 */
-	public function get_icon()
-	{
+	public function get_icon() {
 		return 'fa fa-thumbs-up';
 	}
 
@@ -53,108 +55,106 @@ class Elementor_Widget extends \Elementor\Widget_Base
 	 *
 	 * @return array widget categories.
 	 */
-	public function get_categories()
-	{
-		return [ 'general' ];
+	public function get_categories() {
+		return array( 'general' );
 	}
 
 	/**
 	 * Register widget controls.
-	 *
-	 * @return void
 	 */
-	protected function _register_controls()
-	{
+	protected function _register_controls() {
+		$options = new Services\Options();
+
 		$this->start_controls_section(
 			'general',
-			[
+			array(
 				'label' => esc_html_x( 'General', 'elementor tab name', 'helpful' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
-			]
+			)
 		);
 
 		$this->add_control(
 			'helpful_credits',
-			[
+			array(
 				'label'        => esc_html_x( 'Show credits', 'elementor option name', 'helpful' ),
 				'type'         => \Elementor\Controls_Manager::SWITCHER,
 				'return_value' => 'on',
 				'default'      => 'on',
-			]
+			)
 		);
 
 		$this->add_control(
 			'helpful_counter',
-			[
+			array(
 				'label'        => esc_html_x( 'Show counter', 'elementor option name', 'helpful' ),
 				'type'         => \Elementor\Controls_Manager::SWITCHER,
 				'return_value' => 'on',
 				'default'      => 'on',
-			]
+			)
 		);
 
 		$this->end_controls_section();
 
 		$this->start_controls_section(
 			'texts',
-			[
+			array(
 				'label' => esc_html_x( 'Texts', 'elementor option name', 'helpful' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
-			]
+			)
 		);
 
 		$this->add_control(
 			'helpful_heading',
-			[
+			array(
 				'label'       => esc_html_x( 'Headline', 'elementor option name', 'helpful' ),
 				'label_block' => true,
 				'type'        => \Elementor\Controls_Manager::TEXT,
-				'default'     => get_option( 'helpful_heading' ),
-			]
+				'default'     => $options->get_option( 'helpful_heading', '', 'kses' ),
+			)
 		);
 
 		$this->add_control(
 			'helpful_content',
-			[
+			array(
 				'label'       => esc_html_x( 'Content', 'elementor option name', 'helpful' ),
 				'label_block' => true,
 				'type'        => \Elementor\Controls_Manager::TEXTAREA,
-				'default'     => get_option( 'helpful_content' ),
-			]
+				'default'     => $options->get_option( 'helpful_content', '', 'kses' ),
+			)
 		);
 
 		$this->add_control(
 			'helpful_pro',
-			[
+			array(
 				'label'       => esc_html_x( 'Pro', 'elementor option name', 'helpful' ),
 				'label_block' => true,
 				'type'        => \Elementor\Controls_Manager::TEXT,
-				'default'     => get_option( 'helpful_pro' ),
-			]
+				'default'     => $options->get_option( 'helpful_pro', '', 'kses' ),
+			)
 		);
 
 		$this->add_control(
 			'helpful_contra',
-			[
+			array(
 				'label'       => esc_html_x( 'Contra', 'elementor option name', 'helpful' ),
 				'label_block' => true,
 				'type'        => \Elementor\Controls_Manager::TEXT,
-				'default'     => get_option( 'helpful_contra' ),
-			]
+				'default'     => $options->get_option( 'helpful_contra', '', 'kses' ),
+			)
 		);
 
 		$this->end_controls_section();
 
 		$this->start_controls_section(
 			'advanced',
-			[
+			array(
 				'label' => esc_html_x( 'Advanced', 'elementor option name', 'helpful' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
-			]
+			)
 		);
 
 		$themes  = apply_filters( 'helpful_themes', false );
-		$choices = [];
+		$choices = array();
 
 		foreach ( $themes as $theme ) :
 			$choices[ $theme['id'] ] = $theme['label'];
@@ -162,25 +162,25 @@ class Elementor_Widget extends \Elementor\Widget_Base
 
 		$this->add_control(
 			'helpful_theme',
-			[
+			array(
 				'label'       => esc_html_x( 'Theme', 'elementor option name', 'helpful' ),
 				'description' => esc_html_x( 'This option overrides the Helpful theme and applies to all Helpful on the site. You will also need to reload the page to see the changes.', 'elementor option description', 'helpful' ),
 				'type'        => \Elementor\Controls_Manager::SELECT,
 				'options'     => $choices,
-				'default'     => get_option( 'helpful_theme' ),
-			]
+				'default'     => $options->get_option( 'helpful_theme', '', 'esc_attr' ),
+			)
 		);
 
 		$this->add_control(
 			'helpful_css',
-			[
+			array(
 				'label'       => esc_html_x( 'Custom CSS', 'elementor option name', 'helpful' ),
 				'label_block' => true,
 				'description' => esc_html_x( 'Here you can use your own CSS. Use selector to address Helpful.', 'elementor option description', 'helpful' ),
 				'type'        => \Elementor\Controls_Manager::CODE,
 				'default'     => 'selector {}',
 				'language'    => 'css',
-			]
+			)
 		);
 
 		$this->end_controls_section();
@@ -188,19 +188,16 @@ class Elementor_Widget extends \Elementor\Widget_Base
 
 	/**
 	 * Render widget output on the frontend.
-	 *
-	 * @return void
 	 */
-	protected function render()
-	{
+	protected function render() {
 		$settings = $this->get_settings_for_display();
 
-		$options = [
+		$options = array(
 			"button_pro='{$settings['helpful_pro']}'",
 			"button_contra='{$settings['helpful_contra']}'",
 			"heading='{$settings['helpful_heading']}'",
 			"content='{$settings['helpful_content']}'",
-		];
+		);
 
 		update_option( 'helpful_theme', $settings['helpful_theme'] );
 

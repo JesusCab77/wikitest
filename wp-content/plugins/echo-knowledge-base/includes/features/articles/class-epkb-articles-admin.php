@@ -28,23 +28,41 @@ class EPKB_Articles_Admin {
 	}
 
 	/**
-	 * Update the article sequence if article is being published from draft.
+	 * Update the article sequence if
+	 * - article is not updating from draft to draft
+	 * - and title/content/status of article was changed
+	 *
 	 * @param $post_id
 	 * @param $post
 	 * @param $post_before
 	 */
 	public function post_updated( $post_id, $post, $post_before ) {
 
-		if ( empty($post->post_type) || empty($post_before->post_status) || empty($post_before->post_title) || ! EPKB_KB_Handler::is_kb_post_type( $post->post_type )
-		     || empty($post->post_status) || $post->post_status == 'auto-draft' || $post->post_status == 'draft' ) {
+		$now_post_type = $post->post_type;
+		$now_post_status = $post->post_status;
+		$before_post_status = $post_before->post_status;
+
+		// return if:
+		// - post_type is empty or is not KB post type
+		// - or previous post_status or current post_status is empty
+		// - or previous post_status and current post_status are draft or auto-draft
+		if ( empty($now_post_type) || empty($before_post_status) || empty($now_post_status)
+		     || ( ( $before_post_status == 'auto-draft' || $before_post_status == 'draft' ) && ( $now_post_status == 'auto-draft' || $now_post_status == 'draft' ) )
+			 || ! EPKB_KB_Handler::is_kb_post_type( $now_post_type ) ) {
 			return;
 		}
 
-		if ( ( $post_before->post_status != 'draft' || $post->post_status != 'publish' ) && ( $post_before->post_title == $post->post_title ) ) {
+		// return if:
+        // - post status did not change
+        // - and article title did not change
+        // - and post content did not change
+		if ( ( $before_post_status == $now_post_status )
+            && ( $post_before->post_title == $post->post_title )
+            && ( $post_before->post_content == $post->post_content )) {
 			return;
 		}
 
-		$kb_id = EPKB_KB_Handler::get_kb_id_from_post_type( $post->post_type );
+		$kb_id = EPKB_KB_Handler::get_kb_id_from_post_type( $now_post_type );
 		if ( is_wp_error( $kb_id) ) {
 			return;
 		}
@@ -99,7 +117,7 @@ class EPKB_Articles_Admin {
 	 */
 	public function update_articles_sequence_article_categories_changed( $post_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids ) {
 
-		if ( ! EPKB_KB_Handler::is_kb_taxonomy( $taxonomy) || empty($post_id) || EPKB_Utilities::post('action', '', false) == 'em'.'kb_add_knowledge_base') {
+		if ( ! EPKB_KB_Handler::is_kb_category_taxonomy( $taxonomy) || empty($post_id) || EPKB_Utilities::post( 'action' ) == 'em'.'kb_add_knowledge_base' ) {
 			return;
 		}
 
@@ -143,11 +161,14 @@ class EPKB_Articles_Admin {
 	 */
 	public function update_articles_sequence( $kb_id ) {
 
+		// add flag for get started page
+		EPKB_Core_Utilities::update_kb_flag( 'edit_articles_categories_visited' );
+
 		// 1. get stored sequence of articles
-		$article_order_method = epkb_get_instance()->kb_config_obj->get_value( 'articles_display_sequence', $kb_id );
+		$article_order_method = epkb_get_instance()->kb_config_obj->get_value( $kb_id, 'articles_display_sequence' );
 
 		// 2. get all term ids  ( do not use WP function get_terms() to avoid recursions or unhook actions )
-		$all_kb_terms = EPKB_Utilities::get_kb_categories_unfiltered( $kb_id );
+		$all_kb_terms = EPKB_Core_Utilities::get_kb_categories_unfiltered( $kb_id );
 		if ( $all_kb_terms === null ) {
 			return false;
 		}
@@ -155,14 +176,15 @@ class EPKB_Articles_Admin {
 		// 3. FOR EACH CATEGORY:
 		$new_stored_ids = array();
 		$db = new EPKB_Articles_DB();
-		foreach( $all_kb_terms as $term ) {
+		foreach ( $all_kb_terms as $term ) {
 
 			// 3. setup sequence of articles within this category
-			if ( $article_order_method == 'created-date' ) {
-				$articles = $db->get_published_articles_by_sub_or_category( $kb_id, $term->term_id );
-			} else {  // for 'user-sequenced' use default for now otherwise default is 'alphabetical-title'
-				$articles = $db->get_published_articles_by_sub_or_category( $kb_id, $term->term_id, 'title' );  
-			}
+            switch ( $article_order_method ) {
+                case 'created-date': $articles = $db->get_articles_by_sub_or_category( $kb_id, $term->term_id ); break;
+                case 'modified-date': $articles = $db->get_articles_by_sub_or_category( $kb_id, $term->term_id, 'modified' ); break;
+                // for 'user-sequenced' use default for now otherwise default is 'alphabetical-title'
+                default: $articles = $db->get_articles_by_sub_or_category( $kb_id, $term->term_id, 'title' ); break;
+            }
 
 			// 4. add article sequence to the configuration
 			$new_article_sequence = EPKB_Articles_Array::retrieve_article_sequence( $articles );
@@ -233,7 +255,7 @@ class EPKB_Articles_Admin {
 	public function get_articles_sequence_non_custom( $kb_id, $article_order_method ) {
 
 		// 1. get all term ids  ( do not use WP function get_terms() to avoid recursions or unhook actions )
-		$all_kb_terms = EPKB_Utilities::get_kb_categories_unfiltered( $kb_id );
+		$all_kb_terms = EPKB_Core_Utilities::get_kb_categories_unfiltered( $kb_id );
 		if ( $all_kb_terms === null ) {
 			return false;
 		}
@@ -244,11 +266,12 @@ class EPKB_Articles_Admin {
 		foreach( $all_kb_terms as $term ) {
 
 			// 3. setup sequence of articles within this category
-			if ( $article_order_method == 'created-date' ) {
-				$articles = $db->get_published_articles_by_sub_or_category( $kb_id, $term->term_id );
-			} else {  // for 'user-sequenced' use default for now otherwise default is 'alphabetical-title'
-				$articles = $db->get_published_articles_by_sub_or_category( $kb_id, $term->term_id, 'title' );
-			}
+            switch( $article_order_method ){
+                case 'created-date': $articles = $db->get_articles_by_sub_or_category( $kb_id, $term->term_id ); break;
+                case 'modified-date': $articles = $db->get_articles_by_sub_or_category( $kb_id, $term->term_id, 'modified' ); break;
+                // for 'user-sequenced' use default for now otherwise default is 'alphabetical-title'
+                default: $articles = $db->get_articles_by_sub_or_category( $kb_id, $term->term_id, 'title' ); break;
+            }
 
 			// 4. add article sequence to the configuration
 			$new_article_sequence = EPKB_Articles_Array::retrieve_article_sequence( $articles );

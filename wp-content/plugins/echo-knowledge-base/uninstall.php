@@ -5,7 +5,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) exit;
 /**
  * Uninstall this plugin
  */
-class KB_Uninstall {
+class EPKB_Uninstall {
 
 	public function __construct() {
 
@@ -27,10 +27,11 @@ class KB_Uninstall {
      *
      */
     private function uninstall_kb()     {
+	    /** @global wpdb $wpdb */
+	    global $wpdb;
 
         delete_option( 'epkb_version' );
 		delete_option( 'epkb_last_seen_version' );
-		delete_option( 'epkb_hide_demo_content_alert' );
         delete_option( 'epkb_version_first' );
         delete_option( 'epkb_config_1' );
         delete_option( 'epkb_orignal_config_1' );
@@ -44,7 +45,9 @@ class KB_Uninstall {
 		delete_option( 'epkb_elementor_settings_dismissed' );
         delete_option( 'epkb_delete_all_kb_data' );
         delete_option( 'epkb_show_upgrade_message' );
+	    delete_option( 'epkb_flags' );
 		delete_transient( '_epkb_plugin_activated' );
+	    delete_transient( '_epkb_delete_all_kb_data' );
 
 	    delete_option( 'asea_version' );
 	    delete_option( 'asea_version_first' );
@@ -88,12 +91,14 @@ class KB_Uninstall {
 	    delete_option( 'widg_license_key' );
 	    delete_option( 'widg_license_state' );
 		
-		delete_option( '_epkb_import_current_kb_id' );
-		delete_transient( '_epkb_import_articles_to_import' );
-		delete_option( '_epkb_import_current_step' );
-		delete_option( '_epkb_import_selected_rows' );
-		delete_option( '_epkb_import_processed_count' );
+		delete_option( '_epie_import_current_kb_id' );
+		delete_option( '_epie_import_current_step' );
+		delete_option( '_epie_import_selected_rows' );
+		delete_option( '_epie_import_processed_count' );
+	    delete_transient( '_epie_import_articles_to_import' );
+
+	    $wpdb->query( "DROP TABLE IF EXISTS " . $wpdb->prefix . 'epkb_hd_submissions' );  // TODO remove
     }
 }
 
-new KB_Uninstall();
+new EPKB_Uninstall();

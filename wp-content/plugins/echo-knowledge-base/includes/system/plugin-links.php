@@ -34,7 +34,7 @@ function epkb_add_plugin_row_meta($links, $file) {
 		return $links;
 	}
 
-	$links[] = '<a href="https://www.echoknowledgebase.com/documentation/configure-kb-with-front-end-editor/" target="_blank">' . esc_html__( 'Getting Started', 'echo-knowledge-base' ) . '</a>';
+	$links[] = '<a href="https://www.echoknowledgebase.com/documentation/configure-kb-with-front-end-editor/" target="_blank">' . esc_html__( 'Get Started', 'echo-knowledge-base' ) . '</a>';
 	$links[] = '<a href="' . admin_url('edit.php?post_type=' . EPKB_KB_Handler::KB_POST_TYPE_PREFIX . '1&page=epkb-new-features') . '">' . esc_html__( "What's New", 'echo-knowledge-base' ) . '</a>';
 
 	return $links;

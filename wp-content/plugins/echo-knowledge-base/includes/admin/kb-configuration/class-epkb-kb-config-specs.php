@@ -9,33 +9,48 @@ class EPKB_KB_Config_Specs {
 
 	private static $cached_specs = array();
 
+	public static function get_defaults() {
+		return array(
+			'label'       => __( 'Label', 'echo-knowledge-base' ),
+			'type'        => EPKB_Input_Filter::TEXT,
+			'mandatory'   => true,
+			'max'         => '20',
+			'min'         => '3',
+			'options'     => array(),
+			'internal'    => false,
+			'default'     => ''
+		);
+	}
+
 	public static function get_categories_display_order() {
-		$base_order = array( 'alphabetical-title' => __( 'Alphabetical by Name', 'echo-knowledge-base' ),
-							 'created-date' => __( 'Chronological by Date Created', 'echo-knowledge-base' ),
+		return array( 'alphabetical-title' => __( 'Alphabetical by Name', 'echo-knowledge-base' ),
+							 'created-date' => __( 'Chronological by Date Created or Published', 'echo-knowledge-base' ),
 							 'user-sequenced' => __( 'Custom - Drag and Drop Categories', 'echo-knowledge-base' ) );
-		return apply_filters( 'epkb_categories_display_order', $base_order );
 	}
 
 	public static function get_articles_display_order() {
-		$base_order = array( 'alphabetical-title' => __( 'Alphabetical by Title', 'echo-knowledge-base' ),
-		                     'created-date' => __( 'Chronological by Date Created', 'echo-knowledge-base' ),
+		return array( 'alphabetical-title' => __( 'Alphabetical by Title', 'echo-knowledge-base' ),
+		                     'created-date' => __( 'Chronological by Date Created or Published', 'echo-knowledge-base' ),
+                             'modified-date' => __( 'Chronological by Date Modified', 'echo-knowledge-base' ),
 		                     'user-sequenced' => __( 'Custom - Drag and Drop articles', 'echo-knowledge-base' ) );
-		return apply_filters( 'epkb_articles_display_order', $base_order );
 	}
 
-	public static $sidebar_component_priority_defaults = array(
-		'elay_sidebar_left' => '1',
-		'toc_left' => '0',
+	private static $sidebar_component_priority_defaults = array(
 		'kb_sidebar_left' => '0',
-		'categories_left' => '1',
+		'kb_sidebar_right' => '0',
+		'toc_left' => '0',
 		'toc_content' => '0',
 		'toc_right' => '1',
-		'kb_sidebar_right' => '0',
-		'categories_right' => '0'
+		'nav_sidebar_left' => '',   // FUTURE TODO set to '0'; '' means not initialized
+		'nav_sidebar_right' => '0'
 	);
 
 	public static function add_sidebar_component_priority_defaults( $article_sidebar_component_priority ) {
 		return array_merge(self::$sidebar_component_priority_defaults, $article_sidebar_component_priority);
+	}
+
+	public static function get_sidebar_component_priority_names() {
+		return array_keys(self::$sidebar_component_priority_defaults);
 	}
 
 	/**
@@ -93,6 +108,30 @@ class EPKB_KB_Config_Specs {
 				'internal'    => true,
 				'default'     => self::$sidebar_component_priority_defaults
 			),
+			'article_nav_sidebar_type_left' => array(
+				'label'       => __( 'Sidebar Navigation', 'echo-knowledge-base' ),
+				'name'        => 'article_nav_sidebar_type_left',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array(
+					'eckb-nav-sidebar-none' => __( 'None', 'echo-knowledge-base' ),
+					'eckb-nav-sidebar-categories' => __( 'Top Categories', 'echo-knowledge-base' ),
+					'eckb-nav-sidebar-v1' => __( 'Categories and Articles', 'echo-knowledge-base' ), // core or elay
+					// FUTURE example:	'eckb-nav-sidebar-v2' => __( 'Advanced Navigation', 'echo-knowledge-base' ),
+				),
+				'default'     => 'eckb-nav-sidebar-v1'
+			),
+			'article_nav_sidebar_type_right' => array(
+				'label'       => __( 'Sidebar Navigation', 'echo-knowledge-base' ),
+				'name'        => 'article_nav_sidebar_type_right',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array(
+					'eckb-nav-sidebar-none' => __( 'None', 'echo-knowledge-base' ),
+					'eckb-nav-sidebar-categories' => __( 'Top Categories', 'echo-knowledge-base' ),
+					'eckb-nav-sidebar-v1' => __( 'Categories and Articles', 'echo-knowledge-base' ), // core or elay
+					// FUTURE example:	'eckb-nav-sidebar-v2' => __( 'Advanced Navigation', 'echo-knowledge-base' ),
+				),
+				'default'     => 'eckb-nav-sidebar-none'
+			),
 
 
 			/******************************************************************************
@@ -126,46 +165,34 @@ class EPKB_KB_Config_Specs {
 				'options'     => EPKB_KB_Config_Layouts::get_main_page_layout_name_value(),
 				'default'     => EPKB_KB_Config_Layout_Basic::LAYOUT_NAME,
 			),
-			'kb_article_page_layout' => array(
+			'kb_article_page_layout' => array( // DEPRICATED
 					'label'       => __( 'Article Page Layout', 'echo-knowledge-base' ),
 					'name'        => 'kb_article_page_layout',
 					'type'        => EPKB_Input_Filter::SELECTION,
-					'options'     => EPKB_KB_Config_Layouts::get_article_page_layout_names(),
-					'default'     => EPKB_KB_Config_Layouts::KB_ARTICLE_PAGE_NO_LAYOUT,
+					'options'     => ['Article' => 'Article', 'Sidebar' => 'Sidebar'],
+					'default'     => 'Article',
 			),
 			'kb_sidebar_location' => array(  // TODO remove after archive page done
 					'label'       => __( 'Article Sidebar Location', 'echo-knowledge-base' ),
 					'name'        => 'kb_sidebar_location',
 					'type'        => EPKB_Input_Filter::SELECTION,
 					'options'     => array(
-							'left-sidebar'   => _x( 'Left Sidebar', 'echo-knowledge-base' ),
-							'right-sidebar'  => _x( 'Right Sidebar', 'echo-knowledge-base' ),
+							'left-sidebar'   => is_rtl() ? _x( 'Right Sidebar', 'echo-knowledge-base' ) : _x( 'Left Sidebar', 'echo-knowledge-base' ),
+							'right-sidebar'  => is_rtl() ? _x( 'Left Sidebar', 'echo-knowledge-base' ) : _x( 'Right Sidebar', 'echo-knowledge-base' ),
 							'no-sidebar'     => _x( 'No Sidebar', 'echo-knowledge-base' ) ),
 					'default'     => 'no-sidebar'
 			),
 			'article-left-sidebar-toggle' => array(
-				'label'       => __( 'Enable Left Sidebar', 'echo-knowledge-base' ),
+				'label'       => is_rtl() ? __( 'Enable Right Sidebar', 'echo-knowledge-base' ) : __( 'Enable Left Sidebar', 'echo-knowledge-base' ),
 				'name'        => 'article-left-sidebar-toggle',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => 'off'
+				'default'     => 'on'
 			),
 			'article-right-sidebar-toggle' => array(
-				'label'       => __( 'Enable Right Sidebar', 'echo-knowledge-base' ),
+				'label'       => is_rtl() ? __( 'Enable Left Sidebar', 'echo-knowledge-base' ) : __( 'Enable Right Sidebar', 'echo-knowledge-base' ),
 				'name'        => 'article-right-sidebar-toggle',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
 				'default'     => 'on'
-			),
-			'meta-data-header-toggle' => array(  // old article content header
-				'label'       => __( 'Enable Header Meta Data', 'echo-knowledge-base' ),
-				'name'        => 'meta-data-header-toggle',
-				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => 'on'
-			),
-			'meta-data-footer-toggle' => array(
-				'label'       => __( 'Enable Meta Data at the Bottom', 'echo-knowledge-base' ),
-				'name'        => 'meta-data-footer-toggle',
-				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => 'off'
 			),
 
 
@@ -381,7 +408,27 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => '#ffffff'
+				'default'     => '#FFFFFF'
+			),
+			'article-meta-typography' => array(
+				'label'       => __( 'Meta Typography', 'echo-knowledge-base' ),
+				'name'        => 'article-meta-typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '14',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
+			),
+			'article-meta-color' => array(
+				'label'       => __( 'Meta Color', 'echo-knowledge-base' ),
+				'name'        => 'article-meta-color',
+				'size'        => '10',
+                'max'         => '7',
+                'min'         => '7',
+                'type'        => EPKB_Input_Filter::COLOR_HEX,
+                'default'     => '#000000'
 			),
 
 			// Article Version 2 - Right Sidebar
@@ -436,7 +483,7 @@ class EPKB_KB_Config_Specs {
 				'default'     => 10
 			),
 			'article-right-sidebar-background-color-v2' => array(
-				'label'       => __( 'Right Sidebar Background', 'echo-knowledge-base' ),
+				'label'       => is_rtl() ? __( 'Left Sidebar Background', 'echo-knowledge-base' ) : __( 'Right Sidebar Background', 'echo-knowledge-base' ),
 				'name'        => 'article-right-sidebar-background-color-v2',
 				'size'        => '10',
 				'max'         => '7',
@@ -478,6 +525,443 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'style'       => 'small',
 				'default'     => 1025
+			),
+
+
+			/******************************************************************************
+			 *
+			 *  ARTICLE SIDEBAR V1
+			 *
+			 ******************************************************************************/
+
+			/***  Article Sidebar -> General ***/
+
+			'sidebar_side_bar_height_mode' => array(
+				'label'       => __( 'Height Mode', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_side_bar_height_mode',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array(
+					'side_bar_no_height' => __( 'Variable', 'echo-elegant-layouts' ),
+					'side_bar_fixed_height' => __( 'Fixed (Scrollbar)', 'echo-elegant-layouts' ) ),
+				'default'     => 'side_bar_no_height'
+			),
+			'sidebar_side_bar_height' => array(
+				'label'       => __( 'Height ( px )', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_side_bar_height',
+				'max'         => '1000',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'style'       => 'small',
+				'default'     => '350'
+			),
+			'sidebar_scroll_bar' => array(
+				'label'       => __( 'Scroll Bar style', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_scroll_bar',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array(
+					'slim_scrollbar'    => _x( 'Slim','echo-elegant-layouts' ),
+					'default_scrollbar' => _x( 'Default', 'echo-elegant-layouts' ) ),
+				'default'     => 'slim_scrollbar'
+			),
+
+			'sidebar_section_category_typography' => array(
+				'label'       => __( 'Category Typography', 'echo-knowledge-base' ),
+				'name'        => 'sidebar_section_category_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '18',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
+			),
+			'sidebar_section_category_typography_desc' => array(
+				'label'       => __( 'Category Description Typography', 'echo-knowledge-base' ),
+				'name'        => 'sidebar_section_category_typography_desc',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '16',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
+			),
+			'sidebar_section_body_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'sidebar_section_body_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '16',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
+			),
+			'sidebar_top_categories_collapsed' => array(
+				'label'       => __( 'Top Categories Collapsed', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_top_categories_collapsed',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'off'
+			),
+			'sidebar_nof_articles_displayed' => array(
+				'label'       => __( 'Number of Articles Listed', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_nof_articles_displayed',
+				'max'         => '200',
+				'min'         => '1',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'style'       => 'small',
+				'default'     => 15,
+			),
+			'sidebar_show_articles_before_categories' => array(
+				'label'       => __( 'Show Articles', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_show_articles_before_categories',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array(
+					'on' => __( 'Before Categories', 'echo-elegant-layouts' ),
+					'off' => __( 'After Categories', 'echo-elegant-layouts' ),
+				),
+				'default'     => 'off'
+			),
+			'sidebar_expand_articles_icon' => array(
+				'label'       => __( 'Icon to Expand/Collapse Articles', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_expand_articles_icon',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array( 'ep_font_icon_plus_box' => _x( 'Plus Box', 'icon type', 'echo-elegant-layouts' ),
+										'ep_font_icon_plus' => _x( 'Plus Sign', 'icon type', 'echo-elegant-layouts' ),
+										'ep_font_icon_right_arrow' => _x( 'Arrow Triangle', 'icon type', 'echo-elegant-layouts' ),
+										'ep_font_icon_arrow_carrot_right' => _x( 'Arrow Caret', 'icon type', 'echo-elegant-layouts' ),
+										'ep_font_icon_arrow_carrot_right_circle' => _x( 'Arrow Caret 2', 'icon type', 'echo-elegant-layouts' ),
+										'ep_font_icon_folder_add' => _x( 'Folder', 'icon type', 'echo-elegant-layouts' ) ),
+				'default'     => 'ep_font_icon_arrow_carrot_right'
+			),
+
+			/***  Article Sidebar -> Articles Listed in Sub-Category ***/
+
+			'sidebar_section_head_alignment' => array(
+				'label'       => __( 'Category Text Alignment', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_head_alignment',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array(
+					'left' => __( 'Left', 'echo-elegant-layouts' ),
+					'center' => __( 'Centered', 'echo-elegant-layouts' ),
+					'right' => __( 'Right', 'echo-elegant-layouts' )
+				),
+				'default'     => 'left'
+			),
+			'sidebar_section_head_padding_top' => array(
+				'label'       => __( 'Top', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_head_padding_top',
+				'max'         => '20',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 8
+			),
+			'sidebar_section_head_padding_bottom' => array(
+				'label'       => __( 'Bottom', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_head_padding_bottom',
+				'max'         => '20',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 8
+			),
+			'sidebar_section_head_padding_left' => array(
+				'label'       => __( 'Left', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_head_padding_left',
+				'max'         => '20',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 8
+			),
+			'sidebar_section_head_padding_right' => array(
+				'label'       => __( 'Right', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_head_padding_right',
+				'max'         => '20',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 8
+			),
+			'sidebar_section_desc_text_on' => array(
+				'label'       => __( 'Category Description', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_desc_text_on',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'off'
+			),
+			'sidebar_section_border_radius' => array(
+				'label'       => __( 'Radius', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_border_radius',
+				'max'         => '30',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 5
+			),
+			'sidebar_section_border_width' => array(
+				'label'       => __( 'Width', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_border_width',
+				'max'         => '10',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 1
+			),
+			'sidebar_section_box_shadow' => array(
+				'label'       => __( 'Navigation Shadow', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_box_shadow',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array(
+					'no_shadow' => __( 'No Shadow', 'echo-elegant-layouts' ),
+					'section_light_shadow' => __( 'Light Shadow', 'echo-elegant-layouts' ),
+					'section_medium_shadow' => __( 'Medium Shadow', 'echo-elegant-layouts' ),
+					'section_bottom_shadow' => __( 'Bottom Shadow', 'echo-elegant-layouts' )
+				),
+				'default'     => 'section_medium_shadow'
+			),
+			'sidebar_section_divider' => array(
+				'label'       => __( 'On/Off', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_divider',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'on'
+			),
+			'sidebar_section_divider_thickness' => array(
+				'label'       => __( 'Thickness ( px )', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_divider_thickness',
+				'max'         => '10',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'style'       => 'small',
+				'default'     => 1
+			),
+			'sidebar_section_box_height_mode' => array(
+				'label'       => __( 'Height Mode', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_box_height_mode',
+				'type'        => EPKB_Input_Filter::SELECTION,
+				'options'     => array(
+					'section_no_height' => __( 'Variable', 'echo-elegant-layouts' ),
+					'section_min_height' => __( 'Minimum', 'echo-elegant-layouts' ),
+					'section_fixed_height' => __( 'Maximum', 'echo-elegant-layouts' )  ),
+				'default'     => 'section_no_height'
+			),
+			'sidebar_section_body_height' => array(
+				'label'       => __( 'Height ( px )', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_body_height',
+				'max'         => '1000',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 350
+			),
+			'sidebar_section_body_padding_top' => array(
+				'label'       => __( 'Top', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_body_padding_top',
+				'max'         => '50',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 8
+			),
+			'sidebar_section_body_padding_bottom' => array(
+				'label'       => __( 'Bottom', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_body_padding_bottom',
+				'max'         => '50',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 10
+			),
+			'sidebar_section_body_padding_left' => array(
+				'label'       => __( 'Left', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_body_padding_left',
+				'max'         => '50',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 0
+			),
+			'sidebar_section_body_padding_right' => array(
+				'label'       => __( 'Right', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_body_padding_right',
+				'max'         => '50',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 5
+			),
+			'sidebar_article_underline' => array(
+				'label'       => __( 'Article Underline Hover', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_article_underline',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'off'
+			),
+			'sidebar_article_active_bold' => array(
+				'label'       => __( 'Article Active Bold', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_article_active_bold',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'on'
+			),
+			'sidebar_article_list_margin' => array(
+				'label'       => __( 'Indentation', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_article_list_margin',
+				'max'         => '50',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 10
+			),
+			'sidebar_article_list_spacing' => array(
+				'label'       => __( 'Between', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_article_list_spacing',
+				'max'         => '50',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => 8
+			),
+
+			/***  Article Sidebar -> Colors -> General  ***/
+
+			'sidebar_background_color' => array(
+				'label'       => __( 'Background', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_background_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#fdfdfd'
+			),
+
+
+			/***  Article Sidebar -> Colors -> Articles Listed in Category Box ***/
+
+			'sidebar_article_font_color' => array(
+				'label'       => __( 'Article Color', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_article_font_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#b3b3b3'
+			),
+			'sidebar_article_icon_color' => array(
+				'label'       => __( 'Icon Color', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_article_icon_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#525252'
+			),
+			'sidebar_article_active_font_color' => array(
+				'label'       => __( 'Active Article Color', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_article_active_font_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#000000'
+			),
+			'sidebar_article_active_background_color' => array(
+				'label'       => __( 'Active Article Background', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_article_active_background_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#e8e8e8'
+			),
+			'sidebar_section_head_font_color' => array(
+				'label'       => __( 'Category Text', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_head_font_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#525252'
+			),
+			'sidebar_section_head_background_color' => array(
+				'label'       => __( 'Category Text Background', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_head_background_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#f1f1f1'
+			),
+			'sidebar_section_head_description_font_color' => array(
+				'label'       => __( 'Category Description', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_head_description_font_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#b3b3b3'
+			),
+			'sidebar_section_border_color' => array(
+				'label'       => __( 'Border', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_border_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#F7F7F7'
+			),
+			'sidebar_section_divider_color' => array(
+				'label'       => __( 'Color', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_divider_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#CDCDCD'
+			),
+			'sidebar_section_category_font_color' => array(
+				'label'       => __( 'Subcategory Text', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_category_font_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#868686'
+			),
+			'sidebar_section_subcategory_typography' => array(
+				'label'       => __( 'Subcategory Typography', 'echo-knowledge-base' ),
+				'name'        => 'sidebar_section_subcategory_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '16',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
+			),
+			'sidebar_section_category_icon_color' => array(
+				'label'       => __( 'Subcategory Expand Icon', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_section_category_icon_color',
+				'size'        => '10',
+				'max'         => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#868686'
+			),
+
+			 /*** Article Sidebar -> Front-End Text ***/
+
+			'sidebar_category_empty_msg' => array(
+				'label'       => __( 'Empty Category Notice', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_category_empty_msg',
+				'size'        => '60',
+				'max'         => '150',
+				'mandatory' => false,
+				'type'        => EPKB_Input_Filter::TEXT,
+				'default'     => __( 'Articles coming soon', 'echo-elegant-layouts' )
+			),
+			'sidebar_collapse_articles_msg' => array(
+				'label'       => __( 'Collapse Articles Text', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_collapse_articles_msg',
+				'size'        => '60',
+				'max'         => '150',
+				'min'         => '1',
+				'type'        => EPKB_Input_Filter::TEXT,
+				'default'     => __( 'Collapse Articles', 'echo-elegant-layouts' )
+			),
+			'sidebar_show_all_articles_msg' => array(
+				'label'       => __( 'Show All Articles Text', 'echo-elegant-layouts' ),
+				'name'        => 'sidebar_show_all_articles_msg',
+				'size'        => '60',
+				'max'         => '150',
+				'min'         => '1',
+				'type'        => EPKB_Input_Filter::TEXT,
+				'default'     => __( 'Show all articles', 'echo-elegant-layouts' )
 			),
 
 
@@ -560,6 +1044,12 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => 100
 			),
+			'archive-show-sub-categories' => array(
+				'label'       => __( 'Show Articles from Sub-Categories', 'echo-knowledge-base' ),
+				'name'        => 'archive-show-sub-categories',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'on'
+			),
 			'archive-content-padding-v2' => array(
 				'label'       => __( 'Padding ( px )', 'echo-knowledge-base' ),
 				'name'        => 'archive-content-padding-v2',
@@ -631,18 +1121,21 @@ class EPKB_KB_Config_Specs {
                 'label'       => __( 'Container Top Margin, (px)', 'echo-knowledge-base' ),
                 'name'        => 'categories_box_top_margin',
                 'max'         => '100',
-                'min'         => '0',
+                'min'         => '-100',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '0'
             ),
-			'categories_box_font_size' => array(
-                'label'       => __( 'Font Size, (px)', 'echo-knowledge-base' ),
-                'name'        => 'categories_box_font_size',
-                'max'         => '50',
-                'min'         => '8',
-                'type'        => EPKB_Input_Filter::NUMBER,
-                'default'     => '14'
-            ),
+			'categories_box_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'categories_box_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '14',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
+			),
 			'category_box_title_text_color' => array(
 				'label'       => __( 'Title Text', 'echo-knowledge-base' ),
 				'name'      => 'category_box_title_text_color',
@@ -697,7 +1190,6 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
 				'default'     => '#CCCCCC'
 			),
-			
 			
 			/******************************************************************************
 			 *
@@ -767,6 +1259,22 @@ class EPKB_KB_Config_Specs {
 				),
 				'default'     => 'off'
 			),
+			'category_focused_menu_heading_text' => array(
+				'label'       => __( 'Categories Heading', 'echo-knowledge-base' ),
+				'name'        => 'category_focused_menu_heading_text',
+				'size'        => '30',
+				'max'         => '50',
+				'min'         => '1',
+				'mandatory'   => false,
+				'type'        => EPKB_Input_Filter::TEXT,
+				'default'     => __( 'Categories', 'echo-knowledge-base' )
+			),
+			'template_widget_sidebar_defaults'  => array(
+				'label'       => __( 'Widget Sidebar Styling', 'echo-knowledge-base' ),
+				'name'        => 'template_widget_sidebar_defaults',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'on'
+			),
 
 
 			/******************************************************************************
@@ -776,73 +1284,73 @@ class EPKB_KB_Config_Specs {
 			 ******************************************************************************/
 
 			// TEMPLATES for Main Page
-			'templates_display_main_page_main_title' => array(
-				'label'       => __( 'Display Main Title', 'echo-knowledge-base' ),
-				'name'        => 'templates_display_main_page_main_title',
+			'template_main_page_display_title' => array(
+				'label'       => __( 'Display Page Title', 'echo-knowledge-base' ),
+				'name'        => 'template_main_page_display_title',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
 				'default'     => 'off'
 			),
-            'templates_for_kb_padding_top' => array(
+            'template_main_page_padding_top' => array(
                 'label'       => __( 'Top', 'echo-knowledge-base' ),
-                'name'        => 'templates_for_kb_padding_top',
+                'name'        => 'template_main_page_padding_top',
                 'max'         => '300',
                 'min'         => '0',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '0'
             ),
-            'templates_for_kb_padding_bottom' => array(
+            'template_main_page_padding_bottom' => array(
                 'label'       => __( 'Bottom', 'echo-knowledge-base' ),
-                'name'        => 'templates_for_kb_padding_bottom',
+                'name'        => 'template_main_page_padding_bottom',
                 'max'         => '500',
                 'min'         => '0',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '50'
             ),
-            'templates_for_kb_padding_left' => array(
+            'template_main_page_padding_left' => array(
                 'label'       => __( 'Left', 'echo-knowledge-base' ),
-                'name'        => 'templates_for_kb_padding_left',
+                'name'        => 'template_main_page_padding_left',
                 'max'         => '50',
                 'min'         => '0',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '0'
             ),
-            'templates_for_kb_padding_right' => array(
+            'template_main_page_padding_right' => array(
                 'label'       => __( 'Right', 'echo-knowledge-base' ),
-                'name'        => 'templates_for_kb_padding_right',
+                'name'        => 'template_main_page_padding_right',
                 'max'         => '50',
                 'min'         => '0',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '0'
             ),
-            'templates_for_kb_margin_top' => array(
+            'template_main_page_margin_top' => array(
                 'label'       => __( 'Top', 'echo-knowledge-base' ),
-                'name'        => 'templates_for_kb_margin_top',
+                'name'        => 'template_main_page_margin_top',
                 'max'         => '300',
-                'min'         => '0',
+                'min'         => '-300',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '0'
             ),
-            'templates_for_kb_margin_bottom' => array(
+            'template_main_page_margin_bottom' => array(
                 'label'       => __( 'Bottom', 'echo-knowledge-base' ),
-                'name'        => 'templates_for_kb_margin_bottom',
+                'name'        => 'template_main_page_margin_bottom',
                 'max'         => '500',
-                'min'         => '0',
+                'min'         => '-500',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '50'
             ),
-            'templates_for_kb_margin_left' => array(
+            'template_main_page_margin_left' => array(
                 'label'       => __( 'Left', 'echo-knowledge-base' ),
-                'name'        => 'templates_for_kb_margin_left',
+                'name'        => 'template_main_page_margin_left',
                 'max'         => '50',
-                'min'         => '0',
+                'min'         => '-50',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '0'
             ),
-            'templates_for_kb_margin_right' => array(
+            'template_main_page_margin_right' => array(
                 'label'       => __( 'Right', 'echo-knowledge-base' ),
-                'name'        => 'templates_for_kb_margin_right',
+                'name'        => 'template_main_page_margin_right',
                 'max'         => '50',
-                'min'         => '0',
+                'min'         => '-50',
                 'type'        => EPKB_Input_Filter::NUMBER,
                 'default'     => '0'
             ),
@@ -860,81 +1368,75 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::CHECKBOX,
 				'default'     => 'off'
 			),
-			'templates_for_kb_widget_sidebar_defaults'         => array(
-				'label'       => __( 'Widget Sidebar Styling', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_widget_sidebar_defaults',
-				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => 'on'
-			),
-			'templates_for_kb_article_padding_top'      => array(
+			'template_article_padding_top'      => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_article_padding_top',
+				'name'        => 'template_article_padding_top',
 				'max'         => '300',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
-			'templates_for_kb_article_padding_bottom'   => array(
+			'template_article_padding_bottom'   => array(
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_article_padding_bottom',
+				'name'        => 'template_article_padding_bottom',
 				'max'         => '500',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
-			'templates_for_kb_article_padding_left'     => array(
+			'template_article_padding_left'     => array(
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_article_padding_left',
+				'name'        => 'template_article_padding_left',
 				'max'         => '300',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
-			'templates_for_kb_article_padding_right'    => array(
+			'template_article_padding_right'    => array(
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_article_padding_right',
+				'name'        => 'template_article_padding_right',
 				'max'         => '300',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
-			'templates_for_kb_article_margin_top'       => array(
+			'template_article_margin_top'       => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_article_margin_top',
+				'name'        => 'template_article_margin_top',
 				'max'         => '300',
-				'min'         => '0',
+				'min'         => '-300',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
-			'templates_for_kb_article_margin_bottom'    => array(
+			'template_article_margin_bottom'    => array(
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_article_margin_bottom',
+				'name'        => 'template_article_margin_bottom',
 				'max'         => '500',
-				'min'         => '0',
+				'min'         => '-500',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '50'
 			),
-			'templates_for_kb_article_margin_left'      => array(
+			'template_article_margin_left'      => array(
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_article_margin_left',
+				'name'        => 'template_article_margin_left',
 				'max'         => '300',
-				'min'         => '0',
+				'min'         => '-300',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
-			'templates_for_kb_article_margin_right'     => array(
+			'template_article_margin_right'     => array(
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_article_margin_right',
+				'name'        => 'template_article_margin_right',
 				'max'         => '300',
-				'min'         => '0',
+				'min'         => '-300',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
 
-			//Category Archive Page
-			'templates_for_kb_category_archive_page_style' => array(
-				'label'       => __( 'Layout Style', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_category_archive_page_style',
+			// Category Archive Page
+			'template_category_archive_page_style' => array(
+				'label'       => __( 'Pre-made Designs', 'echo-knowledge-base' ),
+				'name'        => 'template_category_archive_page_style',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
 					'eckb-category-archive-style-1' => __( 'Style 1 ( Basic List )', 'echo-knowledge-base' ),
@@ -945,9 +1447,9 @@ class EPKB_KB_Config_Specs {
 				),
 				'default'     => 'eckb-category-archive-style-2'
 			),
-			'templates_for_kb_category_archive_page_heading_description' => array(
+			'template_category_archive_page_heading_description' => array(
 				'label'       => __( 'Heading Description', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_category_archive_page_heading_description',
+				'name'        => 'template_category_archive_page_heading_description',
 				'size'        => '30',
 				'max'         => '50',
 				'min'         => '1',
@@ -955,9 +1457,9 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::TEXT,
 				'default'     => __( 'Category - ', 'echo-knowledge-base' )
 			),
-			'templates_for_kb_category_archive_read_more' => array(
+			'template_category_archive_read_more' => array(
 				'label'       => __( 'Read More', 'echo-knowledge-base' ),
-				'name'        => 'templates_for_kb_category_archive_read_more',
+				'name'        => 'template_category_archive_read_more',
 				'size'        => '30',
 				'max'         => '50',
 				'min'         => '1',
@@ -965,23 +1467,62 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::TEXT,
 				'default'     => __( 'Read More', 'echo-knowledge-base' )
 			),
-			'category_focused_menu_heading_text' => array(
-				'label'       => __( 'Categories Heading', 'echo-knowledge-base' ),
-				'name'        => 'category_focused_menu_heading_text',
+			'template_category_archive_date' => array(
+				'label'       => __( 'Date Text', 'echo-knowledge-base' ),
+				'name'        => 'template_category_archive_date',
 				'size'        => '30',
 				'max'         => '50',
 				'min'         => '1',
 				'mandatory'   => false,
 				'type'        => EPKB_Input_Filter::TEXT,
-				'default'     => __( 'Categories', 'echo-knowledge-base' )
+				'default'     => __( 'Date:', 'echo-knowledge-base' )
+			),
+			'template_category_archive_author' => array(
+				'label'       => __( 'Author Text', 'echo-knowledge-base' ),
+				'name'        => 'template_category_archive_author',
+				'size'        => '30',
+				'max'         => '50',
+				'min'         => '1',
+				'mandatory'   => false,
+				'type'        => EPKB_Input_Filter::TEXT,
+				'default'     => __( 'By:', 'echo-knowledge-base' )
+			),
+			'template_category_archive_categories' => array(
+				'label'       => __( 'Categories Text', 'echo-knowledge-base' ),
+				'name'        => 'template_category_archive_categories',
+				'size'        => '30',
+				'max'         => '50',
+				'min'         => '1',
+				'mandatory'   => false,
+				'type'        => EPKB_Input_Filter::TEXT,
+				'default'     => __( 'Categories:', 'echo-knowledge-base' )
 			),
 
+			'template_category_archive_date_on'         => array(
+				'label'       => __( 'Show date', 'echo-knowledge-base' ),
+				'name'        => 'template_category_archive_date_on',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'on'
+			),
+			'template_category_archive_author_on'         => array(
+				'label'       => __( 'Show author', 'echo-knowledge-base' ),
+				'name'        => 'template_category_archive_author_on',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'on'
+			),
+			'template_category_archive_categories_on'         => array(
+				'label'       => __( 'Show categories', 'echo-knowledge-base' ),
+				'name'        => 'template_category_archive_categories_on',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'on'
+			),
 
 			/******************************************************************************
 			 *
 			 *  TOC
 			 *
 			 ******************************************************************************/
+
 			'article_toc_enable' => array(
 				'label'       => __( 'Show Table of Contents', 'echo-knowledge-base' ),
 				'name'        => 'article_toc_enable',
@@ -1016,17 +1557,8 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::TEXT,
 				'default'     => ''
             ),
-			'article_toc_text_color' => array(
-				'label'       => __( 'Text Color', 'echo-knowledge-base' ),
-				'name'      => 'article_toc_text_color',
-				'size'        => '10',
-				'max'        => '7',
-				'min'         => '7',
-				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => '#2b98e5'
-			),
 			'article_toc_active_bg_color' => array(
-				'label'       => __( 'Active Background Color', 'echo-knowledge-base' ),
+				'label'       => __( 'Active Background', 'echo-knowledge-base' ),
 				'name'      => 'article_toc_active_bg_color',
 				'size'        => '10',
 				'max'        => '7',
@@ -1034,8 +1566,26 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
 				'default'     => '#1e73be'
 			),
+			'article_toc_title_color' => array(
+				'label'       => __( 'Title', 'echo-knowledge-base' ),
+				'name'      => 'article_toc_title_color',
+				'size'        => '10',
+				'max'        => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#2b98e5'
+			),
+			'article_toc_text_color' => array(
+				'label'       => __( 'Headings', 'echo-knowledge-base' ),
+				'name'      => 'article_toc_text_color',
+				'size'        => '10',
+				'max'        => '7',
+				'min'         => '7',
+				'type'        => EPKB_Input_Filter::COLOR_HEX,
+				'default'     => '#2b98e5'
+			),
 			'article_toc_active_text_color' => array(
-				'label'       => __( 'Active Text Color', 'echo-knowledge-base' ),
+				'label'       => __( 'Active Heading', 'echo-knowledge-base' ),
 				'name'      => 'article_toc_active_text_color',
 				'size'        => '10',
 				'max'        => '7',
@@ -1044,7 +1594,7 @@ class EPKB_KB_Config_Specs {
 				'default'     => '#ffffff'
 			),
 			'article_toc_cursor_hover_bg_color' => array(
-				'label'       => __( 'Hover: Background Color', 'echo-knowledge-base' ),
+				'label'       => __( 'Hover: Background', 'echo-knowledge-base' ),
 				'name'      => 'article_toc_cursor_hover_bg_color',
 				'size'        => '10',
 				'max'        => '7',
@@ -1053,7 +1603,7 @@ class EPKB_KB_Config_Specs {
 				'default'     => '#e1ecf7'
 			),
 			'article_toc_cursor_hover_text_color' => array(
-				'label'       => __( 'Hover: Text Color', 'echo-knowledge-base' ),
+				'label'       => __( 'Hover: Text', 'echo-knowledge-base' ),
 				'name'      => 'article_toc_cursor_hover_text_color',
 				'size'        => '10',
 				'max'        => '7',
@@ -1094,7 +1644,7 @@ class EPKB_KB_Config_Specs {
                 'default'     => 'between'
             ),
 			'article_toc_border_color' => array(
-				'label'       => __( 'Border Color', 'echo-knowledge-base' ),
+				'label'       => __( 'Border', 'echo-knowledge-base' ),
 				'name'      => 'article_toc_border_color',
 				'size'        => '10',
 				'max'        => '7',
@@ -1102,15 +1652,28 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
 				'default'     => '#2b98e5'
 			),
-			'article_toc_font_size' => array(
-                'label'       => __( 'Font size (px)', 'echo-knowledge-base' ),
-                'name'        => 'article_toc_font_size',
-                'max'         => '200',
-                'min'         => '0',
-                'type'        => EPKB_Input_Filter::NUMBER,
-				'style'       => 'small',
-                'default'     => '14'
-            ),
+			'article_toc_header_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'article_toc_header_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '15',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
+			),
+			'article_toc_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'article_toc_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '14',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
+			),
 			'article_toc_position_from_top' => array(
                 'label'       => __( 'Starting Position (px)', 'echo-knowledge-base' ),
                 'name'        => 'article_toc_position_from_top',
@@ -1120,61 +1683,6 @@ class EPKB_KB_Config_Specs {
                 'default'     => '300'
             ),
 
-			// Media Sizing
-			'article_toc_width_1' => array(
-				'label'       => __( 'DeskTop (px)', 'echo-knowledge-base' ),
-				'name'        => 'article_toc_width_1',
-				'max'         => '500',
-				'min'         => '0',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'style'       => 'small',
-				'default'     => '100'
-			),
-			'article_toc_media_1' => array(
-				'label'       => __( 'Large tablets (px)', 'echo-knowledge-base' ),
-				'name'        => 'article_toc_media_1',
-				'max'         => '2000',
-				'min'         => '0',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'style'       => 'small',
-				'default'     => '1367'
-			),
-			'article_toc_width_2' => array(
-				'label'       => __( 'Tablet (px)', 'echo-knowledge-base' ),
-				'name'        => 'article_toc_width_2',
-				'max'         => '500',
-				'min'         => '0',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'style'       => 'small',
-				'default'     => '100'
-			),
-			'article_toc_media_2' => array(
-				'label'       => __( 'Small tablets (px)', 'echo-knowledge-base' ),
-				'name'        => 'article_toc_media_2',
-				'max'         => '2000',
-				'min'         => '0',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'style'       => 'small',
-				'default'     => '1025'
-			),
-			'article_toc_media_3' => array(
-				'label'       => __( 'Mobile (px)', 'echo-knowledge-base' ),
-				'name'        => 'article_toc_media_3',
-				'max'         => '2000',
-				'min'         => '0',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'style'       => 'small',
-				'default'     => '800'
-			),
-			'article_toc_gutter' => array(
-				'label'       => __( 'Gutter', 'echo-knowledge-base' ),
-				'name'        => 'article_toc_gutter',
-				'max'         => '500',
-				'min'         => '0',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'style'       => 'small',
-				'default'     => '0'
-			),
 			'article_toc_background_color' => array(
 				'label'       => __( 'Container Background', 'echo-knowledge-base' ),
 				'name'      => 'article_toc_background_color',
@@ -1193,6 +1701,14 @@ class EPKB_KB_Config_Specs {
 				'mandatory'   => false,
 				'type'        => EPKB_Input_Filter::TEXT,
 				'default'     => __( 'Table of Contents', 'echo-knowledge-base' )
+			),
+			'article_toc_scroll_speed' => array(
+				'label'       => __( 'Scroll Time', 'echo-knowledge-base' ),
+				'name'        => 'article_toc_scroll_speed',
+				'max'         => '5000',
+				'min'         => '0',
+				'type'        => EPKB_Input_Filter::NUMBER,
+				'default'     => '300',
 			),
 
 			/******************************************************************************
@@ -1309,6 +1825,12 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::CHECKBOX,
 				'default'     => 'on'
 			),
+			'article_title_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'article_title_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => EPKB_Typography::$typography_defaults
+			),
 			'article_title_row'                         => array(
 				'label'       => __( 'Row', 'echo-knowledge-base' ),
 				'name'        => 'article_title_row',
@@ -1327,8 +1849,8 @@ class EPKB_KB_Config_Specs {
 				'name'        => 'article_title_alignment',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
-					'left'  	        => _x( 'Left', 'echo-knowledge-base' ),
-					'right'  	        => _x( 'Right', 'echo-knowledge-base' ) ),
+					'left'  	        => is_rtl() ? _x( 'Right', 'echo-knowledge-base' ) : _x( 'Left', 'echo-knowledge-base' ),
+					'right'  	        => is_rtl() ? _x( 'Left', 'echo-knowledge-base' ) : _x( 'Right', 'echo-knowledge-base' ) ),
 				'default'     => 'left'
 			),
 			'article_title_sequence'                    => array(
@@ -1373,8 +1895,8 @@ class EPKB_KB_Config_Specs {
 				'name'        => 'back_navigation_alignment',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
-					'left'  	        => _x( 'Left', 'echo-knowledge-base' ),
-					'right'  	        => _x( 'Right', 'echo-knowledge-base' ) ),
+					'left'  	        => is_rtl() ? _x( 'Right', 'echo-knowledge-base' ) : _x( 'Left', 'echo-knowledge-base' ),
+					'right'  	        => is_rtl() ? _x( 'Left', 'echo-knowledge-base' ) : _x( 'Right', 'echo-knowledge-base' ) ),
 				'default'     => 'left'
 			),
 			'back_navigation_sequence'      => array(
@@ -1436,15 +1958,16 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
 				'default'     => '#b5b5b5'
 			),
-			'back_navigation_font_size'     => array(
-				'label'       => __( 'Text Size', 'echo-knowledge-base' ),
-				'name'        => 'back_navigation_font_size',
-				'size'        => '50',
-				'max'         => '50',
-				'min'         => '1',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'style'       => 'small',
-				'default'     => '14'
+			'back_navigation_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'back_navigation_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '14',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
 			),
 			'back_navigation_border'        => array(
 				'label'       => __( 'Button Border', 'echo-knowledge-base' ),
@@ -1480,7 +2003,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
 				'name'        => 'back_navigation_margin_top',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '4'
 			),
@@ -1488,7 +2011,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
 				'name'        => 'back_navigation_margin_bottom',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '4'
 			),
@@ -1496,7 +2019,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
 				'name'        => 'back_navigation_margin_left',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '4'
 			),
@@ -1504,7 +2027,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
 				'name'        => 'back_navigation_margin_right',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '15'
 			),
@@ -1539,6 +2062,19 @@ class EPKB_KB_Config_Specs {
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '10'
+			),
+
+			'meta-data-header-toggle' => array(  // old article content header
+				'label'       => __( 'Enable Header Meta Data', 'echo-knowledge-base' ),
+				'name'        => 'meta-data-header-toggle',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'on'
+			),
+			'meta-data-footer-toggle' => array(
+				'label'       => __( 'Enable Meta Data at the Bottom', 'echo-knowledge-base' ),
+				'name'        => 'meta-data-footer-toggle',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'off'
 			),
 
 			/******************************************************************************
@@ -1586,8 +2122,8 @@ class EPKB_KB_Config_Specs {
 				'name'        => 'author_alignment',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
-					'left'  	        => _x( 'Left', 'echo-knowledge-base' ),
-					'right'  	        => _x( 'Right', 'echo-knowledge-base' ) ),
+					'left'  	        => is_rtl() ? _x( 'Right', 'echo-knowledge-base' ) : _x( 'Left', 'echo-knowledge-base' ),
+					'right'  	        => is_rtl() ? _x( 'Left', 'echo-knowledge-base' ) : _x( 'Right', 'echo-knowledge-base' ) ),
 				'default'     => 'left'
 			),
 			'author_sequence'               => array(
@@ -1631,7 +2167,7 @@ class EPKB_KB_Config_Specs {
 				'default'     => 'on'
 			),
 			'created_on_text'               => array(
-				'label'       => __( 'Posted On Text', 'echo-knowledge-base' ),
+				'label'       => __( 'Created Date Prefix', 'echo-knowledge-base' ),
 				'name'        => 'created_on_text',
 				'size'        => '30',
 				'max'         => '60',
@@ -1658,8 +2194,8 @@ class EPKB_KB_Config_Specs {
 				'name'        => 'created_date_alignment',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
-					'left'  	        => _x( 'Left', 'echo-knowledge-base' ),
-					'right'  	        => _x( 'Right', 'echo-knowledge-base' ) ),
+					'left'  	        => is_rtl() ? _x( 'Right', 'echo-knowledge-base' ) : _x( 'Left', 'echo-knowledge-base' ),
+					'right'  	        => is_rtl() ? _x( 'Left', 'echo-knowledge-base' ) : _x( 'Right', 'echo-knowledge-base' ) ),
 				'default'     => 'left'
 			),
 			'created_date_sequence'         => array(
@@ -1696,15 +2232,15 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::CHECKBOX,
 				'default'     => 'on'
 			),
-			'last_udpated_on_footer_toggle' => array(
+			'last_updated_on_footer_toggle' => array(
 				'label'       => __( 'Show Last Updated On', 'echo-knowledge-base' ),
-				'name'        => 'last_udpated_on_footer_toggle',
+				'name'        => 'last_updated_on_footer_toggle',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
 				'default'     => 'on'
 			),
-			'last_udpated_on_text'          => array(
-				'label'       => __( 'Updated Text', 'echo-knowledge-base' ),
-				'name'        => 'last_udpated_on_text',
+			'last_updated_on_text'          => array(
+				'label'       => __( 'Updated Date Prefix', 'echo-knowledge-base' ),
+				'name'        => 'last_updated_on_text',
 				'size'        => '30',
 				'max'         => '60',
 				'min'         => '0',
@@ -1730,8 +2266,8 @@ class EPKB_KB_Config_Specs {
 				'name'        => 'created_date_alignment',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
-					'left'  	        => _x( 'Left', 'echo-knowledge-base' ),
-					'right'  	        => _x( 'Right', 'echo-knowledge-base' ) ),
+					'left'  	        => is_rtl() ? _x( 'Right', 'echo-knowledge-base' ) : _x( 'Left', 'echo-knowledge-base' ),
+					'right'  	        => is_rtl() ? _x( 'Left', 'echo-knowledge-base' ) : _x( 'Right', 'echo-knowledge-base' ) ),
 				'default'     => 'left'
 			),
 			'last_updated_date_sequence'    => array(
@@ -1786,8 +2322,8 @@ class EPKB_KB_Config_Specs {
 				'name'        => 'breadcrumb_alignment',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
-					'left'  	        => _x( 'Left', 'echo-knowledge-base' ),
-					'right'  	        => _x( 'Right', 'echo-knowledge-base' ) ),
+					'left'  	        => is_rtl() ? _x( 'Right', 'echo-knowledge-base' ) : _x( 'Left', 'echo-knowledge-base' ),
+					'right'  	        => is_rtl() ? _x( 'Left', 'echo-knowledge-base' ) : _x( 'Right', 'echo-knowledge-base' ) ),
 				'default'     => 'left'
 			),
 			'breadcrumb_sequence'           => array(
@@ -1839,7 +2375,7 @@ class EPKB_KB_Config_Specs {
                 'max'         => '50',
                 'min'         => '0',
                 'type'        => EPKB_Input_Filter::NUMBER,
-                'default'     => '0'
+                'default'     => '4'
             ),
             'breadcrumb_padding_right'      => array(
                 'label'       => __( 'Right', 'echo-knowledge-base' ),
@@ -1847,13 +2383,13 @@ class EPKB_KB_Config_Specs {
                 'max'         => '50',
                 'min'         => '0',
                 'type'        => EPKB_Input_Filter::NUMBER,
-                'default'     => '0'
+                'default'     => '4'
             ),
 			'breadcrumb_margin_top'         => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
 				'name'        => 'breadcrumb_margin_top',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
@@ -1861,7 +2397,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
 				'name'        => 'breadcrumb_margin_bottom',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
@@ -1869,7 +2405,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
 				'name'        => 'breadcrumb_margin_left',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
@@ -1877,7 +2413,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
 				'name'        => 'breadcrumb_margin_right',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
@@ -1898,7 +2434,7 @@ class EPKB_KB_Config_Specs {
 				'min'         => '0',
 				'mandatory'   => false,
 				'type'        => EPKB_Input_Filter::TEXT,
-				'default'     => __( 'You are here:', 'echo-knowledge-base' )
+				'default'     => ''
 			),
 			'breadcrumb_home_text'          => array(
 				'label'       => __( 'Breadcrumb Home Text', 'echo-knowledge-base' ),
@@ -1909,16 +2445,16 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::TEXT,
 				'default'     => __( 'Main', 'echo-knowledge-base' )
 			),
-			'breadcrumb_font_size'          => array(
-				'label'       => __( 'Relative Text Size', 'echo-knowledge-base' ),
-				'name'        => 'breadcrumb_font_size',
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'options'     => array(
-					'10' => _x( 'Extra Small', 'font size', 'echo-knowledge-base' ),
-					'12' => _x( 'Small', 'font size', 'echo-knowledge-base' ),
-					'14' => _x( 'Medium', 'font size', 'echo-knowledge-base' ),
-					'16' => _x( 'Large', 'font size', 'echo-knowledge-base' ) ),
-				'default'     => '14'
+			'breadcrumb_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'breadcrumb_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '14',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
 			),
 
 
@@ -1951,8 +2487,8 @@ class EPKB_KB_Config_Specs {
 				'name'        => 'article_content_toolbar_alignment',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
-					'left'  	        => _x( 'Left', 'echo-knowledge-base' ),
-					'right'  	        => _x( 'Right', 'echo-knowledge-base' ) ),
+					'left'  	        => is_rtl() ? _x( 'Right', 'echo-knowledge-base' ) : _x( 'Left', 'echo-knowledge-base' ),
+					'right'  	        => is_rtl() ? _x( 'Left', 'echo-knowledge-base' ) : _x( 'Right', 'echo-knowledge-base' ) ),
 				'default'     => 'right'
 			),
 			'article_content_toolbar_sequence'              => array(
@@ -2090,7 +2626,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
 				'name'        => 'article_content_toolbar_button_margin_top',
 				'max'         => '100',
-				'min'         => '0',
+				'min'         => '-100',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
@@ -2098,7 +2634,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
 				'name'        => 'article_content_toolbar_button_margin_bottom',
 				'max'         => '100',
-				'min'         => '0',
+				'min'         => '-100',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
@@ -2106,7 +2642,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
 				'name'        => 'article_content_toolbar_button_margin_left',
 				'max'         => '100',
-				'min'         => '0',
+				'min'         => '-100',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
@@ -2114,7 +2650,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
 				'name'        => 'article_content_toolbar_button_margin_right',
 				'max'         => '100',
-				'min'         => '0',
+				'min'         => '-100',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),
@@ -2254,7 +2790,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
 				'name'        => 'breadcrumb_margin_bottom_old',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'default'     => '0'
 			),/* option postponed
@@ -2272,6 +2808,68 @@ class EPKB_KB_Config_Specs {
                 ),
                 'default'     => 'M j, Y'
             ), */
+
+
+			/******************************************************************************
+			 *
+			 *  Admin UI Access - CONTEXTs
+			 *
+			 ******************************************************************************/
+
+			// Access to visual Editor (write)
+			'admin_eckb_access_frontend_editor_write' => array(
+				'label'       => __( 'Edit KB colors, fonts, labels and features', 'echo-knowledge-base' ),
+				'name'        => 'admin_eckb_access_frontend_editor_write',
+				'type'        => EPKB_Input_Filter::TEXT,
+				'max'         => '60',
+				'min'         => '3',
+				'allowed_access'  => array( EPKB_Admin_UI_Access::EPKB_WP_EDITOR_CAPABILITY ),
+				'default'     => EPKB_Utilities::is_amag_on() ? EPKB_Admin_UI_Access::EPKB_ADMIN_CAPABILITY : EPKB_Admin_UI_Access::EPKB_WP_EDITOR_CAPABILITY
+			),
+
+			// Access to Order Articles (write)
+			'admin_eckb_access_order_articles_write' => array(
+				'label'       => __( 'Order Articles and Categories', 'echo-knowledge-base' ),
+				'name'        => 'admin_eckb_access_order_articles_write',
+				'type'        => EPKB_Input_Filter::TEXT,
+				'max'         => '60',
+				'min'         => '3',
+				'allowed_access'  => array( EPKB_Admin_UI_Access::EPKB_WP_EDITOR_CAPABILITY ),
+				'default'     => EPKB_Utilities::is_amag_on() ? EPKB_Admin_UI_Access::EPKB_ADMIN_CAPABILITY : EPKB_Admin_UI_Access::EPKB_WP_EDITOR_CAPABILITY
+			),
+
+			// Access to Search Analytics (read)
+			'admin_eckb_access_search_analytics_read' => array(
+				'label'       => __( 'Search Analytics', 'echo-knowledge-base' ),
+				'name'        => 'admin_eckb_access_search_analytics_read',
+				'type'        => EPKB_Input_Filter::TEXT,
+				'max'         => '60',
+				'min'         => '3',
+				'allowed_access'  => array( EPKB_Admin_UI_Access::EPKB_WP_AUTHOR_CAPABILITY, EPKB_Admin_UI_Access::EPKB_WP_EDITOR_CAPABILITY ),
+				'default'     => EPKB_Utilities::is_amag_on() ? EPKB_Admin_UI_Access::EPKB_ADMIN_CAPABILITY : EPKB_Admin_UI_Access::EPKB_WP_AUTHOR_CAPABILITY
+			),
+
+			// Access to Need Help? (read)
+			'admin_eckb_access_need_help_read' => array(
+				'label'       => __( 'Need Help?', 'echo-knowledge-base' ),
+				'name'        => 'admin_eckb_access_need_help_read',
+				'type'        => EPKB_Input_Filter::TEXT,
+				'max'         => '60',
+				'min'         => '3',
+				'allowed_access'  => array( EPKB_Admin_UI_Access::EPKB_WP_AUTHOR_CAPABILITY, EPKB_Admin_UI_Access::EPKB_WP_EDITOR_CAPABILITY ),
+				'default'     => EPKB_Utilities::is_amag_on() ? EPKB_Admin_UI_Access::EPKB_ADMIN_CAPABILITY : EPKB_Admin_UI_Access::EPKB_WP_AUTHOR_CAPABILITY
+			),
+
+			// Access to Add-ons / News (read)
+			'admin_eckb_access_addons_news_read' => array(
+				'label'       => __( 'Add-ons / News', 'echo-knowledge-base' ),
+				'name'        => 'admin_eckb_access_addons_news_read',
+				'type'        => EPKB_Input_Filter::TEXT,
+				'max'         => '60',
+				'min'         => '3',
+				'allowed_access'  => array( EPKB_Admin_UI_Access::EPKB_WP_AUTHOR_CAPABILITY, EPKB_Admin_UI_Access::EPKB_WP_EDITOR_CAPABILITY ),
+				'default'     => EPKB_Utilities::is_amag_on() ? EPKB_Admin_UI_Access::EPKB_ADMIN_CAPABILITY : EPKB_Admin_UI_Access::EPKB_WP_AUTHOR_CAPABILITY
+			)
 		);
 
 		// add CORE LAYOUTS SHARED configuration
@@ -2294,10 +2892,7 @@ class EPKB_KB_Config_Specs {
 	 * @return array
 	 */
 	public static function shared_configuration() {
-
-		$default_style = EPKB_KB_Config_Layout_Basic::demo_1_set();
-		$default_color = EPKB_KB_Config_Layout_Basic::demo_1_colors();
-
+		
 		/**
 		 * Layout/color settings shared among layouts and color sets are listed here.
 		 * If a setting becomes unique to color/layout, move it to its file.
@@ -2320,18 +2915,18 @@ class EPKB_KB_Config_Specs {
 				'options'     => array(
 					'epkb-boxed' => __( 'Boxed Width', 'echo-knowledge-base' ),
 					'epkb-full' => __( 'Full Width', 'echo-knowledge-base' ) ),
-				'default'     => $default_style['width']
+				'default'     => 'epkb-full'
 			),
-			'section_font_size' => array(
-				'label'       => __( 'Relative Text Size', 'echo-knowledge-base' ),
-				'name'        => 'section_font_size',
-				'type'        => EPKB_Input_Filter::SELECTION,
-				'options'     => array(
-					'section_xsmall_font' => _x( 'Extra Small', 'font size', 'echo-knowledge-base' ),
-					'section_small_font' => _x( 'Small', 'font size', 'echo-knowledge-base' ),
-					'section_medium_font' => _x( 'Medium', 'font size', 'echo-knowledge-base' ),
-					'section_large_font' => _x( 'Large', 'font size', 'echo-knowledge-base' ) ),
-				'default'     => $default_style['section_font_size']
+			'section_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'section_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '14',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
 			),
 			'show_articles_before_categories' => array(
 				'label'       => __( 'Show Articles', 'echo-knowledge-base' ),
@@ -2344,14 +2939,14 @@ class EPKB_KB_Config_Specs {
 				'default'     => 'on'
 			),
 			'categories_layout_list_mode' => array(
-				'label'       => __( 'Categories List Mode (Article and Archive Page)', 'echo-knowledge-base' ),
+				'label'       => __( 'Categories to Display', 'echo-knowledge-base' ),
 				'name'        => 'categories_layout_list_mode',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
 					'list_top_categories' => __( 'Top Categories', 'echo-knowledge-base' ),
 					'list_sibling_categories' => __( 'Sibling Categories', 'echo-knowledge-base' ),
 					),
-				'default'     => $default_style['categories_layout_list_mode']
+				'default'     => 'list_top_categories'
 			),
 			'nof_columns' => array(
 				'label'       => __( 'Number of Columns', 'echo-knowledge-base' ),
@@ -2359,7 +2954,7 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'style'       => 'small',
 				'options'     => array( 'one-col' => '1', 'two-col' => '2', 'three-col' => '3', 'four-col' => '4' ),
-				'default'     => $default_style['nof_columns']
+				'default'     => 'three-col'
 			),
 			'nof_articles_displayed' => array(
 				'label'       => __( 'Number of Articles Listed', 'echo-knowledge-base' ),
@@ -2368,7 +2963,7 @@ class EPKB_KB_Config_Specs {
 				'min'         => '1',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'style'       => 'small',
-				'default'     => $default_style['nof_articles_displayed'],
+				'default'     => 8
 			),
 			'expand_articles_icon' => array(
 				'label'       => __( 'Icon Type', 'echo-knowledge-base' ),
@@ -2380,7 +2975,7 @@ class EPKB_KB_Config_Specs {
 				                        'ep_font_icon_arrow_carrot_right' => _x( 'Arrow Caret', 'icon type', 'echo-knowledge-base' ),
 				                        'ep_font_icon_arrow_carrot_right_circle' => _x( 'Arrow Caret 2', 'icon type', 'echo-knowledge-base' ),
 				                        'ep_font_icon_folder_add' => _x( 'Folder', 'icon type', 'echo-knowledge-base' ) ),
-				'default'     => $default_style['expand_articles_icon']
+				'default'     => 'ep_font_icon_arrow_carrot_right'
 			),
 
 
@@ -2397,7 +2992,7 @@ class EPKB_KB_Config_Specs {
 					'epkb-search-form-3' => __( 'No search button', 'echo-knowledge-base' ),
 					'epkb-search-form-0' => __( 'No search box', 'echo-knowledge-base' )
 				),
-				'default'     => $default_style['search_layout']
+				'default'     => 'epkb-search-form-1'
 			),
 			'search_input_border_width' => array(
 				'label'       => __( 'Border (px)', 'echo-knowledge-base' ),
@@ -2406,7 +3001,7 @@ class EPKB_KB_Config_Specs {
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'style'       => 'small',
-				'default'     => $default_style['search_input_border_width']
+				'default'     => 1
 			),
 			'search_box_padding_top' => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
@@ -2414,7 +3009,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '100',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['search_box_padding_top']
+				'default'     => 20
 			),
 			'search_box_padding_bottom' => array(
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
@@ -2422,7 +3017,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '100',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['search_box_padding_bottom']
+				'default'     => 20
 			),
 			'search_box_padding_left' => array(
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
@@ -2430,7 +3025,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '200',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['search_box_padding_left']
+				'default'     => 0
 			),
 			'search_box_padding_right' => array(
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
@@ -2438,23 +3033,23 @@ class EPKB_KB_Config_Specs {
 				'max'         => '200',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['search_box_padding_right']
+				'default'     => 0
 			),
 			'search_box_margin_top' => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
 				'name'        => 'search_box_margin_top',
 				'max'         => '200',
-				'min'         => '0',
+				'min'         => '-200',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['search_box_margin_top']
+				'default'     => 0
 			),
 			'search_box_margin_bottom' => array(
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
 				'name'        => 'search_box_margin_bottom',
 				'max'         => '200',
-				'min'         => '0',
+				'min'         => '-200',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['search_box_margin_bottom']
+				'default'     => 40
 			),
 			'search_box_input_width' => array(
 				'label'       => __( 'Width (%)', 'echo-knowledge-base' ),
@@ -2469,7 +3064,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Search Results: Match Article Colors', 'echo-knowledge-base' ),
 				'name'        => 'search_box_results_style',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => $default_style['search_box_results_style']
+				'default'     => 'off'
 			),
 			'search_title_html_tag' => array(
 				'label'       => __( 'Search Title Html Tag', 'echo-knowledge-base' ),
@@ -2478,15 +3073,18 @@ class EPKB_KB_Config_Specs {
 				'max'         => '10',
 				'min'         => '1',
 				'type'        => EPKB_Input_Filter::TEXT,
-				'default'     => $default_style['search_title_html_tag']
+				'default'     => 'div'
 			),
-			'search_title_font_size' => array(
-				'label'       => __( 'Search Title Font Size (px)', 'echo-knowledge-base' ),
-				'name'        => 'search_title_font_size',
-				'max'         => '50',
-				'min'         => '12',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['search_title_font_size']
+			'search_title_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'search_title_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '36',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
 			),
 
 			/***  KB Article Page -> Search Box ***/
@@ -2502,7 +3100,7 @@ class EPKB_KB_Config_Specs {
 					'epkb-search-form-3' => __( 'No search button', 'echo-knowledge-base' ),
 					'epkb-search-form-0' => __( 'No search box', 'echo-knowledge-base' )
 				),
-				'default'     => $default_style['article_search_layout']
+				'default'     => 'epkb-search-form-1'
 			),
 			'article_search_input_border_width' => array(
 				'label'       => __( 'Border (px)', 'echo-knowledge-base' ),
@@ -2510,7 +3108,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '10',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['article_search_input_border_width']
+				'default'     => 1
 			),
 			'article_search_box_padding_top' => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
@@ -2518,7 +3116,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '100',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['article_search_box_padding_top']
+				'default'     => 20
 			),
 			'article_search_box_padding_bottom' => array(
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
@@ -2526,7 +3124,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '100',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['article_search_box_padding_bottom']
+				'default'     => 20
 			),
 			'article_search_box_padding_left' => array(
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
@@ -2534,7 +3132,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '200',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['article_search_box_padding_left']
+				'default'     => 0
 			),
 			'article_search_box_padding_right' => array(
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
@@ -2542,23 +3140,23 @@ class EPKB_KB_Config_Specs {
 				'max'         => '200',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['article_search_box_padding_right']
+				'default'     => 0
 			),
 			'article_search_box_margin_top' => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
 				'name'        => 'article_search_box_margin_top',
 				'max'         => '200',
-				'min'         => '0',
+				'min'         => '-200',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['article_search_box_margin_top']
+				'default'     => 0
 			),
 			'article_search_box_margin_bottom' => array(
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
 				'name'        => 'article_search_box_margin_bottom',
 				'max'         => '200',
-				'min'         => '0',
+				'min'         => '-200',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['article_search_box_margin_bottom']
+				'default'     => 40
 			),
 			'article_search_box_input_width' => array(
 				'label'       => __( 'Width (%)', 'echo-knowledge-base' ),
@@ -2573,7 +3171,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Search Results: Match Article Colors', 'echo-knowledge-base' ),
 				'name'        => 'article_search_box_results_style',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => $default_style['article_search_box_results_style']
+				'default'     => 'off'
 			),
 			'article_search_title_html_tag' => array(
 				'label'       => __( 'Search Title Html Tag', 'echo-knowledge-base' ),
@@ -2582,15 +3180,18 @@ class EPKB_KB_Config_Specs {
 				'max'         => '10',
 				'min'         => '1',
 				'type'        => EPKB_Input_Filter::TEXT,
-				'default'     => $default_style['article_search_title_html_tag']
+				'default'     => 'div'
 			),
-			'article_search_title_font_size' => array(
-				'label'       => __( 'Search Title Font Size (px)', 'echo-knowledge-base' ),
-				'name'        => 'article_search_title_font_size',
-				'max'         => '50',
-				'min'         => '12',
-				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['article_search_title_font_size']
+			'article_search_title_typography' => array(
+				'label'       => __( 'Typography', 'echo-knowledge-base' ),
+				'name'        => 'article_search_title_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family' => '',
+					'font-size' => '36',
+					'font-size-units' => 'px',
+					'font-weight' => '',
+				)
 			),
 
 
@@ -2603,24 +3204,24 @@ class EPKB_KB_Config_Specs {
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'style'       => 'small',
 				'options'     => array(
-					'left' => __( 'Left', 'echo-knowledge-base' ),
+					'left' => is_rtl() ? __( 'Right', 'echo-knowledge-base' ) : __( 'Left', 'echo-knowledge-base' ),
 					'center' => __( 'Centered', 'echo-knowledge-base' ),
-					'right' => __( 'Right', 'echo-knowledge-base' )
+					'right' => is_rtl() ? __( 'Left', 'echo-knowledge-base' ) : __( 'Right', 'echo-knowledge-base' )
 				),
-				'default'     => $default_style['section_head_alignment']
+				'default'     => 'left'
 			),
 
 			// Style - Icons
 			'section_head_category_icon_location' => array(
-				'label'       => __( 'Icons Location/Turn Off', 'echo-knowledge-base' ),
+				'label'       => __( 'Icons Location / Turn Off', 'echo-knowledge-base' ),
 				'name'        => 'section_head_category_icon_location',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'style'       => 'small',
 				'options'     => array(
 					'no_icons' => __( 'No Icons', 'echo-knowledge-base' ),
 					'top'   => __( 'Top',   'echo-knowledge-base' ),
-					'left'  => __( 'Left',  'echo-knowledge-base' ),
-					'right' => __( 'Right', 'echo-knowledge-base' )
+					'left' => is_rtl() ? __( 'Start', 'echo-knowledge-base' ) : __( 'Left', 'echo-knowledge-base' ),
+					'right' => is_rtl() ? __( 'End', 'echo-knowledge-base' ) : __( 'Right', 'echo-knowledge-base' )
 				),
 				'default'     => 'left'
 			),
@@ -2638,7 +3239,7 @@ class EPKB_KB_Config_Specs {
 				'label'       => __( 'Divider', 'echo-knowledge-base' ),
 				'name'        => 'section_divider',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => $default_style['section_divider']
+				'default'     => 'on'
 			),
 			'section_divider_thickness' => array(
 				'label'       => __( 'Divider Thickness ( px )', 'echo-knowledge-base' ),
@@ -2647,26 +3248,32 @@ class EPKB_KB_Config_Specs {
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'style'       => 'small',
-				'default'     => $default_style['section_divider_thickness']
+				'default'     => 5
 			),
 			'section_desc_text_on' => array(
 				'label'       => __( 'Category Description', 'echo-knowledge-base' ),
 				'name'        => 'section_desc_text_on',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => $default_style['section_desc_text_on']
+				'default'     => 'off'
 			),
-			'section_hyperlink_text_on' => array(
-				'label'       => __( 'Click on Top Category', 'echo-knowledge-base' ),
+			'section_hyperlink_text_on' => array(   // Grid Layout only
+				'label'       => __( 'Click on Category', 'echo-knowledge-base' ),
 				'name'        => 'section_hyperlink_text_on',
 				'type'        => EPKB_Input_Filter::SELECTION,
 				'options'     => array(
 					'on' => __( 'Go to Category Archive Page', 'echo-knowledge-base' ),
-					'off' => __( 'No Effect', 'echo-knowledge-base' ),
+					'off' => __( 'Go to the first Article', 'echo-knowledge-base' ),
 				),
 				'default'     => 'off'
 			),
+			'section_hyperlink_on' => array(   // Basic and Tabs Layouts
+				'label'       => __( 'Category link to Archive page', 'echo-knowledge-base' ),
+				'name'        => 'section_hyperlink_on',
+				'type'        => EPKB_Input_Filter::CHECKBOX,
+				'default'     => 'off'
+			),
 
-			//Advanced
+			// Advanced
 			'section_box_shadow' => array(
 				'label'       => __( 'Article List Shadow', 'echo-knowledge-base' ),
 				'name'        => 'section_box_shadow',
@@ -2677,7 +3284,7 @@ class EPKB_KB_Config_Specs {
 					'section_medium_shadow' => __( 'Medium Shadow', 'echo-knowledge-base' ),
 					'section_bottom_shadow' => __( 'Bottom Shadow', 'echo-knowledge-base' )
 				),
-				'default'     => $default_style['section_box_shadow']
+				'default'     => 'no_shadow'
 			),
 			'section_head_padding_top' => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
@@ -2685,7 +3292,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '50',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['section_head_padding_top']
+				'default'     => 20
 			),
 			'section_head_padding_bottom' => array(
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
@@ -2693,7 +3300,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '50',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['section_head_padding_bottom']
+				'default'     => 20
 			),
 			'section_head_padding_left' => array(
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
@@ -2701,7 +3308,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '50',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['section_head_padding_left']
+				'default'     => 4
 			),
 			'section_head_padding_right' => array(
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
@@ -2709,7 +3316,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '50',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['section_head_padding_right']
+				'default'     => 4
 			),
             'section_border_radius' => array(
 				'label'       => __( 'Border Radius', 'echo-knowledge-base' ),
@@ -2718,7 +3325,7 @@ class EPKB_KB_Config_Specs {
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 	            'style'       => 'small',
-				'default'     => $default_style['section_border_radius']
+				'default'     => 4
 			),
 			'section_border_width' => array(
 				'label'       => __( 'Border Width', 'echo-knowledge-base' ),
@@ -2727,7 +3334,7 @@ class EPKB_KB_Config_Specs {
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'style'       => 'small',
-				'default'     => $default_style['section_border_width']
+				'default'     => 0
 			),
 
 			/***   KB Main Page -> Articles Listed in Sub-Category ***/
@@ -2739,7 +3346,7 @@ class EPKB_KB_Config_Specs {
 					'section_no_height' => __( 'Variable', 'echo-knowledge-base' ),
 					'section_min_height' => __( 'Minimum', 'echo-knowledge-base' ),
 					'section_fixed_height' => __( 'Maximum', 'echo-knowledge-base' )  ),
-				'default'     => $default_style['section_box_height_mode']
+				'default'     => 'section_min_height'
 			),
 			'section_body_height' => array(
 				'label'       => __( 'Height ( px )', 'echo-knowledge-base' ),
@@ -2748,7 +3355,7 @@ class EPKB_KB_Config_Specs {
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'style'       => 'small',
-				'default'     => $default_style['section_body_height']
+				'default'     => 200
 			),
 			'section_body_padding_top' => array(
 				'label'       => __( 'Top', 'echo-knowledge-base' ),
@@ -2756,7 +3363,7 @@ class EPKB_KB_Config_Specs {
                 'max'         => '200',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['section_body_padding_top']
+				'default'     => 4
 			),
 			'section_body_padding_bottom' => array(
 				'label'       => __( 'Bottom', 'echo-knowledge-base' ),
@@ -2764,7 +3371,7 @@ class EPKB_KB_Config_Specs {
                 'max'         => '200',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['section_body_padding_bottom']
+				'default'     => 4
 			),
 			'section_body_padding_left' => array(
 				'label'       => __( 'Left', 'echo-knowledge-base' ),
@@ -2772,7 +3379,7 @@ class EPKB_KB_Config_Specs {
                 'max'         => '200',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['section_body_padding_left']
+				'default'     => 10
 			),
 			'section_body_padding_right' => array(
 				'label'       => __( 'Right', 'echo-knowledge-base' ),
@@ -2780,31 +3387,31 @@ class EPKB_KB_Config_Specs {
                 'max'         => '200',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
-				'default'     => $default_style['section_body_padding_right']
+				'default'     => 10
 			),
 			'section_article_underline' => array(
 				'label'       => __( 'Article Underline Hover', 'echo-knowledge-base' ),
 				'name'        => 'section_article_underline',
 				'type'        => EPKB_Input_Filter::CHECKBOX,
-				'default'     => $default_style['section_article_underline']
+				'default'     => 'on'
 			),
 			'article_list_margin' => array(
-				'label'       => __( 'List off Set', 'echo-knowledge-base' ),
+				'label'       => __( 'Left offset for Articles List', 'echo-knowledge-base' ),
 				'name'        => 'article_list_margin',
 				'max'         => '50',
-				'min'         => '0',
+				'min'         => '-50',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'style'       => 'small',
-				'default'     => $default_style['article_list_margin']
+				'default'     => 10
 			),
 			'article_list_spacing' => array(
-				'label'       => __( 'Between', 'echo-knowledge-base' ),
+				'label'       => __( 'Space Between Items', 'echo-knowledge-base' ),
 				'name'        => 'article_list_spacing',
 				'max'         => '50',
 				'min'         => '0',
 				'type'        => EPKB_Input_Filter::NUMBER,
 				'style'       => 'small',
-				'default'     => $default_style['article_list_spacing']
+				'default'     => 8
 			),
 
 
@@ -2814,7 +3421,7 @@ class EPKB_KB_Config_Specs {
 			 *
 			 ******************************************************************************/
 
-			/***  Main Page Search Box ***/
+			/***  Main Page Search Box COLORS ***/
 			'search_title_font_color' => array(
 				'label'       => __( 'Title', 'echo-knowledge-base' ),
 				'name'        => 'search_title_font_color',
@@ -2822,7 +3429,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['search_title_font_color']
+				'default'     => '#FFFFFF'
 			),
 			'search_background_color' => array(
 				'label'       => __( 'Search Background', 'echo-knowledge-base' ),
@@ -2831,7 +3438,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['search_background_color']
+				'default'     => '#f7941d'
 			),
 			'search_text_input_background_color' => array(
 				'label'       => __( 'Background', 'echo-knowledge-base' ),
@@ -2840,7 +3447,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['search_text_input_background_color']
+				'default'     => '#FFFFFF'
 			),
 			'search_text_input_border_color' => array(
 				'label'       => __( 'Border', 'echo-knowledge-base' ),
@@ -2849,7 +3456,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['search_text_input_border_color']
+				'default'     => '#CCCCCC'
 			),
 			'search_btn_background_color' => array(
 				'label'       => __( 'Background', 'echo-knowledge-base' ),
@@ -2858,7 +3465,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['search_btn_background_color']
+				'default'     => '#40474f'
 			),
 			'search_btn_border_color' => array(
 				'label'       => __( 'Border', 'echo-knowledge-base' ),
@@ -2867,10 +3474,10 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['search_btn_border_color']
+				'default'     => '#F1F1F1'
 			),
 
-			/***  Article Page Search Box ***/
+			/***  Article Page Search Box COLORS ***/
 			'article_search_title_font_color' => array(
 				'label'       => __( 'Title', 'echo-knowledge-base' ),
 				'name'        => 'article_search_title_font_color',
@@ -2878,7 +3485,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['article_search_title_font_color']
+				'default'     => '#FFFFFF'
 			),
 			'article_search_background_color' => array(
 				'label'       => __( 'Search Background', 'echo-knowledge-base' ),
@@ -2887,7 +3494,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['article_search_background_color']
+				'default'     => '#f7941d'
 			),
 			'article_search_text_input_background_color' => array(
 				'label'       => __( 'Background', 'echo-knowledge-base' ),
@@ -2896,7 +3503,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['article_search_text_input_background_color']
+				'default'     => '#FFFFFF'
 			),
 			'article_search_text_input_border_color' => array(
 				'label'       => __( 'Border', 'echo-knowledge-base' ),
@@ -2905,7 +3512,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['article_search_text_input_border_color']
+				'default'     => '#CCCCCC'
 			),
 			'article_search_btn_background_color' => array(
 				'label'       => __( 'Background', 'echo-knowledge-base' ),
@@ -2914,7 +3521,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['article_search_btn_background_color']
+				'default'     => '#40474f'
 			),
 			'article_search_btn_border_color' => array(
 				'label'       => __( 'Border', 'echo-knowledge-base' ),
@@ -2923,7 +3530,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['article_search_btn_border_color']
+				'default'     => '#F1F1F1'
 			),
 
 			/***  Content ***/
@@ -2934,10 +3541,21 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['background_color']
+				'default'     =>  '#FFFFFF'
 			),
 
 			/***  List of Articles ***/
+            'article_typography' => array(
+                'label'       => __( 'Typography', 'echo-knowledge-base' ),
+                'name'        => 'article_typography',
+                'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+                'default'     => array(
+                    'font-family' => '',
+                    'font-size' => '14',
+                    'font-size-units' => 'px',
+                    'font-weight' => '',
+                )
+            ),
 			'article_font_color' => array(
 				'label'       => __( 'Text', 'echo-knowledge-base' ),
 				'name'        => 'article_font_color',
@@ -2945,7 +3563,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['article_font_color']
+				'default'     => '#459fed'
 			),
 			'article_icon_color' => array(
 				'label'       => __( 'Icon', 'echo-knowledge-base' ),
@@ -2954,7 +3572,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['article_icon_color']
+				'default'     => '#b3b3b3'
 			),
 			'section_body_background_color' => array(
 				'label'       => __( 'Body Background', 'echo-knowledge-base' ),
@@ -2963,7 +3581,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['section_body_background_color']
+				'default'     => '#FFFFFF'
 			),
 			'section_border_color' => array(
 				'label'       => __( 'Border Color', 'echo-knowledge-base' ),
@@ -2972,7 +3590,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['section_border_color']
+				'default'     => '#F7F7F7'
 			),
 
 			/***  Categories ***/
@@ -2983,7 +3601,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['section_head_font_color']
+				'default'     => '#40474f'
 			),
 			'section_head_background_color' => array(
 				'label'       => __( 'Background', 'echo-knowledge-base' ),
@@ -2992,7 +3610,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['section_head_background_color']
+				'default'     => '#FFFFFF'
 			),
 			'section_head_description_font_color' => array(
 				'label'       => __( 'Category Description Color', 'echo-knowledge-base' ),
@@ -3001,7 +3619,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['section_head_description_font_color']
+				'default'     => '#b3b3b3'
 			),
 			'section_divider_color' => array(
 				'label'       => __( 'Divider', 'echo-knowledge-base' ),
@@ -3010,7 +3628,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['section_divider_color']
+				'default'     => '#edf2f6'
 			),
 			'section_category_font_color' => array(
 				'label'       => __( 'Text Color', 'echo-knowledge-base' ),
@@ -3019,7 +3637,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['section_category_font_color']
+				'default'     => '#40474f'
 			),
 			'section_category_icon_color' => array(
 				'label'       => __( 'Icon Color', 'echo-knowledge-base' ),
@@ -3028,7 +3646,7 @@ class EPKB_KB_Config_Specs {
 				'max'         => '7',
 				'min'         => '7',
 				'type'        => EPKB_Input_Filter::COLOR_HEX,
-				'default'     => $default_color['section_category_icon_color']
+				'default'     => '#f7941d'
 			),
 			'section_head_category_icon_color' => array(
 				'label'             => __( 'Category Icon', 'echo-knowledge-base' ),
@@ -3037,8 +3655,31 @@ class EPKB_KB_Config_Specs {
 				'max'               => '7',
 				'min'               => '7',
 				'type'              => EPKB_Input_Filter::COLOR_HEX,
-				'default'           => $default_color['section_head_category_icon_color']
+				'default'           => '#f7941d'
 			),
+			'section_head_typography' => array(
+				'label'       => __( 'Name Typography', 'echo-knowledge-base' ),
+				'name'        => 'section_head_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+								'font-family'       => '',
+								'font-size'         => '21',
+								'font-size-units'   => 'px',
+								'font-weight'       => '',
+				)
+			),
+			'section_head_description_typography' => array(
+				'label'       => __( 'Description Typography', 'echo-knowledge-base' ),
+				'name'        => 'section_head_description_typography',
+				'type'        => EPKB_Input_Filter::TYPOGRAPHY,
+				'default'     => array(
+					'font-family'       => '',
+					'font-size'         => '14',
+					'font-size-units'   => 'px',
+					'font-weight'       => '',
+				)
+			),
+
 
 			/******************************************************************************
 			 *
@@ -3176,7 +3817,7 @@ class EPKB_KB_Config_Specs {
 				'default'     => __( 'Show all articles', 'echo-knowledge-base' )
 			),
 			'choose_main_topic' => array(
-				'label'       => __( 'Choose Main Topic', 'echo-knowledge-base' ),
+				'label'       => __( 'Drop Down Title', 'echo-knowledge-base' ),
 				'name'        => 'choose_main_topic',
 				'size'        => '60',
 				'max'         => '150',
@@ -3216,17 +3857,15 @@ class EPKB_KB_Config_Specs {
 	}
 
 	/**
-	 * Return default values from given specification.
-	 * @param $config_specs
+	 * Get names of all configuration items for KB configuration
 	 * @return array
 	 */
-	public static function get_specs_defaults( $config_specs ) {
-		$default_configuration = array();
-		foreach( $config_specs as $key => $spec ) {
-			$default = isset($spec['default']) ? $spec['default'] : '';
-			$default_configuration += array( $key => $default );
+	public static function get_specs_item_name_keys() {
+		$keys = array();
+		foreach ( self::get_fields_specification( EPKB_KB_Config_DB::DEFAULT_KB_ID ) as $key => $spec ) {
+			$keys[$key] = '';
 		}
-		return $default_configuration;
+		return $keys;
 	}
 }
 

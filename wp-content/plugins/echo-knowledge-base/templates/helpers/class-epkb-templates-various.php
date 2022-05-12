@@ -48,7 +48,7 @@ class EPKB_Templates_Various {
 	 */
     private static function get_article_breadcrumb_v1( $article_id, $articles_seq_data, $category_seq_data ) {
 
-		$seq_no = EPKB_Utilities::get('seq_no', 1, false);
+		$seq_no = EPKB_Utilities::get( 'seq_no', 1 );
 		$seq_no = EPKB_Utilities::sanitize_int( $seq_no );
 		$seq_cnt = 0;
 		$first_instance = array();
@@ -177,7 +177,7 @@ class EPKB_Templates_Various {
 	 */
 	private static function get_article_breadcrumb_v2( $article_id, $articles_seq_data, $category_seq_data ) {
 
-        $seq_no = EPKB_Utilities::get('seq_no', 1, false);
+        $seq_no = EPKB_Utilities::get( 'seq_no', 1 );
         $seq_no = EPKB_Utilities::sanitize_int( $seq_no );
         $seq_cnt = 0;
         $first_instance = array();

@@ -1,0 +1,503 @@
+0000.000 (0) Opened log file at time: Thu, 12 May 2022 14:17:01 +0000 on http://localhost/wikitest
+0000.002 (0) UpdraftPlus WordPress backup plugin (https://updraftplus.com): 2.22.11.25 WP: 5.9.3 PHP: 8.1.2 (apache2handler, Windows NT FV-JESUS 10.0 build 19043 (Windows 10) AMD64) MySQL: 10.4.22-MariaDB (max packet size=1048576) WPLANG: es_ES Server: Apache/2.4.52 (Win64) OpenSSL/1.1.1m PHP/8.1.2 safe_mode: 0 max_execution_time: 900 memory_limit: 512M (used: 88.6M | 90M) multisite: N openssl: OpenSSL 1.1.1m  14 Dec 2021 mcrypt: N LANG:  ZipArchive::addFile: Y
+0000.004 (0) Free space on disk containing Updraft's temporary directory: 111249.9 MB
+0000.009 (0) Tasks: Backup files: 1 (schedule: unset) Backup DB: 1 (schedule: unset)
+0000.013 (0) Requesting semaphore lock (fd) (apparently not via scheduler)
+0000.017 (0) Set semaphore last lock (fd) time to 2022-05-12 14:17:01
+0000.018 (0) Semaphore lock (fd) complete
+0000.024 (0) Backup run: resumption=0, nonce=866e3ce87195, file_nonce=866e3ce87195 begun at=1652365021 (0s ago), job type=backup, label=Automatic backup before update
+0000.026 (0) Scheduling a resumption (1) after 300 seconds (1652365321) in case this run gets aborted
+0000.038 (0) Checking if we have a zip executable available
+0000.041 (0) Creation of backups of directories: beginning
+0000.045 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0000.049 (0) Beginning creation of dump of plugins (split every: 400 MB)
+0000.053 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0003.647 (0) Total entities for the zip file: 2097 directories, 10335 files (0 skipped as non-modified), 107.3 MB
+0003.657 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 2.0 seconds have passed since the last write (0 MB, 1 (1) files added so far); re-opening (prior size: 0 KB)
+0003.766 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 100 files added (on-disk size: 435.9 KB)
+0003.800 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 200 files added (on-disk size: 435.9 KB)
+0003.837 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 300 files added (on-disk size: 435.9 KB)
+0003.870 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 400 files added (on-disk size: 435.9 KB)
+0003.903 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 500 files added (on-disk size: 435.9 KB)
+0003.936 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 600 files added (on-disk size: 435.9 KB)
+0003.968 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 700 files added (on-disk size: 435.9 KB)
+0004.001 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 800 files added (on-disk size: 435.9 KB)
+0004.033 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 900 files added (on-disk size: 435.9 KB)
+0004.066 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1000 files added (on-disk size: 435.9 KB)
+0004.069 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (16.1 MB, 10335 files batched, 1001 (1002) added so far); re-opening (prior size: 435.9 KB)
+0004.891 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1100 files added (on-disk size: 8378.3 KB)
+0004.924 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1200 files added (on-disk size: 8378.3 KB)
+0004.958 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1300 files added (on-disk size: 8378.3 KB)
+0004.992 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1400 files added (on-disk size: 8378.3 KB)
+0005.025 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1500 files added (on-disk size: 8378.3 KB)
+0005.061 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1600 files added (on-disk size: 8378.3 KB)
+0005.109 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1700 files added (on-disk size: 8378.3 KB)
+0005.144 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1800 files added (on-disk size: 8378.3 KB)
+0005.179 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 1900 files added (on-disk size: 8378.3 KB)
+0005.216 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2000 files added (on-disk size: 8378.3 KB)
+0005.219 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (10.3 MB, 10335 files batched, 1001 (2003) added so far); re-opening (prior size: 8378.3 KB)
+0006.022 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2100 files added (on-disk size: 11367.6 KB)
+0006.058 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2200 files added (on-disk size: 11367.6 KB)
+0006.094 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2300 files added (on-disk size: 11367.6 KB)
+0006.128 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2400 files added (on-disk size: 11367.6 KB)
+0006.163 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2500 files added (on-disk size: 11367.6 KB)
+0006.197 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2600 files added (on-disk size: 11367.6 KB)
+0006.231 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2700 files added (on-disk size: 11367.6 KB)
+0006.264 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2800 files added (on-disk size: 11367.6 KB)
+0006.297 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 2900 files added (on-disk size: 11367.6 KB)
+0006.331 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3000 files added (on-disk size: 11367.6 KB)
+0006.334 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (7.9 MB, 10335 files batched, 1001 (3004) added so far); re-opening (prior size: 11367.6 KB)
+0007.040 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3100 files added (on-disk size: 14104 KB)
+0007.075 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3200 files added (on-disk size: 14104 KB)
+0007.109 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3300 files added (on-disk size: 14104 KB)
+0007.144 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3400 files added (on-disk size: 14104 KB)
+0007.179 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3500 files added (on-disk size: 14104 KB)
+0007.213 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3600 files added (on-disk size: 14104 KB)
+0007.249 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3700 files added (on-disk size: 14104 KB)
+0007.284 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3800 files added (on-disk size: 14104 KB)
+0007.318 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 3900 files added (on-disk size: 14104 KB)
+0007.352 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4000 files added (on-disk size: 14104 KB)
+0007.356 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (13.1 MB, 10335 files batched, 1001 (4005) added so far); re-opening (prior size: 14104 KB)
+0008.133 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4100 files added (on-disk size: 17584.1 KB)
+0008.168 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4200 files added (on-disk size: 17584.1 KB)
+0008.202 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4300 files added (on-disk size: 17584.1 KB)
+0008.235 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4400 files added (on-disk size: 17584.1 KB)
+0008.270 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4500 files added (on-disk size: 17584.1 KB)
+0008.305 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4600 files added (on-disk size: 17584.1 KB)
+0008.339 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4700 files added (on-disk size: 17584.1 KB)
+0008.372 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4800 files added (on-disk size: 17584.1 KB)
+0008.408 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 4900 files added (on-disk size: 17584.1 KB)
+0008.442 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5000 files added (on-disk size: 17584.1 KB)
+0008.445 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (2.6 MB, 10335 files batched, 1001 (5006) added so far); re-opening (prior size: 17584.1 KB)
+0008.924 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5100 files added (on-disk size: 18900.4 KB)
+0008.957 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5200 files added (on-disk size: 18900.4 KB)
+0008.993 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5300 files added (on-disk size: 18900.4 KB)
+0009.046 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5400 files added (on-disk size: 18900.4 KB)
+0009.081 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5500 files added (on-disk size: 18900.4 KB)
+0009.117 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5600 files added (on-disk size: 18900.4 KB)
+0009.151 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5700 files added (on-disk size: 18900.4 KB)
+0009.186 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5800 files added (on-disk size: 18900.4 KB)
+0009.221 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 5900 files added (on-disk size: 18900.4 KB)
+0009.257 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6000 files added (on-disk size: 18900.4 KB)
+0009.262 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (7.5 MB, 10335 files batched, 1001 (6007) added so far); re-opening (prior size: 18900.4 KB)
+0009.899 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6100 files added (on-disk size: 21118.8 KB)
+0009.935 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6200 files added (on-disk size: 21118.8 KB)
+0009.974 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6300 files added (on-disk size: 21118.8 KB)
+0010.034 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6400 files added (on-disk size: 21118.8 KB)
+0010.066 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6500 files added (on-disk size: 21118.8 KB)
+0010.099 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6600 files added (on-disk size: 21118.8 KB)
+0010.133 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6700 files added (on-disk size: 21118.8 KB)
+0010.167 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6800 files added (on-disk size: 21118.8 KB)
+0010.201 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 6900 files added (on-disk size: 21118.8 KB)
+0010.235 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7000 files added (on-disk size: 21118.8 KB)
+0010.241 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (13.3 MB, 10335 files batched, 1001 (7008) added so far); re-opening (prior size: 21118.8 KB)
+0010.841 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7100 files added (on-disk size: 32171.4 KB)
+0010.875 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7200 files added (on-disk size: 32171.4 KB)
+0010.912 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7300 files added (on-disk size: 32171.4 KB)
+0010.947 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7400 files added (on-disk size: 32171.4 KB)
+0010.983 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7500 files added (on-disk size: 32171.4 KB)
+0011.047 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7600 files added (on-disk size: 32171.4 KB)
+0011.080 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7700 files added (on-disk size: 32171.4 KB)
+0011.120 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7800 files added (on-disk size: 32171.4 KB)
+0011.159 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 7900 files added (on-disk size: 32171.4 KB)
+0011.194 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8000 files added (on-disk size: 32171.4 KB)
+0011.200 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (20.8 MB, 10335 files batched, 1001 (8009) added so far); re-opening (prior size: 32171.4 KB)
+0013.266 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8100 files added (on-disk size: 40546.9 KB)
+0013.302 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8200 files added (on-disk size: 40546.9 KB)
+0013.338 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8300 files added (on-disk size: 40546.9 KB)
+0013.374 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8400 files added (on-disk size: 40546.9 KB)
+0013.411 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8500 files added (on-disk size: 40546.9 KB)
+0013.449 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8600 files added (on-disk size: 40546.9 KB)
+0013.482 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8700 files added (on-disk size: 40546.9 KB)
+0013.519 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8800 files added (on-disk size: 40546.9 KB)
+0013.557 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 8900 files added (on-disk size: 40546.9 KB)
+0013.600 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9000 files added (on-disk size: 40546.9 KB)
+0013.608 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (5.8 MB, 10335 files batched, 1001 (9010) added so far); re-opening (prior size: 40546.9 KB)
+0014.293 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9100 files added (on-disk size: 43148.9 KB)
+0014.379 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9200 files added (on-disk size: 43148.9 KB)
+0014.480 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9300 files added (on-disk size: 43148.9 KB)
+0014.570 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9400 files added (on-disk size: 43148.9 KB)
+0014.674 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9500 files added (on-disk size: 43148.9 KB)
+0014.791 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9600 files added (on-disk size: 43148.9 KB)
+0014.911 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9700 files added (on-disk size: 43148.9 KB)
+0015.012 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9800 files added (on-disk size: 43148.9 KB)
+0015.110 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 9900 files added (on-disk size: 43148.9 KB)
+0015.198 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 10000 files added (on-disk size: 43148.9 KB)
+0015.209 (0) Adding batch to zip file (UpdraftPlus_ZipArchive): over 1000 files added on this batch (7.5 MB, 10335 files batched, 1001 (10011) added so far); re-opening (prior size: 43148.9 KB)
+0015.982 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 10100 files added (on-disk size: 45082.1 KB)
+0016.157 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 10200 files added (on-disk size: 45082.1 KB)
+0016.275 (0) Zip: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.tmp: 10300 files added (on-disk size: 45082.1 KB)
+0016.872 (0) Creating zip file manifest (C:\xampp\htdocs\wikitest/wp-content/updraft/backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.list-temp.tmp)
+0016.906 (0) Successfully created zip file manifest (size: 969834)
+0017.305 (0) Created plugins zip (0) - 45939.7 KB in 17.3 s (2662.9 KB/s) (sha1: 84d0c5b3c57eb06d23c8b408075c0fa33962b1b8, sha256: c8c97d1cb8fd5480ded41c25809cf95074fa422687aa4f253d988c7c3b8fee6f)
+0017.309 (0) No backup of themes: excluded by user's options
+0017.310 (0) No backup of uploads: excluded by user's options
+0017.312 (0) No backup of wpcore: excluded by user's options
+0017.314 (0) No backup of others: excluded by user's options
+0017.315 (0) No backup of more: excluded by user's options
+0017.323 (0) Saving backup status to database (elements: 2)
+0017.325 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0017.329 (0) Beginning creation of database dump (WordPress DB)
+0017.331 (0) SQL compatibility mode is: NO_ZERO_IN_DATE,NO_ENGINE_SUBSTITUTION
+0017.334 (0) Testing potential mysqldump binary: C:\Program Files\MySQL\MySQL Workbench 8.0\mysqldump.exe
+0017.418 (0) Output: /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;\n/*!40103 SET TIME_ZONE='+00:00' */;\n/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;\n/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;\n/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;\n/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;\nDROP TABLE IF EXISTS `wp_options`;\n/*!40101 SET @saved_cs_client     = @@character_set_client */;\n/*!50503 SET character_set_client = utf8mb4 */;\n (truncated - 1310 bytes total)
+0017.420 (0) Binary mysqldump: error (code: 2)
+0017.423 (0) Testing potential mysqldump binary: C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe
+0017.509 (0) Output: /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;\n/*!40103 SET TIME_ZONE='+00:00' */;\n/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;\n/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;\n/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;\n/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;\nDROP TABLE IF EXISTS `wp_options`;\n/*!40101 SET @saved_cs_client     = @@character_set_client */;\n/*!50503 SET character_set_client = utf8mb4 */;\n (truncated - 1310 bytes total)
+0017.512 (0) Binary mysqldump: error (code: 2)
+0017.542 (0) Table wp_options: Total expected rows (via COUNT): 625
+0017.601 (0) Table wp_options: Rows added in this batch (next record: 76220): 621 (uncompressed bytes in this segment=1222893) in 0.07 seconds
+0017.612 (0) Table wp_options: finishing file(s) (2, 281.5 KB)
+0017.624 (0) Table wp_users: Total expected rows (via COUNT): 6
+0017.626 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0017.630 (0) Table wp_users: Rows added in this batch (next record: 7): 6 (uncompressed bytes in this segment=2366) in 0.01 seconds
+0017.639 (0) Table wp_users: finishing file(s) (2, 1.1 KB)
+0017.653 (0) Table wp_usermeta: Total expected rows (via COUNT): 183
+0017.655 (0) Table is relatively small; fetch_rows will thus be: 250 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0017.660 (0) Table wp_usermeta: Rows added in this batch (next record: 240): 183 (uncompressed bytes in this segment=11234) in 0.01 seconds
+0017.671 (0) Table wp_usermeta: finishing file(s) (2, 3.1 KB)
+0017.683 (0) Table wp_actionscheduler_actions: Total expected rows (via COUNT): 2
+0017.685 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0017.689 (0) Table wp_actionscheduler_actions: Rows added in this batch (next record: 4): 2 (uncompressed bytes in this segment=2270) in 0.01 seconds
+0017.699 (0) Table wp_actionscheduler_actions: finishing file(s) (2, 0.7 KB)
+0017.709 (0) Table wp_actionscheduler_claims: Total expected rows (via COUNT): 0
+0017.713 (0) Table wp_actionscheduler_claims: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=636) in 0.01 seconds
+0017.722 (0) Table wp_actionscheduler_claims: finishing file(s) (2, 0.4 KB)
+0017.736 (0) Table wp_actionscheduler_groups: Total expected rows (via COUNT): 4
+0017.739 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0017.743 (0) Table wp_actionscheduler_groups: Rows added in this batch (next record: 4): 4 (uncompressed bytes in this segment=766) in 0.01 seconds
+0017.752 (0) Table wp_actionscheduler_groups: finishing file(s) (2, 0.4 KB)
+0017.763 (0) Table wp_actionscheduler_logs: Total expected rows (via COUNT): 6
+0017.764 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0017.767 (0) Table wp_actionscheduler_logs: Rows added in this batch (next record: 12): 6 (uncompressed bytes in this segment=1348) in 0.01 seconds
+0017.776 (0) Table wp_actionscheduler_logs: finishing file(s) (2, 0.6 KB)
+0017.788 (0) Table wp_commentmeta: Total expected rows (via COUNT): 0
+0017.791 (0) Table wp_commentmeta: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=696) in 0.01 seconds
+0017.801 (0) Table wp_commentmeta: finishing file(s) (2, 0.4 KB)
+0017.812 (0) Table wp_comments: Total expected rows (via COUNT): 11
+0017.813 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0017.817 (0) Table wp_comments: Rows added in this batch (next record: 11): 11 (uncompressed bytes in this segment=6360) in 0.01 seconds
+0017.826 (0) Table wp_comments: finishing file(s) (2, 2.1 KB)
+0017.835 (0) Table wp_links: Total expected rows (via COUNT): 0
+0017.840 (0) Table wp_links: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1306) in 0.01 seconds
+0017.847 (0) Table wp_links: finishing file(s) (2, 0.5 KB)
+0017.867 (0) Table wp_postmeta: Total expected rows (approximate): 2607
+0017.888 (0) Table wp_postmeta: Rows added in this batch (next record: 9493): 2628 (uncompressed bytes in this segment=383903) in 0.04 seconds
+0017.898 (0) Table wp_postmeta: finishing file(s) (2, 39 KB)
+0018.004 (0) Table wp_posts: Total expected rows (via COUNT): 983
+0018.269 (0) Table wp_posts: Rows added in this batch (next record: 1170): 983 (uncompressed bytes in this segment=11836400) in 0.36 seconds
+0018.282 (0) Table wp_posts: finishing file(s) (2, 590.4 KB)
+0018.293 (0) Table wp_term_relationships: Total expected rows (approximate): 71
+0018.298 (0) Table wp_term_relationships: Rows added in this batch (next record: 100000): 75 (uncompressed bytes in this segment=1805) in 0.01 seconds
+0018.307 (0) Table wp_term_relationships: finishing file(s) (2, 0.6 KB)
+0018.318 (0) Table wp_term_taxonomy: Total expected rows (via COUNT): 50
+0018.320 (0) Table is relatively small; fetch_rows will thus be: 100 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.324 (0) Table wp_term_taxonomy: Rows added in this batch (next record: 56): 50 (uncompressed bytes in this segment=3191) in 0.01 seconds
+0018.333 (0) Table wp_term_taxonomy: finishing file(s) (2, 0.9 KB)
+0018.345 (0) Table wp_termmeta: Total expected rows (via COUNT): 0
+0018.348 (0) Table wp_termmeta: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=669) in 0.01 seconds
+0018.358 (0) Table wp_termmeta: finishing file(s) (2, 0.4 KB)
+0018.367 (0) Table wp_terms: Total expected rows (via COUNT): 50
+0018.369 (0) Table is relatively small; fetch_rows will thus be: 100 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.373 (0) Table wp_terms: Rows added in this batch (next record: 56): 50 (uncompressed bytes in this segment=2764) in 0.01 seconds
+0018.382 (0) Table wp_terms: finishing file(s) (2, 1.1 KB)
+0018.392 (0) Table wp_wc_category_lookup: Total expected rows (approximate): 0
+0018.396 (0) Table wp_wc_category_lookup: Rows added in this batch (next record: 1000): 1 (uncompressed bytes in this segment=589) in 0.01 seconds
+0018.404 (0) Table wp_wc_category_lookup: finishing file(s) (2, 0.3 KB)
+0018.415 (0) Table wp_wc_product_meta_lookup: Total expected rows (via COUNT): 0
+0018.416 (0) Table wp_wc_product_meta_lookup: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1349) in 0.01 seconds
+0018.425 (0) Table wp_wc_product_meta_lookup: finishing file(s) (2, 0.5 KB)
+0018.434 (0) Table wp_wc_reserved_stock: Total expected rows (approximate): 0
+0018.436 (0) Table wp_wc_reserved_stock: Rows added in this batch (next record: 0): 0 (uncompressed bytes in this segment=663) in 0.01 seconds
+0018.445 (0) Table wp_wc_reserved_stock: finishing file(s) (2, 0.4 KB)
+0018.455 (0) Table wp_wc_tax_rate_classes: Total expected rows (via COUNT): 2
+0018.457 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.461 (0) Table wp_wc_tax_rate_classes: Rows added in this batch (next record: 2): 2 (uncompressed bytes in this segment=814) in 0.01 seconds
+0018.469 (0) Table wp_wc_tax_rate_classes: finishing file(s) (2, 0.4 KB)
+0018.482 (0) Table wp_woocommerce_order_itemmeta: Total expected rows (via COUNT): 0
+0018.486 (0) Table wp_woocommerce_order_itemmeta: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=784) in 0.01 seconds
+0018.496 (0) Table wp_woocommerce_order_itemmeta: finishing file(s) (2, 0.4 KB)
+0018.509 (0) Table wp_woocommerce_payment_tokenmeta: Total expected rows (via COUNT): 0
+0018.510 (0) Table wp_woocommerce_payment_tokenmeta: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=811) in 0.01 seconds
+0018.520 (0) Table wp_woocommerce_payment_tokenmeta: finishing file(s) (2, 0.4 KB)
+0018.532 (0) Table wp_duplicator_pro_entities: Total expected rows (via COUNT): 5
+0018.534 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.538 (0) Table wp_duplicator_pro_entities: Rows added in this batch (next record: 5): 5 (uncompressed bytes in this segment=6032) in 0.01 seconds
+0018.548 (0) Table wp_duplicator_pro_entities: finishing file(s) (2, 1.7 KB)
+0018.561 (0) Table wp_duplicator_pro_packages: Total expected rows (via COUNT): 0
+0018.564 (0) Table wp_duplicator_pro_packages: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=872) in 0.01 seconds
+0018.580 (0) Table wp_duplicator_pro_packages: finishing file(s) (2, 0.4 KB)
+0018.592 (0) Table wp_helpful: Total expected rows (via COUNT): 14
+0018.593 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.597 (0) Table wp_helpful: Rows added in this batch (next record: 14): 14 (uncompressed bytes in this segment=1914) in 0.01 seconds
+0018.605 (0) Table wp_helpful: finishing file(s) (2, 0.7 KB)
+0018.615 (0) Table wp_helpful_feedback: Total expected rows (via COUNT): 0
+0018.618 (0) Table wp_helpful_feedback: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=830) in 0.01 seconds
+0018.627 (0) Table wp_helpful_feedback: finishing file(s) (2, 0.4 KB)
+0018.640 (0) Table wp_helpful_instances: Total expected rows (via COUNT): 0
+0018.642 (0) Table wp_helpful_instances: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=664) in 0.01 seconds
+0018.650 (0) Table wp_helpful_instances: finishing file(s) (2, 0.4 KB)
+0018.660 (0) Table wp_image_hover_ultimate_list: Total expected rows (via COUNT): 0
+0018.662 (0) Table wp_image_hover_ultimate_list: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=594) in 0.01 seconds
+0018.670 (0) Table wp_image_hover_ultimate_list: finishing file(s) (2, 0.3 KB)
+0018.681 (0) Table wp_image_hover_ultimate_style: Total expected rows (via COUNT): 0
+0018.683 (0) Table wp_image_hover_ultimate_style: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=834) in 0.01 seconds
+0018.692 (0) Table wp_image_hover_ultimate_style: finishing file(s) (2, 0.4 KB)
+0018.704 (0) Table wp_ms_snippets: Total expected rows (via COUNT): 0
+0018.706 (0) Table wp_ms_snippets: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=880) in 0.01 seconds
+0018.715 (0) Table wp_ms_snippets: finishing file(s) (2, 0.4 KB)
+0018.725 (0) Table wp_oxi_div_import: Total expected rows (via COUNT): 15
+0018.726 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.730 (0) Table wp_oxi_div_import: Rows added in this batch (next record: 15): 15 (uncompressed bytes in this segment=1376) in 0.01 seconds
+0018.737 (0) Table wp_oxi_div_import: finishing file(s) (2, 0.5 KB)
+0018.752 (0) Table wp_podsrel: Total expected rows (via COUNT): 0
+0018.756 (0) Table wp_podsrel: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=963) in 0.01 seconds
+0018.764 (0) Table wp_podsrel: finishing file(s) (2, 0.4 KB)
+0018.777 (0) Table wp_snippets: Total expected rows (via COUNT): 6
+0018.778 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.782 (0) Table wp_snippets: Rows added in this batch (next record: 6): 6 (uncompressed bytes in this segment=4526) in 0.01 seconds
+0018.791 (0) Table wp_snippets: finishing file(s) (2, 1.6 KB)
+0018.803 (0) Table wp_wc_admin_note_actions: Total expected rows (via COUNT): 90
+0018.805 (0) Table is relatively small; fetch_rows will thus be: 100 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.809 (0) Table wp_wc_admin_note_actions: Rows added in this batch (next record: 13080): 90 (uncompressed bytes in this segment=15116) in 0.01 seconds
+0018.818 (0) Table wp_wc_admin_note_actions: finishing file(s) (2, 3.5 KB)
+0018.831 (0) Table wp_wc_admin_notes: Total expected rows (via COUNT): 82
+0018.832 (0) Table is relatively small; fetch_rows will thus be: 100 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0018.836 (0) Table wp_wc_admin_notes: Rows added in this batch (next record: 82): 82 (uncompressed bytes in this segment=40076) in 0.01 seconds
+0018.846 (0) Table wp_wc_admin_notes: finishing file(s) (2, 10.3 KB)
+0018.856 (0) Table wp_wc_customer_lookup: Total expected rows (via COUNT): 0
+0018.859 (0) Table wp_wc_customer_lookup: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1266) in 0.01 seconds
+0018.866 (0) Table wp_wc_customer_lookup: finishing file(s) (2, 0.5 KB)
+0018.876 (0) Table wp_wc_download_log: Total expected rows (via COUNT): 0
+0018.878 (0) Table wp_wc_download_log: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=926) in 0.01 seconds
+0018.885 (0) Table wp_wc_download_log: finishing file(s) (2, 0.5 KB)
+0018.895 (0) Table wp_wc_order_coupon_lookup: Total expected rows (approximate): 0
+0018.897 (0) Table wp_wc_order_coupon_lookup: Rows added in this batch (next record: 0): 0 (uncompressed bytes in this segment=715) in 0.01 seconds
+0018.905 (0) Table wp_wc_order_coupon_lookup: finishing file(s) (2, 0.4 KB)
+0018.914 (0) Table wp_wc_order_product_lookup: Total expected rows (via COUNT): 0
+0018.916 (0) Table wp_wc_order_product_lookup: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1215) in 0.01 seconds
+0018.924 (0) Table wp_wc_order_product_lookup: finishing file(s) (2, 0.5 KB)
+0018.934 (0) Table wp_wc_order_stats: Total expected rows (via COUNT): 0
+0018.936 (0) Table wp_wc_order_stats: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1110) in 0.01 seconds
+0018.944 (0) Table wp_wc_order_stats: finishing file(s) (2, 0.5 KB)
+0018.953 (0) Table wp_wc_order_tax_lookup: Total expected rows (approximate): 0
+0018.955 (0) Table wp_wc_order_tax_lookup: Rows added in this batch (next record: 0): 0 (uncompressed bytes in this segment=793) in 0.01 seconds
+0018.963 (0) Table wp_wc_order_tax_lookup: finishing file(s) (2, 0.4 KB)
+0018.974 (0) Table wp_wc_webhooks: Total expected rows (via COUNT): 0
+0018.976 (0) Table wp_wc_webhooks: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1226) in 0.01 seconds
+0018.983 (0) Table wp_wc_webhooks: finishing file(s) (2, 0.5 KB)
+0018.995 (0) Table wp_woocommerce_api_keys: Total expected rows (via COUNT): 0
+0018.997 (0) Table wp_woocommerce_api_keys: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1059) in 0.01 seconds
+0019.013 (0) Table wp_woocommerce_api_keys: finishing file(s) (2, 0.5 KB)
+0019.023 (0) Table wp_woocommerce_attribute_taxonomies: Total expected rows (via COUNT): 0
+0019.025 (0) Table wp_woocommerce_attribute_taxonomies: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=959) in 0.01 seconds
+0019.032 (0) Table wp_woocommerce_attribute_taxonomies: finishing file(s) (2, 0.4 KB)
+0019.044 (0) Table wp_woocommerce_downloadable_product_permissions: Total expected rows (via COUNT): 0
+0019.046 (0) Table wp_woocommerce_downloadable_product_permissions: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1534) in 0.01 seconds
+0019.055 (0) Table wp_woocommerce_downloadable_product_permissions: finishing file(s) (2, 0.5 KB)
+0019.066 (0) Table wp_woocommerce_log: Total expected rows (via COUNT): 0
+0019.068 (0) Table wp_woocommerce_log: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=735) in 0.01 seconds
+0019.077 (0) Table wp_woocommerce_log: finishing file(s) (2, 0.4 KB)
+0019.087 (0) Table wp_woocommerce_order_items: Total expected rows (via COUNT): 0
+0019.089 (0) Table wp_woocommerce_order_items: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=739) in 0.01 seconds
+0019.097 (0) Table wp_woocommerce_order_items: finishing file(s) (2, 0.4 KB)
+0019.108 (0) Table wp_woocommerce_payment_tokens: Total expected rows (via COUNT): 0
+0019.110 (0) Table wp_woocommerce_payment_tokens: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=837) in 0.01 seconds
+0019.118 (0) Table wp_woocommerce_payment_tokens: finishing file(s) (2, 0.4 KB)
+0019.130 (0) Table wp_woocommerce_sessions: Total expected rows (via COUNT): 1
+0019.131 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0019.134 (0) Table wp_woocommerce_sessions: Rows added in this batch (next record: 8): 1 (uncompressed bytes in this segment=2177) in 0.01 seconds
+0019.144 (0) Table wp_woocommerce_sessions: finishing file(s) (2, 0.9 KB)
+0019.153 (0) Table wp_woocommerce_shipping_zone_locations: Total expected rows (via COUNT): 0
+0019.158 (0) Table wp_woocommerce_shipping_zone_locations: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=874) in 0.01 seconds
+0019.166 (0) Table wp_woocommerce_shipping_zone_locations: finishing file(s) (2, 0.4 KB)
+0019.176 (0) Table wp_woocommerce_shipping_zone_methods: Total expected rows (via COUNT): 0
+0019.178 (0) Table wp_woocommerce_shipping_zone_methods: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=773) in 0.01 seconds
+0019.187 (0) Table wp_woocommerce_shipping_zone_methods: finishing file(s) (2, 0.4 KB)
+0019.197 (0) Table wp_woocommerce_shipping_zones: Total expected rows (via COUNT): 0
+0019.199 (0) Table wp_woocommerce_shipping_zones: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=633) in 0.01 seconds
+0019.207 (0) Table wp_woocommerce_shipping_zones: finishing file(s) (2, 0.4 KB)
+0019.217 (0) Table wp_woocommerce_tax_rate_locations: Total expected rows (via COUNT): 0
+0019.219 (0) Table wp_woocommerce_tax_rate_locations: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=848) in 0.01 seconds
+0019.228 (0) Table wp_woocommerce_tax_rate_locations: finishing file(s) (2, 0.4 KB)
+0019.239 (0) Table wp_woocommerce_tax_rates: Total expected rows (via COUNT): 0
+0019.242 (0) Table wp_woocommerce_tax_rates: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1297) in 0.01 seconds
+0019.254 (0) Table wp_woocommerce_tax_rates: finishing file(s) (2, 0.5 KB)
+0019.267 (0) Table wp_wpmailsmtp_tasks_meta: Total expected rows (via COUNT): 3
+0019.268 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0019.273 (0) Table wp_wpmailsmtp_tasks_meta: Rows added in this batch (next record: 3): 3 (uncompressed bytes in this segment=926) in 0.01 seconds
+0019.282 (0) Table wp_wpmailsmtp_tasks_meta: finishing file(s) (2, 0.5 KB)
+0019.284 (0) PHP event: code E_WARNING: filemtime(): stat failed for C:\xampp\htdocs\wikitest/wp-content/updraft/backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db.gz (line 1836, C:\xampp\htdocs\wikitest\wp-content\plugins\updraftplus\backup.php)
+0019.287 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_options.table.tmpr76221.gz (1/55/fopen): adding to final database dump
+0019.294 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_options.table.gz (2/55/fopen): adding to final database dump
+0019.297 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_users.table.tmpr8.gz (3/55/fopen): adding to final database dump
+0019.299 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_users.table.gz (4/55/fopen): adding to final database dump
+0019.301 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_usermeta.table.tmpr241.gz (5/55/fopen): adding to final database dump
+0019.302 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_usermeta.table.gz (6/55/fopen): adding to final database dump
+0019.304 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_actionscheduler_actions.table.tmpr5.gz (7/55/fopen): adding to final database dump
+0019.306 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_actionscheduler_actions.table.gz (8/55/fopen): adding to final database dump
+0019.308 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_actionscheduler_claims.table.tmpr0.gz (9/55/fopen): adding to final database dump
+0019.309 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_actionscheduler_claims.table.gz (10/55/fopen): adding to final database dump
+0019.311 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_actionscheduler_groups.table.tmpr5.gz (11/55/fopen): adding to final database dump
+0019.313 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_actionscheduler_groups.table.gz (12/55/fopen): adding to final database dump
+0019.314 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_actionscheduler_logs.table.tmpr13.gz (13/55/fopen): adding to final database dump
+0019.316 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_actionscheduler_logs.table.gz (14/55/fopen): adding to final database dump
+0019.318 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_commentmeta.table.tmpr0.gz (15/55/fopen): adding to final database dump
+0019.319 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_commentmeta.table.gz (16/55/fopen): adding to final database dump
+0019.321 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_comments.table.tmpr12.gz (17/55/fopen): adding to final database dump
+0019.323 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_comments.table.gz (18/55/fopen): adding to final database dump
+0019.325 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_links.table.tmpr0.gz (19/55/fopen): adding to final database dump
+0019.326 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_links.table.gz (20/55/fopen): adding to final database dump
+0019.328 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_postmeta.table.tmpr9494.gz (21/55/fopen): adding to final database dump
+0019.330 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_postmeta.table.gz (22/55/fopen): adding to final database dump
+0019.332 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_posts.table.tmpr1171.gz (23/55/fopen): adding to final database dump
+0019.346 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_posts.table.gz (24/55/fopen): adding to final database dump
+0019.348 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_term_relationships.table.tmpr100001.gz (25/55/fopen): adding to final database dump
+0019.350 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_term_relationships.table.gz (26/55/fopen): adding to final database dump
+0019.351 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_term_taxonomy.table.tmpr57.gz (27/55/fopen): adding to final database dump
+0019.353 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_term_taxonomy.table.gz (28/55/fopen): adding to final database dump
+0019.355 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_termmeta.table.tmpr0.gz (29/55/fopen): adding to final database dump
+0019.357 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_termmeta.table.gz (30/55/fopen): adding to final database dump
+0019.359 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_terms.table.tmpr57.gz (31/55/fopen): adding to final database dump
+0019.361 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_terms.table.gz (32/55/fopen): adding to final database dump
+0019.363 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_category_lookup.table.tmpr1001.gz (33/55/fopen): adding to final database dump
+0019.364 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_category_lookup.table.gz (34/55/fopen): adding to final database dump
+0019.366 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_product_meta_lookup.table.tmpr0.gz (35/55/fopen): adding to final database dump
+0019.368 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_product_meta_lookup.table.gz (36/55/fopen): adding to final database dump
+0019.370 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_reserved_stock.table.tmpr1.gz (37/55/fopen): adding to final database dump
+0019.372 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_reserved_stock.table.gz (38/55/fopen): adding to final database dump
+0019.374 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_tax_rate_classes.table.tmpr3.gz (39/55/fopen): adding to final database dump
+0019.376 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_tax_rate_classes.table.gz (40/55/fopen): adding to final database dump
+0019.378 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_order_itemmeta.table.tmpr0.gz (41/55/fopen): adding to final database dump
+0019.380 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_order_itemmeta.table.gz (42/55/fopen): adding to final database dump
+0019.381 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_payment_tokenmeta.table.tmpr0.gz (43/55/fopen): adding to final database dump
+0019.383 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_payment_tokenmeta.table.gz (44/55/fopen): adding to final database dump
+0019.385 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_duplicator_pro_entities.table.tmpr6.gz (45/55/fopen): adding to final database dump
+0019.387 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_duplicator_pro_entities.table.gz (46/55/fopen): adding to final database dump
+0019.389 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_duplicator_pro_packages.table.tmpr0.gz (47/55/fopen): adding to final database dump
+0019.391 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_duplicator_pro_packages.table.gz (48/55/fopen): adding to final database dump
+0019.392 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_helpful.table.tmpr15.gz (49/55/fopen): adding to final database dump
+0019.394 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_helpful.table.gz (50/55/fopen): adding to final database dump
+0019.396 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_helpful_feedback.table.tmpr0.gz (51/55/fopen): adding to final database dump
+0019.397 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_helpful_feedback.table.gz (52/55/fopen): adding to final database dump
+0019.399 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_helpful_instances.table.tmpr0.gz (53/55/fopen): adding to final database dump
+0019.402 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_helpful_instances.table.gz (54/55/fopen): adding to final database dump
+0019.404 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_image_hover_ultimate_list.table.tmpr0.gz (55/55/fopen): adding to final database dump
+0019.406 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_image_hover_ultimate_list.table.gz (56/55/fopen): adding to final database dump
+0019.408 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_image_hover_ultimate_style.table.tmpr0.gz (57/55/fopen): adding to final database dump
+0019.409 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_image_hover_ultimate_style.table.gz (58/55/fopen): adding to final database dump
+0019.411 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_ms_snippets.table.tmpr0.gz (59/55/fopen): adding to final database dump
+0019.413 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_ms_snippets.table.gz (60/55/fopen): adding to final database dump
+0019.415 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_oxi_div_import.table.tmpr16.gz (61/55/fopen): adding to final database dump
+0019.417 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_oxi_div_import.table.gz (62/55/fopen): adding to final database dump
+0019.418 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_podsrel.table.tmpr0.gz (63/55/fopen): adding to final database dump
+0019.420 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_podsrel.table.gz (64/55/fopen): adding to final database dump
+0019.422 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_snippets.table.tmpr7.gz (65/55/fopen): adding to final database dump
+0019.424 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_snippets.table.gz (66/55/fopen): adding to final database dump
+0019.425 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_admin_note_actions.table.tmpr13081.gz (67/55/fopen): adding to final database dump
+0019.427 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_admin_note_actions.table.gz (68/55/fopen): adding to final database dump
+0019.429 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_admin_notes.table.tmpr83.gz (69/55/fopen): adding to final database dump
+0019.430 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_admin_notes.table.gz (70/55/fopen): adding to final database dump
+0019.432 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_customer_lookup.table.tmpr0.gz (71/55/fopen): adding to final database dump
+0019.434 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_customer_lookup.table.gz (72/55/fopen): adding to final database dump
+0019.435 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_download_log.table.tmpr0.gz (73/55/fopen): adding to final database dump
+0019.438 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_download_log.table.gz (74/55/fopen): adding to final database dump
+0019.440 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_order_coupon_lookup.table.tmpr1.gz (75/55/fopen): adding to final database dump
+0019.441 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_order_coupon_lookup.table.gz (76/55/fopen): adding to final database dump
+0019.443 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_order_product_lookup.table.tmpr0.gz (77/55/fopen): adding to final database dump
+0019.445 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_order_product_lookup.table.gz (78/55/fopen): adding to final database dump
+0019.446 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_order_stats.table.tmpr0.gz (79/55/fopen): adding to final database dump
+0019.448 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_order_stats.table.gz (80/55/fopen): adding to final database dump
+0019.450 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_order_tax_lookup.table.tmpr1.gz (81/55/fopen): adding to final database dump
+0019.451 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_order_tax_lookup.table.gz (82/55/fopen): adding to final database dump
+0019.453 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_webhooks.table.tmpr0.gz (83/55/fopen): adding to final database dump
+0019.456 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wc_webhooks.table.gz (84/55/fopen): adding to final database dump
+0019.458 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_api_keys.table.tmpr0.gz (85/55/fopen): adding to final database dump
+0019.459 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_api_keys.table.gz (86/55/fopen): adding to final database dump
+0019.461 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_attribute_taxonomies.table.tmpr0.gz (87/55/fopen): adding to final database dump
+0019.463 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_attribute_taxonomies.table.gz (88/55/fopen): adding to final database dump
+0019.464 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_downloadable_product_permissions.table.tmpr0.gz (89/55/fopen): adding to final database dump
+0019.466 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_downloadable_product_permissions.table.gz (90/55/fopen): adding to final database dump
+0019.468 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_log.table.tmpr0.gz (91/55/fopen): adding to final database dump
+0019.469 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_log.table.gz (92/55/fopen): adding to final database dump
+0019.472 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_order_items.table.tmpr0.gz (93/55/fopen): adding to final database dump
+0019.474 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_order_items.table.gz (94/55/fopen): adding to final database dump
+0019.476 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_payment_tokens.table.tmpr0.gz (95/55/fopen): adding to final database dump
+0019.478 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_payment_tokens.table.gz (96/55/fopen): adding to final database dump
+0019.479 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_sessions.table.tmpr9.gz (97/55/fopen): adding to final database dump
+0019.481 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_sessions.table.gz (98/55/fopen): adding to final database dump
+0019.482 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_shipping_zone_locations.table.tmpr0.gz (99/55/fopen): adding to final database dump
+0019.486 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_shipping_zone_locations.table.gz (100/55/fopen): adding to final database dump
+0019.488 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_shipping_zone_methods.table.tmpr0.gz (101/55/fopen): adding to final database dump
+0019.490 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_shipping_zone_methods.table.gz (102/55/fopen): adding to final database dump
+0019.491 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_shipping_zones.table.tmpr0.gz (103/55/fopen): adding to final database dump
+0019.493 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_shipping_zones.table.gz (104/55/fopen): adding to final database dump
+0019.494 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_tax_rate_locations.table.tmpr0.gz (105/55/fopen): adding to final database dump
+0019.496 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_tax_rate_locations.table.gz (106/55/fopen): adding to final database dump
+0019.498 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_tax_rates.table.tmpr0.gz (107/55/fopen): adding to final database dump
+0019.499 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_woocommerce_tax_rates.table.gz (108/55/fopen): adding to final database dump
+0019.501 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wpmailsmtp_tasks_meta.table.tmpr4.gz (109/55/fopen): adding to final database dump
+0019.503 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db-table-wp_wpmailsmtp_tasks_meta.table.gz (110/55/fopen): adding to final database dump
+0019.524 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db.gz: finished writing out complete database file (955.1 KB)
+0019.550 (0) Total database tables backed up: 55 (backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db.gz, size: 978146, sha1: 724a38d47960555a031b1c9d96bc6970b118b238, sha256: 5754921284a0156834410607127e71ae70c5d32f6960e790665227dd1105eb49)
+0019.553 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0019.557 (0) PHP event: code E_DEPRECATED: strlen(): Passing null to parameter #1 ($string) of type string is deprecated (line 2752, C:\xampp\htdocs\wikitest\wp-content\plugins\updraftplus\backup.php)
+0019.559 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0019.563 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0019.563 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip: plugins: This file has not yet been successfully uploaded: will queue
+0019.565 (0) backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db.gz: db: This file has not yet been successfully uploaded: will queue
+0019.566 (0) Saving backup history. Total backup size: 45.8 MB
+0019.568 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0019.572 (0) Requesting upload of the files that have not yet been successfully uploaded (2)
+0019.576 (0) Cloud backup selection (1/1): none with instance (1/1) (last)
+0019.578 (0) No remote despatch: user chose no remote backup service
+0019.579 (0) Recording as successfully uploaded: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip
+0019.582 (0) Deleting zip manifest (backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-plugins.zip.list.tmp)
+0019.584 (0) Recording as successfully uploaded: backup_2022-05-12-1417_Ferias_Virtuales_WIKI_866e3ce87195-db.gz
+0019.590 (0) Retain: beginning examination of existing backup sets; user setting: retain_files=2, retain_db=2
+0019.592 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0019.594 (0) PHP event: code E_DEPRECATED: rtrim(): Passing null to parameter #1 ($string) of type string is deprecated (line 2761, C:\xampp\htdocs\wikitest\wp-includes\formatting.php)
+0019.594 (0) Number of backup sets in history: 7; groups (db): 1
+0019.595 (0) Examining (for databases) backup set with group_id=0, nonce=866e3ce87195, datestamp=1652365021 (May 12 2022 14:17:01)
+0019.597 (0) This backup set is the backup set just made, so will not be deleted.
+0019.597 (0) Examining (for databases) backup set with group_id=0, nonce=2036ba045bce, datestamp=1652364985 (May 12 2022 14:16:25)
+0019.597 (0) This backup set (1652364985) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.597 (0) Examining (for databases) backup set with group_id=0, nonce=8585bdd1dc9c, datestamp=1652364950 (May 12 2022 14:15:50)
+0019.597 (0) This backup set (1652364950) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.597 (0) Examining (for databases) backup set with group_id=0, nonce=f422da85184c, datestamp=1652364913 (May 12 2022 14:15:13)
+0019.597 (0) This backup set (1652364913) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.597 (0) Examining (for databases) backup set with group_id=0, nonce=f2164f5059e8, datestamp=1652364793 (May 12 2022 14:13:13)
+0019.597 (0) This backup set (1652364793) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.597 (0) Examining (for databases) backup set with group_id=0, nonce=9d291a87ddbf, datestamp=1652364755 (May 12 2022 14:12:35)
+0019.597 (0) This backup set (1652364755) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.597 (0) Examining (for databases) backup set with group_id=0, nonce=f74d939d72e4, datestamp=1652364607 (May 12 2022 14:10:07)
+0019.597 (0) This backup set (1652364607) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.597 (0) Number of backup sets in history: 7; groups (files): 1
+0019.599 (0) Examining (for files) backup set with nonce=866e3ce87195, datestamp=1652365021 (May 12 2022 14:17:01)
+0019.599 (0) This backup set is the backup set just made, so will not be deleted.
+0019.600 (0) This backup set remains non-empty (f=1/d=1); will retain in history
+0019.602 (0) Examining (for files) backup set with nonce=2036ba045bce, datestamp=1652364985 (May 12 2022 14:16:25)
+0019.602 (0) This backup set (1652364985) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.602 (0) This backup set remains non-empty (f=1/d=1); will retain in history
+0019.602 (0) Examining (for files) backup set with nonce=8585bdd1dc9c, datestamp=1652364950 (May 12 2022 14:15:50)
+0019.602 (0) This backup set (1652364950) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.602 (0) This backup set remains non-empty (f=1/d=1); will retain in history
+0019.602 (0) Examining (for files) backup set with nonce=f422da85184c, datestamp=1652364913 (May 12 2022 14:15:13)
+0019.602 (0) This backup set (1652364913) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.602 (0) This backup set remains non-empty (f=1/d=1); will retain in history
+0019.602 (0) Examining (for files) backup set with nonce=f2164f5059e8, datestamp=1652364793 (May 12 2022 14:13:13)
+0019.602 (0) This backup set (1652364793) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.602 (0) This backup set remains non-empty (f=1/d=1); will retain in history
+0019.602 (0) Examining (for files) backup set with nonce=9d291a87ddbf, datestamp=1652364755 (May 12 2022 14:12:35)
+0019.602 (0) This backup set (1652364755) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.602 (0) This backup set remains non-empty (f=1/d=1); will retain in history
+0019.602 (0) Examining (for files) backup set with nonce=f74d939d72e4, datestamp=1652364607 (May 12 2022 14:10:07)
+0019.602 (0) This backup set (1652364607) was an automatic backup, and we have not yet reached any retain limits, so it will not be counted or pruned. Skipping.
+0019.602 (0) This backup set remains non-empty (f=1/d=1); will retain in history
+0019.602 (0) Retain: saving new backup history (sets now: 7) and finishing retain operation
+0019.607 (0) Resume backup (866e3ce87195, 0): finish run
+0019.610 (0) Decremented the semaphore (fd) by 1
+0019.613 (0) Semaphore (fd) unlocked
+0019.614 (0) There were no errors in the uploads, so the 'resume' event (1) is being unscheduled
+0019.621 (0) No email will/can be sent - the user has not configured an email address.
+0019.623 (0) The backup apparently succeeded and is now complete

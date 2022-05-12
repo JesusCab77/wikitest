@@ -1,3 +1,175 @@
+= 3.8.5 =
+* Implemented licensing system
+* Minimum required PHP version now 5.3
+
+= 3.8.4 =
+* Fixed slider "run once" option not working when continue on hover enabled
+
+= 3.8.3 =
+* Now hides added gallery module settings when not applicable
+* Fixed array_values() expects parameter 1 to be array error in deprecated icons
+
+= 3.8.2 =
+* Removed Google+ from header / footer icons
+* Added Linktree icon to header / footer and social media module icons
+* Added Eventbrite icon to header / footer and social media module icons
+
+= 3.8.1 =
+* Removed slide background link url option - same effect can now be achieved with the built-in slide module link field
+
+= 3.8.0 =
+* Extended contact form blacklist to work with custom email fields
+* Fixed second slide button preview not working
+
+= 3.7.9 =
+* Fixed custom icon not working correctly with Divi Breadcrumbs Module
+* Added option to place site tagline below title in menu module
+
+= 3.7.8 =
+* Improved compatibility with older PHP versions
+* Added option to link menu module site title to homepage
+* Fixed phone number wrapping on mobile when top header text set
+* Fixed custom icon path wrong on Divi Builder plugin
+
+= 3.7.7 =
+* Fixed WP Rocket affecting open image in lightbox feature
+* Fixed site title not showing in menu module
+
+= 3.7.6 =
+* Fixed WP Rocket preventing accordion from loading fully closed
+* Fixed htaccess overwritten when content read fails
+
+= 3.7.5 =
+* Added dynamic content support to portfolio module order by ID option
+* Fixed toggle content briefly visible while loading fully closed accordion
+
+= 3.7.4 =
+* Added additional gallery sort options
+
+= 3.7.3 =
+* Fixed closeable accordion icon not inheriting individual toggle color and font size
+* Enable Divi Builder by default now appends post ID to names to prevent duplicate slug issue
+
+= 3.7.2 =
+* Mobile content width setting now applies to speciality sections
+
+= 3.7.1 =
+* Fixed cannot redeclare function error
+* Fixed transparent header offset not applied when adding image above header
+
+= 3.7.0 = 
+* Added custom social media icon hover support
+* Minor improvements to custom icon feature
+* Renamed custom icon class to avoid conflict with code in related post
+* Custom icons now shown in fullwidth header module scroll down icon picker
+
+= 3.6.9 =
+* Clarified wording on top header options
+
+= 3.6.8 =
+* Custom icons updated to work with Divi extended icons
+
+= 3.6.7 =
+* Fixed custom mobile width incorrectly applying to rows with own width set
+
+= 3.6.6 =
+* Fixed secondary header social icons on right not hidden before being moved. Thanks to Victor of divimundo.com
+
+= 3.6.5 =
+* Fixed menu module link spacing not persisting in theme builder
+
+= 3.6.4 =
+* Fixed warning about missing method in slider run once feature
+* Updated "Run Once" option to work with both the standard and fullwidth slider
+
+= 3.6.3 =
+* Removed unnecessary thumbs.db files from plugin folder
+
+= 3.6.2 =
+* Slider module second button now previewable in the visual builder
+
+= 3.6.1 =
+* Fixed open in lightbox feature not working in Divi 4.10
+* Changed social media follow tiktok icon background color to black
+* Added alt and aria-label attributes to header / footer social icons for accessibility
+
+= 3.6.0 =
+* Added menu module option to set link spacing
+
+= 3.5.9 =
+* Fixed menu module vertical separator not centered for some font sizes
+* Fixed visual builder styles not loaded when certain child themes active
+
+= 3.5.8 =
+* Updated social icons feature for Divi 4.10 compatibility
+
+= 3.5.7 =
+* Fixed person module icons not displaying when no other icons enabled
+
+= 3.5.6 =
+* Fixed person module icons not displaying in Divi 4.10
+
+= 3.5.5 =
+* Added option to show post tags in blog module
+
+= 3.5.4 =
+* Fixed undefined function et_builder_i18n() error in Divi pre 4.4.9
+
+= 3.5.3 =
+* Added "Image Icon" custom icon option to social media network list
+
+= 3.5.2 =
+* Fixed menu module vertical separators applied to submenu items
+* Added "Run Once" option to fullwidth slider automation animation
+
+= 3.5.1 =
+* Added option to change filterable portfolio tab order
+
+= 3.5.0 =
+* Added span tag to separator added by post title module tags feature
+
+= 3.4.9 =
+* Reverted map pin feature to earlier loading method due to errors
+
+= 3.4.8 =
+* Added website and podcast icons to social media follow module
+
+= 3.4.7 =
+* Added site title / site tagline options to menu module
+* Improved custom map pin loading
+
+= 3.4.6 =
+* Added phone icon to social media follow module
+
+= 3.4.5 =
+* Fixed portfolio sorting by Id duplicating items in subsequent portfolios
+* Improved positioning of title text option in Extra
+
+= 3.4.4 =
+* Fixed errors when plugin loaded twice
+
+= 3.4.3 =
+* Fixed errors in CSS manager feature
+
+= 3.4.2 =
+* Fixed person module email and website not showing in theme builder layouts
+
+= 3.4.1 =
+* Fixed module options not applied in theme builder on some pages
+
+= 3.4.0 =
+* Added option to enable menu separator bars on menu module
+
+= 3.3.9 =
+* Fixed unsupported operand error in countdown timer module option
+
+= 3.3.8 =
+* Added option to set footer menu alignment
+* Improved footer option organization and wording
+
+= 3.3.7 =
+* Added Site-wide Settings > Accessibility > Enable Zooming option
+
 = 3.3.6 =
 * Updated title / tagline feature to omit tagline element when not visible
 * Fixed custom overlay icon positioning in fullwidth portfolio

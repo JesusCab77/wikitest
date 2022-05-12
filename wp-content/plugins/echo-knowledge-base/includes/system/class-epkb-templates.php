@@ -9,7 +9,7 @@
 class EPKB_Templates {
 
 	public function __construct() {
-   		add_filter( 'template_include', array( __CLASS__, 'template_loader' ) );
+   		add_filter( 'template_include', array( __CLASS__, 'template_loader' ), 99999 );
 	}
 
 	/**
@@ -22,12 +22,10 @@ class EPKB_Templates {
 	 */
 	public static function template_loader( $template ) {
 		/** @var WP_Query $wp_query */
-        global $wp_query, $eckb_kb_id, $eckb_is_kb_main_page, $epkb_kb_templates_on;
-
-        // KEEP performance optimized
+        global $wp_query, $eckb_kb_id, $eckb_is_kb_main_page;
 
 		// handle Category archive page
-		$is_kb_taxonomy = ! empty($GLOBALS['taxonomy']) && EPKB_KB_Handler::is_kb_taxonomy($GLOBALS['taxonomy']);
+		$is_kb_taxonomy = ! empty( $GLOBALS['taxonomy'] ) && EPKB_KB_Handler::is_kb_category_taxonomy( $GLOBALS['taxonomy'] );
 		if ( $is_kb_taxonomy && self::is_kb_template_active() ) {
 			$located_template = self::locate_template( 'archive-categories.php' );
 			$kb_id = EPKB_KB_Handler::get_kb_id_from_any_taxonomy($GLOBALS['taxonomy']);
@@ -83,30 +81,30 @@ class EPKB_Templates {
 
 		// continue only if we are using KB templates
 		$temp_config = empty($all_kb_configs[$kb_id]) ? array() : $all_kb_configs[$kb_id];
-		$temp_config = EPKB_Editor_Controller::filter_kb_config( $temp_config );
+		$temp_config = EPKB_Editor_Utilities::update_kb_from_editor_config( $temp_config );
 		
         if ( ! self::is_kb_template_active( $temp_config ) ) {
             return $template;
         }
 
 		// get the layout name
-		$layout_config_name = $eckb_is_kb_main_page ? 'kb_main_page_layout' : 'kb_article_page_layout';
-		$default_layout_name = $eckb_is_kb_main_page ? EPKB_KB_Config_Layout_Basic::LAYOUT_NAME : EPKB_KB_Config_Layouts::KB_ARTICLE_PAGE_NO_LAYOUT;
-		$layout_name =  empty($all_kb_configs[$kb_id][$layout_config_name]) ? $default_layout_name : $all_kb_configs[$kb_id][$layout_config_name];
+		if ( $eckb_is_kb_main_page ) {
+			$layout_name =  empty($all_kb_configs[$kb_id]['kb_main_page_layout']) ? EPKB_KB_Config_Layout_Basic::LAYOUT_NAME : $all_kb_configs[$kb_id]['kb_main_page_layout'];
+		} else {
+			$layout_name = 'Article';
+		}
 
 		// locate KB template
 		$template_name = self::get_template_name( $layout_name );
-		if ( empty($template_name) ) {
+		if ( empty( $template_name ) ) {
 			return $template;
 		}
 
 		// locate KB template; if none found then return the default WP template
 		$located_template = self::locate_template( $template_name );
-		if ( empty($located_template) ) {
+		if ( empty( $located_template ) ) {
 			return $template;
 		}
-
-		//$epkb_kb_templates_on = true;
 
 		return $located_template;
 	}

@@ -1,22 +1,27 @@
 <?php
 /**
- * ...
+ * All functions related to voting are collected here.
  *
- * @package Helpful\Core\Helpers
- * @author  Pixelbart <me@pixelbart.de>
- * @version 4.3.0
+ * @package Helpful
+ * @subpackage Core\Helpers
+ * @version 4.4.50
+ * @since 4.3.0
  */
+
 namespace Helpful\Core\Helpers;
 
 use Helpful\Core\Helper;
+use Helpful\Core\Services as Services;
 
 /* Prevent direct access */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Stats
-{
+/**
+ * ...
+ */
+class Stats {
 	/**
 	 * Helpful color helper
 	 *
@@ -37,19 +42,18 @@ class Stats
 	 *
 	 * @url https://developer.wordpress.org/reference/functions/date_i18n/
 	 *
-	 * @param string      $format Format to display the date.
-	 * @param int|boolean $timestamp_with_offset Whether to use GMT timezone. Only applies if timestamp is not provided.
-	 * @param boolean     $gmt Whether to use GMT timezone. Only applies if timestamp is not provided.
-	 * @return string The date, translated if locale specifies it.
+	 * @param string   $format Format to display the date.
+	 * @param int|bool $timestamp_with_offset Whether to use GMT timezone. Only applies if timestamp is not provided.
+	 * @param bool     $gmt Whether to use GMT timezone. Only applies if timestamp is not provided.
+	 * @return string
 	 */
-	private static function helpful_date( $format, $timestamp_with_offset = false, $gmt = false )
-	{
+	private static function helpful_date( $format, $timestamp_with_offset = false, $gmt = false ) {
 		if ( function_exists( 'wp_date' ) ) {
 			return wp_date( $format, $timestamp_with_offset, $gmt );
 		} elseif ( function_exists( 'date_i18n' ) ) {
 			return date_i18n( $format, $timestamp_with_offset, $gmt );
 		} else {
-			return date( $format, $timestamp_with_offset );
+			return gmdate( $format, $timestamp_with_offset );
 		}
 	}
 
@@ -63,8 +67,7 @@ class Stats
 	 *
 	 * @return string
 	 */
-	public static function get_pro( $post_id = null, $percentages = false )
-	{
+	public static function get_pro( $post_id = null, $percentages = false ) {
 		if ( is_null( $post_id ) ) {
 			global $post;
 
@@ -77,15 +80,16 @@ class Stats
 
 		global $wpdb;
 
+		$options = new Services\Options();
 		$post_id = absint( $post_id );
 		$helpful = $wpdb->prefix . 'helpful';
 		$sql     = $wpdb->prepare( "SELECT COUNT(*) FROM $helpful WHERE pro = 1 AND post_id = %d", intval( $post_id ) );
 
 		$cache_name   = 'helpful_pro_' . $post_id;
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$var          = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -101,9 +105,9 @@ class Stats
 			return $var;
 		}
 
-		$pro         = $var ?: 0;
-		$contra      = self::get_contra( $post_id );
-		$percentage  = 0;
+		$pro        = ( $var ) ? $var : 0;
+		$contra     = self::get_contra( $post_id );
+		$percentage = 0;
 
 		if ( 0 !== $pro ) {
 			$average    = (int) ( $pro - $contra );
@@ -126,29 +130,30 @@ class Stats
 	 *
 	 * @return string
 	 */
-	public static function get_contra( $post_id = null, $percentages = false )
-	{
+	public static function get_contra( $post_id = null, $percentages = false ) {
 		if ( is_null( $post_id ) ) {
 			global $post, $wpdb;
 
 			if ( ! isset( $post->ID ) ) {
 				return 0;
 			}
-			
+
 			$post_id = $post->ID;
 		}
 
 		global $wpdb;
+
+		$options = new Services\Options();
 
 		$post_id = absint( $post_id );
 		$helpful = $wpdb->prefix . 'helpful';
 		$sql     = $wpdb->prepare( "SELECT COUNT(*) FROM $helpful WHERE contra = 1 AND post_id = %d", intval( $post_id ) );
 
 		$cache_name   = 'helpful_contra_' . $post_id;
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$var          = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -164,9 +169,9 @@ class Stats
 			return $var;
 		}
 
-		$contra      = $var ?: 0;
-		$pro         = self::get_pro( $post_id );
-		$percentage  = 0;
+		$contra     = ( $var ) ? $var : 0;
+		$pro        = self::get_pro( $post_id );
+		$percentage = 0;
 
 		if ( 0 !== $contra ) {
 			$average    = (int) ( $contra - $pro );
@@ -188,18 +193,18 @@ class Stats
 	 *
 	 * @return int count
 	 */
-	public static function get_pro_all( $percentages = false )
-	{
+	public static function get_pro_all( $percentages = false ) {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 		$sql     = "SELECT COUNT(*) FROM $helpful WHERE pro = 1";
 
 		$cache_name   = 'helpful_pro_all';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$var          = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -215,7 +220,7 @@ class Stats
 			return $var;
 		}
 
-		$pro         = $var ?: 0;
+		$pro         = ( $var ) ? $var : 0;
 		$contra      = self::get_contraAll();
 		$pro_percent = 0;
 
@@ -237,18 +242,18 @@ class Stats
 	 *
 	 * @return int count
 	 */
-	public static function get_contra_all( $percentages = false )
-	{
+	public static function get_contra_all( $percentages = false ) {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 		$sql     = "SELECT COUNT(*) FROM $helpful WHERE contra = 1";
 
 		$cache_name   = 'helpful_contra_all';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$var          = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -264,7 +269,7 @@ class Stats
 			return $var;
 		}
 
-		$contra         = $var ?: 0;
+		$contra         = ( $var ) ? $var : 0;
 		$pro            = self::get_proAll();
 		$contra_percent = 0;
 
@@ -283,18 +288,18 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_years()
-	{
+	public static function get_years() {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 		$sql     = "SELECT time FROM $helpful ORDER BY time DESC";
 
-		$cache_name   = 'helpful_years';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_name   = 'helpful/stats/years';
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -307,13 +312,13 @@ class Stats
 		$results = maybe_unserialize( $results );
 
 		if ( ! $results ) {
-			return [];
+			return array();
 		}
 
-		$years = [];
+		$years = array();
 
 		foreach ( $results as $result ) :
-			$years[] = date( 'Y', strtotime( $result->time ) );
+			$years[] = gmdate( 'Y', strtotime( $result->time ) );
 		endforeach;
 
 		$years = array_unique( $years );
@@ -330,10 +335,10 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_stats_today( $year )
-	{
+	public static function get_stats_today( $year ) {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 		$query   = "
 		SELECT pro, contra, time
@@ -342,13 +347,12 @@ class Stats
 		AND YEAR(time) = %d
 		";
 
-		$sql = $wpdb->prepare( $query, intval( $year ) );
-
-		$cache_name   = 'helpful_today';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$sql          = $wpdb->prepare( $query, intval( $year ) );
+		$cache_name   = 'helpful/stats/today/' . $year;
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -361,10 +365,10 @@ class Stats
 		$results = maybe_unserialize( $results );
 
 		if ( ! $results ) {
-			return [
+			return array(
 				'status'  => 'error',
 				'message' => __( 'No entries found', 'helpful' ),
-			];
+			);
 		}
 
 		$pro    = wp_list_pluck( $results, 'pro' );
@@ -373,32 +377,32 @@ class Stats
 		$contra = array_sum( $contra );
 
 		/* Response for ChartJS */
-		$response = [
-			'type'    => 'doughnut',
-			'data'    => [
-				'datasets' => [
-					[
-						'data'            => [
+		$response = array(
+			'type' => 'doughnut',
+			'data' => array(
+				'datasets' => array(
+					array(
+						'data' => array(
 							absint( $pro ),
 							absint( $contra ),
-						],
-						'backgroundColor' => [
+						),
+						'backgroundColor' => array(
 							self::$green,
 							self::$red,
-						],
-					],
-				],
-				'labels'   => [
+						),
+					),
+				),
+				'labels' => array(
 					__( 'Pro', 'helpful' ),
 					__( 'Contra', 'helpful' ),
-				],
-			],
-			'options' => [
-				'legend' => [
+				),
+			),
+			'options' => array(
+				'legend' => array(
 					'position' => 'bottom',
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return $response;
 	}
@@ -412,10 +416,10 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_stats_yesterday( $year )
-	{
+	public static function get_stats_yesterday( $year ) {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 		$query   = "
 		SELECT pro, contra, time
@@ -424,13 +428,12 @@ class Stats
 		AND YEAR(time) = %d
 		";
 
-		$sql = $wpdb->prepare( $query, intval( $year ) );
-
-		$cache_name   = 'helpful_yesterday';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$sql          = $wpdb->prepare( $query, intval( $year ) );
+		$cache_name   = 'helpful/stats/yesterday/' . $year;
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -443,10 +446,10 @@ class Stats
 		$results = maybe_unserialize( $results );
 
 		if ( ! $results ) {
-			return [
+			return array(
 				'status'  => 'error',
 				'message' => __( 'No entries found', 'helpful' ),
-			];
+			);
 		}
 
 		$pro    = wp_list_pluck( $results, 'pro' );
@@ -455,32 +458,32 @@ class Stats
 		$contra = array_sum( $contra );
 
 		/* Response for ChartJS */
-		$response = [
-			'type'    => 'doughnut',
-			'data'    => [
-				'datasets' => [
-					[
-						'data'            => [
+		$response = array(
+			'type' => 'doughnut',
+			'data' => array(
+				'datasets' => array(
+					array(
+						'data' => array(
 							absint( $pro ),
 							absint( $contra ),
-						],
-						'backgroundColor' => [
+						),
+						'backgroundColor' => array(
 							self::$green,
 							self::$red,
-						],
-					],
-				],
-				'labels'   => [
+						),
+					),
+				),
+				'labels' => array(
 					__( 'Pro', 'helpful' ),
 					__( 'Contra', 'helpful' ),
-				],
-			],
-			'options' => [
-				'legend' => [
+				),
+			),
+			'options' => array(
+				'legend' => array(
 					'position' => 'bottom',
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return $response;
 	}
@@ -494,10 +497,10 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_stats_week( $year )
-	{
+	public static function get_stats_week( $year ) {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 		$query   = "
 		SELECT pro, contra, time
@@ -506,13 +509,12 @@ class Stats
 		AND YEAR(time) = %d
 		";
 
-		$sql = $wpdb->prepare( $query, intval( $year ) );
-
-		$cache_name   = 'helpful_week';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$sql          = $wpdb->prepare( $query, intval( $year ) );
+		$cache_name   = 'helpful/stats/week/' . $year;
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -525,15 +527,15 @@ class Stats
 		$results = maybe_unserialize( $results );
 
 		if ( ! $results ) {
-			return [
+			return array(
 				'status'  => 'error',
 				'message' => __( 'No entries found', 'helpful' ),
-			];
+			);
 		}
 
-		$pro       = [];
-		$contra    = [];
-		$labels    = [];
+		$pro       = array();
+		$contra    = array();
+		$labels    = array();
 		$timestamp = strtotime( 'monday this week' );
 		$days      = 7;
 
@@ -558,37 +560,37 @@ class Stats
 		endforeach;
 
 		/* Response for ChartJS */
-		$response = [
-			'type'    => 'bar',
-			'data'    => [
-				'datasets' => [
-					[
+		$response = array(
+			'type' => 'bar',
+			'data' => array(
+				'datasets' => array(
+					array(
 						'label'           => __( 'Pro', 'helpful' ),
 						'data'            => array_values( $pro ),
 						'backgroundColor' => self::$green,
-					],
-					[
+					),
+					array(
 						'label'           => __( 'Contra', 'helpful' ),
 						'data'            => array_values( $contra ),
 						'backgroundColor' => self::$red,
-					],
-				],
-				'labels'   => $labels,
-			],
-			'options' => [
-				'scales' => [
-					'xAxes' => [
-						[ 'stacked' => true ],
-					],
-					'yAxes' => [
-						[ 'stacked' => true ],
-					],
-				],
-				'legend' => [
+					),
+				),
+				'labels' => $labels,
+			),
+			'options' => array(
+				'scales' => array(
+					'xAxes' => array(
+						array( 'stacked' => true ),
+					),
+					'yAxes' => array(
+						array( 'stacked' => true ),
+					),
+				),
+				'legend' => array(
 					'position' => 'bottom',
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return $response;
 	}
@@ -603,32 +605,31 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_stats_month( $year, $month = null )
-	{
+	public static function get_stats_month( $year, $month = null ) {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 
 		if ( is_null( $month ) ) {
-			$month = date( 'm' );
+			$month = gmdate( 'm' );
 		} else {
 			$month = absint( $month );
 		}
 
-		$query   = "
+		$query = "
 		SELECT pro, contra, time
 		FROM $helpful
 		WHERE MONTH(time) = %d
 		AND YEAR(time) = %d
 		";
 
-		$sql = $wpdb->prepare( $query, intval( $month ), intval( $year ) );
-
-		$cache_name   = 'helpful_month';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$sql          = $wpdb->prepare( $query, intval( $month ), intval( $year ) );
+		$cache_name   = 'helpful/stats/month/' . $month . '/' . $year;
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -641,16 +642,16 @@ class Stats
 		$results = maybe_unserialize( $results );
 
 		if ( ! $results ) {
-			return [
+			return array(
 				'status'  => 'error',
 				'message' => __( 'No entries found', 'helpful' ),
-			];
+			);
 		}
 
-		$pro       = [];
-		$contra    = [];
-		$labels    = [];
-		$timestamp = strtotime( date( "$year-$month-1" ) );
+		$pro       = array();
+		$contra    = array();
+		$labels    = array();
+		$timestamp = strtotime( gmdate( "$year-$month-1" ) );
 		$days      = date_i18n( 't', $timestamp ) - 1;
 
 		for ( $i = 0; $i < $days; $i++ ) :
@@ -674,37 +675,37 @@ class Stats
 		endforeach;
 
 		/* Response for ChartJS */
-		$response = [
-			'type'    => 'bar',
-			'data'    => [
-				'datasets' => [
-					[
+		$response = array(
+			'type' => 'bar',
+			'data' => array(
+				'datasets' => array(
+					array(
 						'label'           => __( 'Pro', 'helpful' ),
 						'data'            => array_values( $pro ),
 						'backgroundColor' => self::$green,
-					],
-					[
+					),
+					array(
 						'label'           => __( 'Contra', 'helpful' ),
 						'data'            => array_values( $contra ),
 						'backgroundColor' => self::$red,
-					],
-				],
-				'labels'   => $labels,
-			],
-			'options' => [
-				'scales' => [
-					'xAxes' => [
-						[ 'stacked' => true ],
-					],
-					'yAxes' => [
-						[ 'stacked' => true ],
-					],
-				],
-				'legend' => [
+					),
+				),
+				'labels' => $labels,
+			),
+			'options' => array(
+				'scales' => array(
+					'xAxes' => array(
+						array( 'stacked' => true ),
+					),
+					'yAxes' => array(
+						array( 'stacked' => true ),
+					),
+				),
+				'legend' => array(
 					'position' => 'bottom',
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return $response;
 	}
@@ -718,10 +719,10 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_stats_year( $year )
-	{
+	public static function get_stats_year( $year ) {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 		$query   = "
 		SELECT pro, contra, time
@@ -729,13 +730,12 @@ class Stats
 		WHERE YEAR(time) = %d
 		";
 
-		$sql = $wpdb->prepare( $query, intval( $year ) );
-
-		$cache_name   = 'helpful_year';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$sql          = $wpdb->prepare( $query, intval( $year ) );
+		$cache_name   = 'helpful/stats/year/' . $year;
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -748,23 +748,23 @@ class Stats
 		$results = maybe_unserialize( $results );
 
 		if ( ! $results ) {
-			return [
+			return array(
 				'status'  => 'error',
 				'message' => __( 'No entries found', 'helpful' ),
-			];
+			);
 		}
 
-		$pro       = [];
-		$contra    = [];
-		$labels    = [];
-		$timestamp = strtotime( sprintf( date( '%d-1-1' ), intval( $year ) ) );
+		$pro       = array();
+		$contra    = array();
+		$labels    = array();
+		$timestamp = strtotime( 'first day of January' . intval( $year ) );
 		$days      = 12;
 
 		for ( $i = 0; $i < $days; $i++ ) :
-			$month             = date_i18n( 'M', strtotime( "+$i months", $timestamp ) );
-			$pro[ $month ]     = 0;
-			$contra [ $month ] = 0;
-			$labels[]          = $month;
+			$month            = date_i18n( 'M', strtotime( "+$i months", $timestamp ) );
+			$pro[ $month ]    = 0;
+			$contra[ $month ] = 0;
+			$labels[]         = $month;
 		endfor;
 
 		foreach ( $results as $result ) :
@@ -780,37 +780,37 @@ class Stats
 		endforeach;
 
 		/* Response for ChartJS */
-		$response = [
-			'type'    => 'bar',
-			'data'    => [
-				'datasets' => [
-					[
+		$response = array(
+			'type' => 'bar',
+			'data' => array(
+				'datasets' => array(
+					array(
 						'label'           => __( 'Pro', 'helpful' ),
 						'data'            => array_values( $pro ),
 						'backgroundColor' => self::$green,
-					],
-					[
+					),
+					array(
 						'label'           => __( 'Contra', 'helpful' ),
 						'data'            => array_values( $contra ),
 						'backgroundColor' => self::$red,
-					],
-				],
-				'labels'   => $labels,
-			],
-			'options' => [
-				'scales' => [
-					'xAxes' => [
-						[ 'stacked' => true ],
-					],
-					'yAxes' => [
-						[ 'stacked' => true ],
-					],
-				],
-				'legend' => [
+					),
+				),
+				'labels' => $labels,
+			),
+			'options' => array(
+				'scales' => array(
+					'xAxes' => array(
+						array( 'stacked' => true ),
+					),
+					'yAxes' => array(
+						array( 'stacked' => true ),
+					),
+				),
+				'legend' => array(
 					'position' => 'bottom',
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return $response;
 	}
@@ -825,10 +825,10 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_stats_range( $from, $to )
-	{
+	public static function get_stats_range( $from, $to ) {
 		global $wpdb;
 
+		$options = new Services\Options();
 		$helpful = $wpdb->prefix . 'helpful';
 		$query   = "
 		SELECT pro, contra, time
@@ -837,13 +837,12 @@ class Stats
 		AND DATE(time) <= DATE(%s)
 		";
 
-		$sql = $wpdb->prepare( $query, $from, $to );
-
-		$cache_name   = 'helpful_from_' . $from . '_to_' . $to;
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$sql          = $wpdb->prepare( $query, $from, $to );
+		$cache_name   = 'helpful/stats/range/' . $from . '/' . $to;
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -856,18 +855,18 @@ class Stats
 		$results = maybe_unserialize( $results );
 
 		if ( ! $results ) {
-			return [
+			return array(
 				'status'  => 'error',
 				'message' => __( 'No entries found', 'helpful' ),
-			];
+			);
 		}
 
 		$from_date = new \DateTime( $from );
 		$to_date   = new \DateTime( $to );
 		$diff      = $from_date->diff( $to_date );
-		$pro       = [];
-		$contra    = [];
-		$labels    = [];
+		$pro       = array();
+		$contra    = array();
+		$labels    = array();
 		$timestamp = strtotime( $from );
 		$limit     = ( $diff->format( '%a' ) + 1 );
 
@@ -886,29 +885,29 @@ class Stats
 		}
 
 		/* Response for ChartJS */
-		$response = [
-			'type'    => 'bar',
-			'data'    => [
-				'datasets' => [
-					[
+		$response = array(
+			'type' => 'bar',
+			'data' => array(
+				'datasets' => array(
+					array(
 						'label'           => __( 'Pro', 'helpful' ),
 						'data'            => array_values( $pro ),
 						'backgroundColor' => self::$green,
-					],
-					[
+					),
+					array(
 						'label'           => __( 'Contra', 'helpful' ),
 						'data'            => array_values( $contra ),
 						'backgroundColor' => self::$red,
-					],
-				],
-				'labels'   => $labels,
-			],
-			'options' => [
-				'legend' => [
+					),
+				),
+				'labels' => $labels,
+			),
+			'options' => array(
+				'legend' => array(
 					'position' => 'bottom',
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return $response;
 	}
@@ -920,18 +919,17 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_stats_total()
-	{
+	public static function get_stats_total() {
 		global $wpdb;
 
-		$helpful = $wpdb->prefix . 'helpful';
-		$sql   = "SELECT pro, contra, time FROM $helpful";
-
-		$cache_name   = 'helpful_total';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$options      = new Services\Options();
+		$helpful      = $wpdb->prefix . 'helpful';
+		$sql          = "SELECT pro, contra, time FROM $helpful";
+		$cache_name   = 'helpful/stats/total';
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -944,45 +942,44 @@ class Stats
 		$results = maybe_unserialize( $results );
 
 		if ( ! $results ) {
-			return [
+			return array(
 				'status'  => 'error',
 				'message' => __( 'No entries found', 'helpful' ),
-			];
+			);
 		}
 
-		$pro = wp_list_pluck( $results, 'pro' );
-		$pro = array_sum( $pro );
-
+		$pro    = wp_list_pluck( $results, 'pro' );
+		$pro    = array_sum( $pro );
 		$contra = wp_list_pluck( $results, 'contra' );
 		$contra = array_sum( $contra );
 
 		/* Response for ChartJS */
-		$response = [
-			'type'    => 'doughnut',
-			'data'    => [
-				'datasets' => [
-					[
-						'data'            => [
+		$response = array(
+			'type' => 'doughnut',
+			'data' => array(
+				'datasets' => array(
+					array(
+						'data' => array(
 							absint( $pro ),
 							absint( $contra ),
-						],
-						'backgroundColor' => [
+						),
+						'backgroundColor' => array(
 							self::$green,
 							self::$red,
-						],
-					],
-				],
-				'labels'   => [
+						),
+					),
+				),
+				'labels' => array(
 					__( 'Pro', 'helpful' ),
 					__( 'Contra', 'helpful' ),
-				],
-			],
-			'options' => [
-				'legend' => [
+				),
+			),
+			'options' => array(
+				'legend' => array(
 					'position' => 'bottom',
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return $response;
 	}
@@ -990,30 +987,36 @@ class Stats
 	/**
 	 * Get most helpful posts.
 	 *
-	 * @param int $limit posts per page.
+	 * @param int          $limit posts per page.
+	 * @param string|array $post_type Post type.
 	 *
 	 * @return array
 	 */
-	public static function get_most_helpful( $limit = null )
-	{
+	public static function get_most_helpful( $limit = null, $post_type = null ) {
+		$options = new Services\Options();
+
 		if ( is_null( $limit ) ) {
-			$limit = intval( get_option( 'helpful_widget_amount' ) );
+			$limit = intval( $options->get_option( 'helpful_widget_amount', 3, 'intval' ) );
 		} else {
 			$limit = intval( $limit );
 		}
 
-		$args  = [
-			'post_type'      => get_option( 'helpful_post_types' ),
+		if ( is_null( $post_type ) ) {
+			$post_type = $options->get_option( 'helpful_post_types', array(), 'esc_attr' );
+		}
+
+		$args = array(
+			'post_type'      => $post_type,
 			'post_status'    => 'any',
 			'posts_per_page' => -1,
 			'fields'         => 'ids',
-		];
+		);
 
 		$cache_name   = 'helpful_most_helpful';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$query        = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -1023,8 +1026,9 @@ class Stats
 			set_transient( $cache_name, maybe_serialize( $query ), $cache_time );
 		}
 
-		$query = maybe_unserialize( $query );
-		$posts = [];
+		$query   = maybe_unserialize( $query );
+		$posts   = array();
+		$results = array();
 
 		if ( $query->found_posts ) {
 			foreach ( $query->posts as $post_id ) :
@@ -1034,19 +1038,18 @@ class Stats
 			endforeach;
 
 			if ( 1 < count( $posts ) ) {
-
 				arsort( $posts );
 
-				$results = [];
-				$posts   = array_slice( $posts, 0, $limit, true );
+				$posts = array_slice( $posts, 0, $limit, true );
 
 				foreach ( $posts as $post_id => $value ) :
 					if ( 0 === $value ) {
 						continue;
 					}
 
-					$data       = self::get_single_post_stats( $post_id );
-					$results[]  = [
+					$data = self::get_single_post_stats( $post_id );
+
+					$results[] = array(
 						'ID'         => $data['ID'],
 						'url'        => $data['permalink'],
 						'name'       => $data['title'],
@@ -1058,13 +1061,13 @@ class Stats
 							__( 'Published %s ago', 'helpful' ),
 							human_time_diff( $data['time']['timestamp'], date_i18n( 'U' ) )
 						),
-					];
+					);
 				endforeach;
 			}
 		}
 
 		if ( is_array( $results ) ) {
-			usort( $results, function( $a, $b ) {
+			usort( $results, function ( $a, $b ) {
 				return $b['percentage'] - $a['percentage'];
 			} );
 
@@ -1077,28 +1080,34 @@ class Stats
 	/**
 	 * Get least helpful posts.
 	 *
-	 * @param int $limit posts per page.
+	 * @param int          $limit posts per page.
+	 * @param string|array $post_type post type.
 	 *
 	 * @return array
 	 */
-	public static function get_least_helpful( $limit = null )
-	{
+	public static function get_least_helpful( $limit = null, $post_type = null ) {
+		$options = new Services\Options();
+
 		if ( is_null( $limit ) ) {
-			$limit = absint( get_option( 'helpful_widget_amount' ) );
+			$limit = intval( $options->get_option( 'helpful_widget_amount', 3, 'intval' ) );
 		}
 
-		$args  = [
-			'post_type'      => get_option( 'helpful_post_types' ),
+		if ( is_null( $post_type ) ) {
+			$post_type = $options->get_option( 'helpful_post_types', array(), 'esc_attr' );
+		}
+
+		$args = array(
+			'post_type'      => $post_type,
 			'post_status'    => 'any',
 			'posts_per_page' => -1,
 			'fields'         => 'ids',
-		];
+		);
 
 		$cache_name   = 'helpful_least_helpful';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$query        = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -1108,8 +1117,9 @@ class Stats
 			set_transient( $cache_name, maybe_serialize( $query ), $cache_time );
 		}
 
-		$query = maybe_unserialize( $query );
-		$posts = [];
+		$query   = maybe_unserialize( $query );
+		$posts   = array();
+		$results = array();
 
 		if ( $query->found_posts ) {
 			foreach ( $query->posts as $post_id ) :
@@ -1119,19 +1129,18 @@ class Stats
 			endforeach;
 
 			if ( 1 < count( $posts ) ) {
-
 				arsort( $posts );
 
-				$results = [];
-				$posts   = array_slice( $posts, 0, $limit, true );
+				$posts = array_slice( $posts, 0, $limit, true );
 
 				foreach ( $posts as $post_id => $value ) :
 					if ( 0 === $value ) {
 						continue;
 					}
 
-					$data       = self::get_single_post_stats( $post_id );
-					$results[]  = [
+					$data = self::get_single_post_stats( $post_id );
+
+					$results[] = array(
 						'ID'         => $data['ID'],
 						'url'        => $data['permalink'],
 						'name'       => $data['title'],
@@ -1143,13 +1152,13 @@ class Stats
 							__( 'Published %s ago', 'helpful' ),
 							human_time_diff( $data['time']['timestamp'], date_i18n( 'U' ) )
 						),
-					];
+					);
 				endforeach;
 			}
 		}
 
 		if ( is_array( $results ) ) {
-			usort( $results, function( $a, $b ) {
+			usort( $results, function ( $a, $b ) {
 				return $a['percentage'] - $b['percentage'];
 			} );
 
@@ -1168,10 +1177,11 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_recently_pro( $limit = null )
-	{
+	public static function get_recently_pro( $limit = null ) {
+		$options = new Services\Options();
+
 		if ( is_null( $limit ) ) {
-			$limit = absint( get_option( 'helpful_widget_amount' ) );
+			$limit = absint( $options->get_option( 'helpful_widget_amount', 3, 'intval' ) );
 		}
 
 		global $wpdb;
@@ -1185,80 +1195,13 @@ class Stats
 		LIMIT %d
 		";
 
-		$posts = [];
-		$sql   = $wpdb->prepare( $sql, 1, intval( $limit ) );
-
+		$posts        = array();
+		$sql          = $wpdb->prepare( $sql, 1, intval( $limit ) );
 		$cache_name   = 'helpful_recently_pro';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
-		$results      = get_transient( $cache_name );
-
-		if ( 'on' !== $cache_active ) {
-			$results = $wpdb->get_results( $sql );
-		} elseif ( false === $results ) {
-			$results = $wpdb->get_results( $sql );
-			set_transient( $cache_name, maybe_serialize( $results ), $cache_time );
-		}
-
-		$results = maybe_unserialize( $results );
-
-		if ( $results ) {
-			foreach ( $results as $post ) :
-				$data       = self::get_single_post_stats( $post->post_id );
-				$timestamp  = strtotime( $post->time );
-				$posts[]    = [
-					'ID'         => $data['ID'],
-					'url'        => $data['permalink'],
-					'name'       => $data['title'],
-					'percentage' => $data['helpful'],
-					'time'       => sprintf(
-						/* translators: %s time difference */
-						__( 'Submitted %s ago', 'helpful' ),
-						human_time_diff( $timestamp, date_i18n( 'U' ) )
-					),
-				];
-			endforeach;
-		}
-
-		return $posts;
-	}
-
-	/**
-	 * Get recently unhelpful pro posts.
-	 *
-	 * @global $wpdb
-	 *
-	 * @param int $limit posts per page.
-	 *
-	 * @return array
-	 */
-	public static function get_recently_contra( $limit = null )
-	{
-		if ( is_null( $limit ) ) {
-			$limit = absint( get_option( 'helpful_widget_amount' ) );
-		}
-
-		global $wpdb;
-
-		$helpful = $wpdb->prefix . 'helpful';
-		$sql     = "
-		SELECT post_id, time
-		FROM $helpful
-		WHERE contra = %d
-		ORDER BY id DESC
-		LIMIT %d
-		";
-
-		$posts = [];
-		$sql   = $wpdb->prepare( $sql, 1, intval( $limit ) );
-
-		$cache_name   = 'helpful_recently_contra';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
-		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
@@ -1274,7 +1217,7 @@ class Stats
 			foreach ( $results as $post ) :
 				$data      = self::get_single_post_stats( $post->post_id );
 				$timestamp = strtotime( $post->time );
-				$posts[]   = [
+				$posts[]   = array(
 					'ID'         => $data['ID'],
 					'url'        => $data['permalink'],
 					'name'       => $data['title'],
@@ -1284,7 +1227,73 @@ class Stats
 						__( 'Submitted %s ago', 'helpful' ),
 						human_time_diff( $timestamp, date_i18n( 'U' ) )
 					),
-				];
+				);
+			endforeach;
+		}
+
+		return $posts;
+	}
+
+	/**
+	 * Get recently unhelpful pro posts.
+	 *
+	 * @global $wpdb
+	 *
+	 * @param int $limit posts per page.
+	 *
+	 * @return array
+	 */
+	public static function get_recently_contra( $limit = null ) {
+		$options = new Services\Options();
+
+		if ( is_null( $limit ) ) {
+			$limit = absint( $options->get_option( 'helpful_widget_amount', 3, 'intval' ) );
+		}
+
+		global $wpdb;
+
+		$helpful = $wpdb->prefix . 'helpful';
+		$sql     = "
+		SELECT post_id, time
+		FROM $helpful
+		WHERE contra = %d
+		ORDER BY id DESC
+		LIMIT %d
+		";
+
+		$posts        = array();
+		$sql          = $wpdb->prepare( $sql, 1, intval( $limit ) );
+		$cache_name   = 'helpful_recently_contra';
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
+		$cache_times  = Cache::get_cache_times( false );
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
+		$results      = get_transient( $cache_name );
+
+		if ( 'on' !== $cache_active ) {
+			$results = $wpdb->get_results( $sql );
+		} elseif ( false === $results ) {
+			$results = $wpdb->get_results( $sql );
+			set_transient( $cache_name, maybe_serialize( $results ), $cache_time );
+		}
+
+		$results = maybe_unserialize( $results );
+
+		if ( $results ) {
+			foreach ( $results as $post ) :
+				$data      = self::get_single_post_stats( $post->post_id );
+				$timestamp = strtotime( $post->time );
+				$posts[]   = array(
+					'ID'         => $data['ID'],
+					'url'        => $data['permalink'],
+					'name'       => $data['title'],
+					'percentage' => $data['helpful'],
+					'time'       => sprintf(
+						/* translators: %s time difference */
+						__( 'Submitted %s ago', 'helpful' ),
+						human_time_diff( $timestamp, date_i18n( 'U' ) )
+					),
+				);
 			endforeach;
 		}
 
@@ -1296,13 +1305,14 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_single_post_stats( $post_id )
-	{
-		$post       = get_post( $post_id );
-		$pro        = self::get_pro( $post->ID ) ? intval( self::get_pro( $post->ID ) ) : 0;
-		$contra     = self::get_contra( $post->ID ) ? intval( self::get_contra( $post->ID ) ) : 0;
-		$prop       = self::get_pro( $post->ID, true );
-		$conp       = self::get_contra( $post->ID, true );
+	public static function get_single_post_stats( $post_id ) {
+		$options = new Services\Options();
+
+		$post   = get_post( $post_id );
+		$pro    = self::get_pro( $post->ID ) ? intval( self::get_pro( $post->ID ) ) : 0;
+		$contra = self::get_contra( $post->ID ) ? intval( self::get_contra( $post->ID ) ) : 0;
+		$prop   = self::get_pro( $post->ID, true );
+		$conp   = self::get_contra( $post->ID, true );
 
 		$average    = 0;
 		$total      = 0;
@@ -1317,33 +1327,33 @@ class Stats
 
 		$post_type = get_post_type_object( $post->post_type );
 
-		$results = [
-			'ID'         => $post->ID,
-			'permalink'  => get_the_permalink( $post->ID ),
-			'title'      => esc_html( $post->post_title ),
-			'type'       => [
+		$results = array(
+			'ID'        => $post->ID,
+			'permalink' => get_the_permalink( $post->ID ),
+			'title'     => esc_html( $post->post_title ),
+			'type'      => array(
 				'slug' => $post_type->name,
 				'name' => $post_type->labels->singular_name,
-			],
-			'author'     => [
+			),
+			'author' => array(
 				'ID'   => $post->post_author,
 				'name' => get_the_author_meta( 'display_name', $post->post_author ),
-			],
-			'pro'        => [
+			),
+			'pro' => array(
 				'value'      => $pro,
 				'percentage' => $prop,
-			],
-			'contra'     => [
+			),
+			'contra' => array(
 				'value'      => $contra,
 				'percentage' => $conp,
-			],
-			'helpful'    => $percentage,
-			'time'       => [
-				'time'     => date_i18n( 'H:i:s', get_the_date( 'U', $post->ID ) ),
-				'date'     => date_i18n( 'Y-m-d', get_the_date( 'U', $post->ID ) ),
+			),
+			'helpful' => $percentage,
+			'time' => array(
+				'time'      => date_i18n( 'H:i:s', get_the_date( 'U', $post->ID ) ),
+				'date'      => date_i18n( 'Y-m-d', get_the_date( 'U', $post->ID ) ),
 				'timestamp' => date_i18n( 'U', get_the_date( 'U', $post->ID ) ),
-			],
-		];
+			),
+		);
 
 		return $results;
 	}
@@ -1353,39 +1363,39 @@ class Stats
 	 *
 	 * @return array
 	 */
-	public static function get_widget_stats()
-	{
+	public static function get_widget_stats() {
+		$options      = new Services\Options();
 		$cache_name   = 'helpful_widget_stats';
-		$cache_time   = get_option( 'helpful_cache_time', 'minute' );
-		$cache_active = get_option( 'helpful_caching', 'off' );
+		$cache_time   = $options->get_option( 'helpful_cache_time', 'minute', 'esc_attr' );
+		$cache_active = $options->get_option( 'helpful_caching', 'off', 'esc_attr' );
 		$cache_times  = Cache::get_cache_times( false );
-		$cache_time   = $cache_times[ $cache_time ];
+		$cache_time   = ( array_key_exists( $cache_time, $cache_times ) ) ? $cache_times[ $cache_time ] : MINUTE_IN_SECONDS;
 		$results      = get_transient( $cache_name );
 
 		if ( 'on' !== $cache_active ) {
-			$results = [
-				'most_helpful'    => get_option( 'helpful_widget_pro' ) ? self::get_most_helpful() : null,
-				'least_helpful'   => get_option( 'helpful_widget_contra' ) ? self::get_least_helpful() : null,
-				'recently_pro'    => get_option( 'helpful_widget_pro_recent' ) ? self::get_recently_pro() : null,
-				'recently_contra' => get_option( 'helpful_widget_contra_recent' ) ? self::get_recently_contra() : null,
-				'feedback_items'  => get_option( 'helpful_feedback_widget' ) ? Feedback::get_feedback_items() : null,
+			$results = array(
+				'most_helpful'    => $options->get_option( 'helpful_widget_pro', false, 'bool' ) ? self::get_most_helpful() : null,
+				'least_helpful'   => $options->get_option( 'helpful_widget_contra', false, 'bool' ) ? self::get_least_helpful() : null,
+				'recently_pro'    => $options->get_option( 'helpful_widget_pro_recent', false, 'bool' ) ? self::get_recently_pro() : null,
+				'recently_contra' => $options->get_option( 'helpful_widget_contra_recent', false, 'bool' ) ? self::get_recently_contra() : null,
+				'feedback_items'  => $options->get_option( 'helpful_feedback_widget', false, 'bool' ) ? Feedback::get_feedback_items() : null,
 				'pro_total'       => intval( self::get_pro_all() ),
 				'contra_total'    => intval( self::get_contra_all() ),
-			];
+			);
 
 			return $results;
 		}
-		
+
 		if ( false === $results ) {
-			$results = [
-				'most_helpful'    => get_option( 'helpful_widget_pro' ) ? self::get_most_helpful() : null,
-				'least_helpful'   => get_option( 'helpful_widget_contra' ) ? self::get_least_helpful() : null,
-				'recently_pro'    => get_option( 'helpful_widget_pro_recent' ) ? self::get_recently_pro() : null,
-				'recently_contra' => get_option( 'helpful_widget_contra_recent' ) ? self::get_recently_contra() : null,
-				'feedback_items'  => get_option( 'helpful_feedback_widget' ) ? Feedback::get_feedback_items() : null,
+			$results = array(
+				'most_helpful'    => $options->get_option( 'helpful_widget_pro', false, 'bool' ) ? self::get_most_helpful() : null,
+				'least_helpful'   => $options->get_option( 'helpful_widget_contra', false, 'bool' ) ? self::get_least_helpful() : null,
+				'recently_pro'    => $options->get_option( 'helpful_widget_pro_recent', false, 'bool' ) ? self::get_recently_pro() : null,
+				'recently_contra' => $options->get_option( 'helpful_widget_contra_recent', false, 'bool' ) ? self::get_recently_contra() : null,
+				'feedback_items'  => $options->get_option( 'helpful_feedback_widget', false, 'bool' ) ? Feedback::get_feedback_items() : null,
 				'pro_total'       => intval( self::get_pro_all() ),
 				'contra_total'    => intval( self::get_contra_all() ),
-			];
+			);
 
 			set_transient( $cache_name, maybe_serialize( $results ), $cache_time );
 		}
@@ -1397,11 +1407,8 @@ class Stats
 
 	/**
 	 * Removes the transient for the widget so that current data can be transferred.
-	 *
-	 * @return void
 	 */
-	public static function delete_widget_transient()
-	{
+	public static function delete_widget_transient() {
 		delete_transient( 'helpful_widget_stats' );
 	}
 }

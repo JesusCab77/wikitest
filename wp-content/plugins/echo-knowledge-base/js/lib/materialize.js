@@ -2509,9 +2509,9 @@ $jscomp.polyfill = function (e, r, p, m) {
 
           // Click a or button tag if exists, otherwise click li tag
           if (!!$activatableElement.length) {
-            $activatableElement[0].click();
+            $activatableElement[0].trigger('click');
           } else if (!!focusedElement) {
-            focusedElement.click();
+            focusedElement.trigger('click');
           }
 
           // Close dropdown on ESC

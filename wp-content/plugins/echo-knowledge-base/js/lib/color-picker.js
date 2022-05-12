@@ -66,7 +66,7 @@
 				 * @return {void}
 				 */
 				change: function( event, ui ) {
-					if ( $.isFunction( self.options.change ) ) {
+					if ( typeof self.options.change == 'function' ) {
 						self.options.change.call( this, event, ui );
 					}
 				},
@@ -188,7 +188,7 @@
 				change: function( event, ui ) {
 					self.toggler.css( { backgroundColor: ui.color.toString() } );
 
-					if ( $.isFunction( self.options.change ) ) {
+					if ( typeof self.options.change == 'function' ) {
 						self.options.change.call( this, event, ui );
 					}
 				}
@@ -199,7 +199,7 @@
 
 			// Force the color picker to always be closed on initial load.
 			if ( ! self.options.hide ) {
-				self.toggler.click();
+				self.toggler.trigger('click');
 			}
 		},
 		/**
@@ -231,7 +231,7 @@
 			 *
 			 * @since 3.5.0
 			 */
-			self.toggler.click( function(){
+			self.toggler.on('click', function(){
 				if ( self.toggler.hasClass( 'epkb-picker-open' ) ) {
 					self.close();
 				} else {
@@ -256,7 +256,7 @@
 				if ( val === '' || val === '#' ) {
 					self.toggler.css( 'backgroundColor', '' );
 					// Fire clear callback if we have one.
-					if ( $.isFunction( self.options.clear ) ) {
+					if ( typeof self.options.clear == 'function' ) {
 						self.options.clear.call( this, event );
 					}
 				}
@@ -271,12 +271,12 @@
 			 *
 			 * @return {void}
 			 */
-			self.button.click( function( event ) {
+			self.button.on('click', function( event ) {
 				var me = $( this );
 				if ( me.hasClass( 'epkb-picker-clear' ) ) {
 					self.element.val( '' );
 					self.toggler.css( 'backgroundColor', '' );
-					if ( $.isFunction( self.options.clear ) ) {
+					if ( typeof self.options.clear == 'function' ) {
 						self.options.clear.call( this, event );
 					}
 				} else if ( me.hasClass( 'epkb-picker-default' ) ) {

@@ -61,7 +61,7 @@ class EPKB_Logging {
 		$stack_trace = self::generateStackTrace();
 
 		$kb_id = isset($eckb_kb_id) && ! empty($eckb_kb_id) ? $eckb_kb_id : '';
-		$kb_id = defined('EM'.'KB_PLUGIN_NAME') ? $kb_id : EPKB_KB_Config_DB::DEFAULT_KB_ID;
+		$kb_id = EPKB_Utilities::is_multiple_kbs_enabled() ? $kb_id : EPKB_KB_Config_DB::DEFAULT_KB_ID;
 
 		// add new error log entry but remove oldest one if more than max
 		// FUTURE TODO log current user
@@ -74,13 +74,6 @@ class EPKB_Logging {
 		// save the error log
 		EPKB_Utilities::save_wp_option( self::LOGGING_OPTION_NAME, $error_log, true );
 	}
-
-	/* private static function store_message($error_message, $param1='', $param2=null) {
-		global $eckb_log_messages;
-
-		$eckb_log_messages = empty($eckb_log_messages) ? array() : $eckb_log_messages;
-		$eckb_log_messages[] = array($error_message, $param1, $param2);
-	} */
 
 	/**
 	 * Get stored logs
@@ -148,36 +141,7 @@ class EPKB_Logging {
 			}
 			
 			// add hooks names 
-			$hooks = '';
-			if ( isset($trace['class']) && $trace['class'] == 'WP_Hook' && isset($trace['object']) ) {
-				
-				/* if ( is_array($trace['object']->callbacks) ) {
-					
-					foreach ( $trace['object']->callbacks as $order => $callback_data ) {
-						foreach ( $callback_data as $name => $function_data ) {
-							
-							// if hooks meand that hooks have text and it is not first hook 
-							if ( $hooks && !empty($function_data['function'][1])) {
-								$hooks .= ', ';
-							}
-							
-							if ( !empty($function_data['function'][1]) ) {
-
-								if ( @get_class($function_data['function'][0]) ) {
-									$hooks .=  '( ' . get_class($function_data['function'][0]) . ', ' . $function_data['function'][1] . ') "' . $order . '"';
-								} else {
-									$hooks .=  $function_data['function'][0] . ' "' . $order . '"';
-								}
-							}
-						}
-					}
-				}
-				
-				if ( $hooks ) {
-					$line .= ' (Filters/Actions: ' . $hooks . ')';
-				} */
-				
-			} else if ( isset($trace['class']) && isset($trace['function']) && $trace['class'] != 'WP_Hook' && strpos($line, 'class-wp-hook.php') !== false) {
+			if ( isset($trace['class']) && isset($trace['function']) && $trace['class'] != 'WP_Hook' && strpos($line, 'class-wp-hook.php') !== false) {
 				//  we run some class with function via hook and want to find the function that was called from some class 
 				$r_class = new ReflectionClass($trace['class']);
 
@@ -188,7 +152,7 @@ class EPKB_Logging {
 				$method = $r_class->getMethod($trace['function']);
 				$line = $method->getFileName() . ' [' . $method->getStartLine() . "] - " . $function;
 				
-			} else if ( strpos($line, 'admin-ajax.php') !== false && ! empty ($trace['args']) && is_string( $trace['args'][0] ) ) { 
+			} else if ( strpos($line, 'admin-ajax.php') !== false && ! empty($trace['args']) && is_string( $trace['args'][0] ) ) {
 				// add ajax start point 
 				$line .= ' (' . $trace['args'][0] . ')';
 			}

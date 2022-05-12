@@ -69,7 +69,7 @@ class EPKB_WPML {
 		return $category_seq_data;
 	}
 
-	private static function remove_language_category( $category_id, $current_lang ) {
+	public static function remove_language_category( $category_id, $current_lang ) {
 		global $icl_adjust_id_url_filter_off;
 
 		$temp_icl_adjust_id_url_filter_off = $icl_adjust_id_url_filter_off;
@@ -112,7 +112,7 @@ class EPKB_WPML {
 		$icl_adjust_id_url_filter_off = true;
 		$category = get_term($category_id);
 		if ( empty( $category ) || is_wp_error( $category ) || ! property_exists( $category, 'term_id' ) ) {
-			return true;
+			return;
 		}
 
 		$args = array( 'element_id' => $category->term_taxonomy_id, 'element_type' => 'category' );

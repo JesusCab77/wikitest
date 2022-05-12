@@ -11,58 +11,17 @@ class EPKB_Utilities {
 	static $wp_options_cache = array();
 	static $postmeta = array();
 
-	/**************************************************************************************************************************
-	 *
-	 *                     POST OPERATIONS
-	 *
-	 **************************************************************************************************************************/
-
-	/**
-	 * Retrieve a KB article with security checks
-	 *
-	 * @param $post_id
-	 * @param bool $only_published
-	 * @return null|WP_Post - return null if this is NOT KB post
+	 /**
+	 * Get Post status translation.
+	 * @param $post_status
+	 * @return mixed
 	 */
-	public static function get_kb_post_secure( $post_id, $only_published=true ) {
-
-		if ( empty($post_id) ) {
-			return null;
-		}
-
-		// ensure post_id is valid
-		$post_id = self::sanitize_int( $post_id );
-		if ( empty($post_id) ) {
-			return null;
-		}
-
-		// retrieve the post and ensure it is one
-		$post = get_post( $post_id );
-		if ( empty($post) || ! is_object($post) || ! $post instanceof WP_Post ) {
-			return null;
-		}
-
-		// verify it is a KB article
-		if ( ! EPKB_KB_Handler::is_kb_post_type( $post->post_type ) ) {
-			return null;
-		}
-
-		// allow only public or private articles
-		if ( $only_published && ! in_array($post->post_status, array('publish', 'future', 'pending', 'draft')) ) {
-			return null;
-		} else  if ( ! in_array($post->post_status, array('publish', 'private', 'future', 'pending', 'draft')) ) {
-			return null;
-		}
-
-		return $post;
-	}
-
 	public static function get_post_status_text( $post_status ) {
 
-		$post_statuses = array( 'draft' => __( 'Draft', 'echo-knowledge-base' ), 'pending' => __( 'Pending', 'echo-knowledge-base' ),
-		                        'publish' => __( 'Published', 'echo-knowledge-base' ), 'future' => __( 'Scheduled', 'echo-knowledge-base' ),
-								'private' => __( 'Private', 'echo-knowledge-base' ),
-								'trash'   => __( 'Trash', 'echo-knowledge-base' ));
+		$post_statuses = array( 'draft' => __( 'Draft' ), 'pending' => __( 'Pending' ),
+		                        'publish' => __( 'Published' ), 'future' => __( 'Scheduled' ),
+								'private' => __( 'Private' ),
+								'trash'   => __( 'Trash' ));
 
 		if ( empty($post_status) || ! in_array($post_status, array_keys($post_statuses)) ) {
 			return $post_status;
@@ -257,13 +216,13 @@ class EPKB_Utilities {
 		$time = abs($time2 - $time1);
 		$time = ( $time < 1 )? 1 : $time;
 		$tokens = array (
-			31536000 => __( 'year', 'echo-knowledge-base' ),
-			2592000 => __( 'month', 'echo-knowledge-base' ),
-			604800 => __( 'week', 'echo-knowledge-base' ),
-			86400 => __( 'day', 'echo-knowledge-base' ),
-			3600 => __( 'hour', 'echo-knowledge-base' ),
-			60 => __( 'min', 'echo-knowledge-base' ),
-			1 => __( 'sec', 'echo-knowledge-base' )
+			31536000 => __( 'year' ),
+			2592000 => __( 'month' ),
+			604800 => __( 'week' ),
+			86400 => __( 'day' ),
+			3600 => __( 'hour' ),
+			60 => __( 'min' ),
+			1 => __( 'sec' )
 		);
 
 		$output = '';
@@ -281,17 +240,36 @@ class EPKB_Utilities {
 
 	/**************************************************************************************************************************
 	 *
-	 *                     NOTICES
+	 *                     AJAX NOTICES
 	 *
 	 *************************************************************************************************************************/
 
 	/**
-	 * Display content (not message).
+	 * wp_die with an error message if nonce invalid or user does not have correct permission
 	 *
-	 * @param $message
+	 * @param string $wpnonce_name
+	 * @param string $context - leave empty if only admin can access this
 	 */
-	public static function ajax_show_content( $message ) {
-		wp_die( json_encode( array( 'message' => $message ) ) );
+	public static function ajax_verify_nonce_and_admin_permission_or_error_die( $wpnonce_name='_wpnonce_epkb_ajax_action', $context='' ) {
+
+		// check wpnonce
+		$wp_nonce = self::post( $wpnonce_name );
+		if ( empty( $wp_nonce ) || ! wp_verify_nonce( $wp_nonce, $wpnonce_name ) ) {
+			self::ajax_show_error_die( __( 'Login or refresh this page to edit this knowledge base', 'echo-knowledge-base' ) . ' (E01)'  );
+		}
+
+		// without context only admins can make changes
+		if ( empty( $context ) ) {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				self::ajax_show_error_die( __( 'Login or refresh this page to edit this knowledge base', 'echo-knowledge-base' ) . ' (E02)'  );
+			}
+			return;
+		}
+
+		// ensure user has correct permission
+		if ( ! EPKB_Admin_UI_Access::is_user_access_to_context_allowed( $context ) ) {
+			self::ajax_show_error_die(__( 'You do not have permission to edit this knowledge base', 'echo-knowledge-base' ) . ' (E02)');
+		}
 	}
 
 	/**
@@ -302,7 +280,9 @@ class EPKB_Utilities {
 	 * @param string $type
 	 */
 	public static function ajax_show_info_die( $message, $title='', $type='success' ) {
-		wp_die( json_encode( array( 'message' => self::get_bottom_notice_message_box( $message, $title, $type) ) ) );
+		if ( defined('DOING_AJAX') ) {
+			wp_die( json_encode( array( 'message' => EPKB_HTML_Forms::notification_box_bottom( $message, $title, $type ) ) ) );
+		}
 	}
 
 	/**
@@ -310,150 +290,62 @@ class EPKB_Utilities {
 	 *
 	 * @param $message
 	 * @param string $title
+	 * @param string $error_code
 	 */
-	public static function ajax_show_error_die( $message, $title='' ) {
-		wp_die( json_encode( array( 'error' => true, 'message' => self::get_bottom_notice_message_box( $message, $title, 'error') ) ) );
-	}
-
-	/**
-	 * Show info or error message to the user
-	 *
-	 * @param $message
-	 * @param string $title
-	 * @param string $type
-	 *
-	 * @return string
-	 */
-	public static function get_bottom_notice_message_box($message, $title='', $type='success', $extra_html='' ) {
-		/* array $EZSQL_ERROR */
-		global $EZSQL_ERROR;
-
-		if ( ! empty($EZSQL_ERROR) && is_array($EZSQL_ERROR) ) {
-			foreach ( $EZSQL_ERROR as $error ){
-				$amgr_tables = array("amgr_access_kb_categories", "amgr_access_read_articles", "amgr_access_read_categories", "amgr_kb_group_users", "amgr_kb_groups", "amgr_kb_public_groups");
-				foreach ( $amgr_tables as $table_name ) {
-					if ( !empty($error['error_str']) && strpos($error['error_str'], $table_name) !== false ) {
-						//LOG Only Acess Manager Error
-						EPKB_Logging::add_log( 'Database error', $EZSQL_ERROR );
-						$message .= __( '. Database Error.', 'echo-knowledge-base' );
-					}
-				}
-
-			}
+	public static function ajax_show_error_die( $message, $title = '', $error_code = '' ) {
+		if ( defined('DOING_AJAX') ) {
+			wp_die( json_encode( array( 'error' => true, 'message' => EPKB_HTML_Forms::notification_box_bottom( $message, $title, 'error' ), 'error_code' => $error_code ) ) );
 		}
-
-		$title = empty($title) ? '' : '<h4>' . $title . '</h4>';
-		$message = empty($message) ? '' : $message;
-		return
-			"<div class='eckb-bottom-notice-message'>
-				<div class='contents'>
-					<span class='$type'>
-						$title
-						<p> " . wp_kses_post($message) . "</p>
-					</span>
-				</div>
-				" . $extra_html . "
-				<div class='epkb-close-notice epkbfa epkbfa-window-close'></div>
-			</div>";
 	}
 
 	public static function user_not_logged_in() {
-		self::ajax_show_error_die( '<p>' . __( 'You are not logged in. Refresh your page and log in.', 'echo-knowledge-base' ) . '</p>', __( 'Cannot save your changes', 'echo-knowledge-base' ) );
+		if ( defined('DOING_AJAX') ) {
+			self::ajax_show_error_die( '<p>' . __( 'You are not logged in. Refresh your page and log in.', 'echo-knowledge-base' ) . '</p>', __( 'Cannot save your changes', 'echo-knowledge-base' ) );
+		}
 	}
 
 	/**
-	 * Show on the page error message on page load.
+	 * Common way to show support link
+	 * @return string
+	 */
+	public static function contact_us_for_support() {
+		return ' ' . esc_html__( 'Please contact us for help', 'echo-knowledge-base' ) . ' ' .
+		       '<a href="https://www.echoknowledgebase.com/technical-support/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'here', 'echo-knowledge-base' ) . '</a>.';
+	}
+
+	/**
+	 * Common way to show feedback link
+	 * @return string
+	 */
+	public static function contact_us_for_feedback() {
+		return ' ' .  esc_html__( "We'd love to hear your feedback!", 'echo-knowledge-base' ) . ' ' .
+		       '<a href="https://www.echoknowledgebase.com/feature-request/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'click here', 'echo-knowledge-base' ) . '</a>';
+	}
+
+	/**
+	 * Get string for generic error, optional specific error number, and Contact us link
 	 *
-	 * @param string $error_msg
-	 */
-	public static function output_inline_error_notice( $error_msg ) {
-		echo '<div class="eckb-inline-error-notice">
-                <div class="eckb-inline-error-notice-contents">
-                ' . $error_msg . '
-				</div>
-			  </div>';
-	}
-
-	/**
-	 * DIALOG BOX - User has to do something with a form values
-	 *	$values ['id']                  CSS ID, used for JS targeting, no CSS styling.
-	 *	$values ['title']               Top Title of Dialog Box.
-	 *	$values ['body']                Text description.
-	 *	$values ['form_inputs']         Form Inputs
-	 *	$values ['accept_label']        Text for Accept button.
-	 *	$values ['accept_type']         Text for Accept button. ( success, default, primary, error , warning )
+	 * For example: EPKB_Utilities::ajax_show_error_die( EPKB_Utilities::report_generic_error( 411 ) );
 	 *
-	 * @param $values
+	 * @param int $error_number
+	 * @param string $message
+	 * @param bool $contact_us
+	 * @return string
 	 */
-	public static function dialog_box_form( $values ) { ?>
+	public static function report_generic_error( $error_number=0, $message='', $contact_us=true ) {
 
-		<div id="<?php echo $values[ 'id' ]; ?>" class="epkb-dialog-box-form">
+		if ( empty( $message ) ) {
+			$message = esc_html__( 'Error occurred', 'echo-knowledge-base' );
+		} else if ( is_wp_error( $message ) ) {
+			/** @var WP_Error $message */
+			$message = $message->get_error_message();
+		} else if ( ! is_string( $message ) ) {
+			$message = esc_html__( 'Error occurred', 'echo-knowledge-base' );
+		}
 
-			<!---- Header ---->
-			<div class="epkb-dbf__header">
-				<h4><?php echo $values['title']; ?></h4>
-			</div>
-
-			<!---- Body ---->
-			<div class="epkb-dbf__body">				<?php 
-				echo empty( $values['body']) ? '' : $values['body']; ?>
-			</div>
-
-			<!---- Form ---->
-			<form class="epkb-dbf__form">				<?php
-				if ( isset($values['form_inputs']) ) {
-					foreach ( $values['form_inputs'] as $input ) {
-						echo '<div class="epkb-dbf__form__input">' . $input . '</div>';
-					}
-				}; ?>
-			</form>
-
-			<!---- Footer ---->
-			<div class="epkb-dbf__footer">
-
-				<div class="epkb-dbf__footer__accept <?php echo isset($values['accept_type']) ? 'epkb-dbf__footer__accept--'.$values['accept_type'] : 'epkb-dbf__footer__accept--success'; ?>">
-					<span id="epkb-accept-button" class="epkb-dbf__footer__accept__btn">
-						<?php echo $values['accept_label'] ? $values['accept_label'] : __( 'Accept', 'echo-knowledge-base' ); ?>
-					</span>
-				</div>
-
-				<div class="epkb-dbf__footer__cancel">
-					<span class="epkb-dbf__footer__cancel__btn"><?php _e( 'Cancel', 'echo-knowledge-base' ); ?></span>
-				</div>
-
-			</div>
-
-			<div class="epkb-dbf__close epkbfa epkbfa-times"></div>
-
-		</div>
-		<div class="epkb-dialog-box-form-black-background"></div>		<?php
-	}
-
-	/**
-	 * DIALOG BOX
-	 *	$values ['id']                  CSS ID, used for JS targeting, no CSS styling.
-	 *	$values ['title']               Top Title of Dialog Box.
-	 *	$values ['body']                Text description.
-	 * @param $values
-	 */
-	public static function dialog_box( $values ) { ?>
-
-		<div id="<?php echo $values[ 'id' ]; ?>" class="epkb-dialog-box-form">
-
-			<!---- Header ---->
-			<div class="epkb-dbf__header">
-				<h4><?php echo $values['title']; ?></h4>
-			</div>
-
-			<!---- Body ---->
-			<div class="epkb-dbf__body">				<?php
-				echo empty( $values['body']) ? '' : $values['body']; ?>
-			</div>
-
-			<div class="epkb-dbf__close epkbfa epkbfa-times"></div>
-
-		</div>
-		<div class="epkb-dialog-box-form-black-background"></div>		<?php
+		return $message .
+				( empty( $error_number ) ? '' : ' (' . $error_number . '). ' ) .
+				( empty( $contact_us ) ? '' : self::contact_us_for_support() );
 	}
 
 
@@ -476,7 +368,12 @@ class EPKB_Utilities {
 			return $default;
 		}
 
-		$number = preg_replace('/\D/', '', $number);
+		// intval returns 0 on error so handle 0 here first
+		if ( $number == 0 ) {
+			return 0;
+		}
+
+		$number = intval($number);
 
 		return empty($number) ? $default : (int) $number;
 	}
@@ -486,7 +383,7 @@ class EPKB_Utilities {
 	 *
 	 * @param $text
 	 * @param String $default
-	 * @return String|<default>
+	 * @return String|$default
 	 */
 	public static function sanitize_english_text( $text, $default='' ) {
 
@@ -500,7 +397,7 @@ class EPKB_Utilities {
 	}
 
 	/**
-	 * Retrieve ID or return error. Used for KB ID and other IDs.
+	 * Retrieve ID or return error. Used for IDs.
 	 *
 	 * @param mixed $id is either $id number or array with 'id' index
 	 *
@@ -510,19 +407,19 @@ class EPKB_Utilities {
 
 		if ( empty( $id) || is_wp_error($id) ) {
 			EPKB_Logging::add_log( 'Error occurred (01)' );
-			return new WP_Error('E001', __( 'invalid ID', 'echo-knowledge-base' ) );
+			return new WP_Error('E001', 'invalid ID' );
 		}
 
 		if ( is_array( $id) ) {
 			if ( ! isset( $id['id']) ) {
 				EPKB_Logging::add_log( 'Error occurred (02)' );
-				return new WP_Error('E002', __( 'invalid ID', 'echo-knowledge-base' ) );
+				return new WP_Error('E002', 'invalid ID' );
 			}
 
 			$id_value = $id['id'];
 			if ( ! self::is_positive_int( $id_value ) ) {
 				EPKB_Logging::add_log( 'Error occurred (03)', $id_value );
-				return new WP_Error('E003', __( 'invalid ID', 'echo-knowledge-base' ) . self::get_variable_string($id_value));
+				return new WP_Error('E003', 'invalid ID' );
 			}
 
 			return (int) $id_value;
@@ -530,7 +427,7 @@ class EPKB_Utilities {
 
 		if ( ! self::is_positive_int( $id ) ) {
 			EPKB_Logging::add_log( 'Error occurred (04)', $id );
-			return new WP_Error('E004', __( 'invalid ID', 'echo-knowledge-base' ) . $id);
+			return new WP_Error('E004', 'invalid ID' );
 		}
 
 		return (int) $id;
@@ -579,11 +476,18 @@ class EPKB_Utilities {
 		$sanitized_fields = array();
 		foreach( $submitted_fields as $submitted_key => $submitted_value ) {
 
-			if ( ! empty($all_fields_specs[$submitted_key]['type']) && $all_fields_specs[$submitted_key]['type'] == EPKB_Input_Filter::WP_EDITOR ) {
-				$sanitized_fields[$submitted_key] = wp_kses_post( $submitted_value );
-			} elseif ( ! empty( $all_fields_specs[$submitted_key]['type'] ) && ! empty( $all_fields_specs[$submitted_key]['allowed_tags'] ) && $all_fields_specs[$submitted_key]['type'] == EPKB_Input_Filter::TEXT ) {
+			$field_type = empty($all_fields_specs[$submitted_key]['type']) ? '' : $all_fields_specs[$submitted_key]['type'];
+
+			if ( $field_type == EPKB_Input_Filter::WP_EDITOR ) {
+				$sanitized_fields[$submitted_key] = wp_kses( $submitted_value, self::get_extended_html_tags() );
+
+			} elseif ( $field_type == EPKB_Input_Filter::TYPOGRAPHY ) {
+				$sanitized_fields[$submitted_key] = EPKB_Input_Filter::sanitize_typography( $submitted_value );
+
+			} elseif ( $field_type == EPKB_Input_Filter::TEXT && ! empty($all_fields_specs[$submitted_key]['allowed_tags']) ) {
 				// text input with allowed tags 
 				$sanitized_fields[$submitted_key] = wp_kses( $submitted_value, $all_fields_specs[$submitted_key]['allowed_tags'] );
+
 			} else {
 				$sanitized_fields[$submitted_key] = sanitize_text_field( $submitted_value );
 			}
@@ -598,7 +502,7 @@ class EPKB_Utilities {
 	 *
 	 * @param $text
 	 * @param String $default
-	 * @return String|<default>
+	 * @return String|$default
 	 */
 	public static function sanitize_comma_separated_ints( $text, $default='' ) {
 
@@ -616,63 +520,183 @@ class EPKB_Utilities {
 	 *
 	 * @param $key
 	 * @param string $default
-	 * @param bool $sanitize
-	 *
+	 * @param string $value_type How to treat and sanitize value. Values: text, url
+	 * @param int $max_length
 	 * @return array|string - empty if not found
 	 */
-	public static function post( $key, $default='', $sanitize=true ) {
+	public static function post( $key, $default = '', $value_type = 'text', $max_length = 0 ) {
 
-		if ( ! isset($_POST[$key]) && ! isset($_GET[$key]) ) {
-			return $default;
+		if ( isset( $_POST[$key] ) ) {
+			return self::post_sanitize( $key, $default, $value_type, $max_length );
 		}
 
-		$value = isset($_POST[$key]) ? $_POST[$key] : $_GET[$key];
+		if ( isset( $_GET[$key] ) ) {
+			return self::get_sanitize( $key, $default, $value_type, $max_length );
+		}
 
-		return $value === null ? $default : ( $sanitize && is_scalar($value) ? sanitize_text_field( $value ) : $value );
+		return $default;
 	}
 
 	/**
-	 * Retrieve value from GET or POST
+	 * Retrieve value from POST or GET
 	 *
 	 * @param $key
 	 * @param string $default
-	 * @param bool $sanitize
-	 *
-	 * @return string - empty if not found
+	 * @param string $value_type How to treat and sanitize value. Values: text, url
+	 * @param int $max_length
+	 * @return array|string - empty if not found
 	 */
-	public static function get( $key,  $default='', $sanitize=true ) {
+	private static function post_sanitize( $key, $default = '', $value_type = 'text', $max_length = 0 ) {
 
-		if ( ! isset($_GET[$key]) && ! isset($_POST[$key]) ) {
+		if ( $_POST[$key] === null || is_object( $_POST[$key] )  ) {
 			return $default;
 		}
 
-		$value = isset($_GET[$key]) ? $_GET[$key] : $_POST[$key];
+		// config is sanitizing with its own specs separately
+		if ( $value_type == 'db-config' ) {
+			return $_POST[$key];
+		}
 
-		return $value === null ? $default : ( $sanitize && is_scalar($value) ? sanitize_text_field( $value ) : $value );
+		if ( is_array( $_POST[$key] ) ) {
+			return self::sanitize_array( $_POST[$key] );
+		}
+
+		// jquery serialized form. sanitize values in array
+		if ( $value_type == 'form' ) {
+			$result = is_array( $default ) ? $default : [];
+			wp_parse_str( stripslashes( $_POST[$key] ), $decoded_form );
+			foreach ( $decoded_form as $field => $val ) {
+				$result[$field] = wp_kses_post( $val );
+			}
+			return $result;
+		}
+
+		if ( $value_type == 'text-area' ) {
+			$value = sanitize_textarea_field( stripslashes( $_POST[$key] ) );  // do not strip line breaks
+		} else if ( $value_type == 'email' ) {
+			$value = sanitize_email( $_POST[$key] );  // strips out all characters that are not allowable in an email
+		} else if ( $value_type == 'url' ) {
+			$value = sanitize_text_field( urldecode( $_POST[$key] ) );
+		} else if ( $value_type == 'wp_editor' ) {
+			$value = wp_kses( $_POST[$key], self::get_extended_html_tags() );
+		} else {
+			$value = sanitize_text_field( stripslashes( $_POST[$key] ) );
+		}
+
+		// optionally limit value by length
+		if ( ! empty( $max_length ) ) {
+			$value = substr( $value, 0, $max_length );
+		}
+
+		return $value;
+	}
+
+	public static function request_key( $key, $default = '' ) {
+
+		if ( is_string( $_REQUEST[$key] ) ) {
+			return sanitize_key( $_REQUEST[$key] );
+		}
+
+		return $default;
 	}
 
 	/**
-	 * Check if Aaccess Manager is considered active.
+	 * Retrieve value from POST or GET
 	 *
-	 * @param bool $is_active_check_only
-	 * @return bool
+	 * @param $key
+	 * @param string $default
+	 * @param string $value_type How to treat and sanitize value. Values: text, url
+	 * @param int $max_length
+	 * @return array|string - empty if not found
 	 */
-	public static function is_amag_on( $is_active_check_only=false ) {
-		/** @var $wpdb Wpdb */
-		global $wpdb;
+	public static function get( $key, $default = '', $value_type = 'text', $max_length = 0 ) {
 
-		if ( defined( 'AMAG_PLUGIN_NAME' ) ) {
-			return true;
+		if ( isset( $_GET[$key] ) ) {
+			return self::get_sanitize( $key, $default, $value_type, $max_length );
 		}
 
-		if ( $is_active_check_only ) {
-			return false;
+		if ( isset( $_POST[$key] ) ) {
+			return self::post_sanitize( $key, $default, $value_type, $max_length );
 		}
 
-		$table = $wpdb->prefix . 'am'.'gr_kb_groups';
-		$result = $wpdb->get_var( "SHOW TABLES LIKE '" . $table ."'" );
+		return $default;
+	}
 
-		return ( ! empty($result) && ( $table == $result ) );
+	/**
+	 * Retrieve value from POST or GET
+	 *
+	 * @param $key
+	 * @param string $default
+	 * @param string $value_type How to treat and sanitize value. Values: text, url
+	 * @param int $max_length
+	 * @return array|string - empty if not found
+	 */
+	private static function get_sanitize( $key, $default = '', $value_type = 'text', $max_length = 0 ) {
+
+		if ( $_GET[$key] === null || is_object( $_GET[$key] )  ) {
+			return $default;
+		}
+
+		// config is sanitizing with its own specs separately
+		if ( $value_type == 'db-config' ) {
+			return $_GET[$key];
+		}
+
+		if ( is_array( $_GET[$key] ) ) {
+			return self::sanitize_array( $_GET[$key] );
+		}
+
+		// jquery serialized form. sanitize values in array
+		if ( $value_type == 'form' ) {
+			$result = is_array( $default ) ? $default : [];
+			wp_parse_str( stripslashes( $_GET[$key] ), $decoded_form );
+			foreach ( $decoded_form as $field => $val ) {
+				$result[$field] = wp_kses_post( $val );
+			}
+			return $result;
+		}
+
+		if ( $value_type == 'text-area' ) {
+			$value = sanitize_textarea_field( stripslashes( $_GET[$key] ) );  // do not strip line breaks
+		} else if ( $value_type == 'email' ) {
+			$value = sanitize_email( $_GET[$key] );  // strips out all characters that are not allowable in an email
+		} else if ( $value_type == 'url' ) {
+			$value = sanitize_text_field( urldecode( $_GET[$key] ) );
+		} else if ( $value_type == 'wp_editor' ) {
+			$value = wp_kses( $_GET[$key], self::get_extended_html_tags() );
+		} else {
+			$value = sanitize_text_field( stripslashes( $_GET[$key] ) );
+		}
+
+		// optionally limit value by length
+		if ( ! empty( $max_length ) ) {
+			$value = substr( $value, 0, $max_length );
+		}
+
+		return $value;
+	}
+
+	public static function sanitize_array( $value ) {
+		$result = [];
+		foreach ( $value as $key => $val ) {
+
+			// can be 2-dimension array
+			if ( is_array( $val ) ) {
+
+				if ( empty( $result[ $key ] ) ) {
+					$result[ $key ] = [];
+				}
+
+				foreach ( $val as $key_2 => $val_2 ) {
+					$result[ $key ][ $key_2 ] = sanitize_text_field( stripslashes( $val_2 ) );
+				}
+
+			} else {
+				$result[ $key ] = sanitize_text_field( stripslashes( $val ) );
+			}
+		}
+
+		return $result;
 	}
 
 
@@ -684,8 +708,6 @@ class EPKB_Utilities {
 
 	/**
 	 * Get KB-SPECIFIC option. Function adds KB ID suffix. Prefix represent core or ADD-ON prefix.
-	 *
-	 * WARN: Use ep.kb_get_instance()->kb_config_obj->get_kb_configs() to get KB specific configuration.
 	 *
 	 * @param $kb_id - assuming it is a valid ID
 	 * @param $option_name - without kb suffix
@@ -709,7 +731,7 @@ class EPKB_Utilities {
 	 * @param bool|false $is_array
 	 * @param bool $return_error
 	 *
-	 * @return array|string|default or error if $return_error is true
+	 * @return array|string|WP_Error or default or error if $return_error is true
 	 */
 	public static function get_wp_option( $option_name, $default, $is_array=false, $return_error=false ) {
 		/** @var $wpdb Wpdb */
@@ -719,18 +741,19 @@ class EPKB_Utilities {
 			return self::$wp_options_cache[$option_name];
 		}
 
-		// retrieve specific KB option
+		// retrieve specific WP option
 		$option = $wpdb->get_var( $wpdb->prepare("SELECT option_value FROM $wpdb->options WHERE option_name = %s", $option_name ) );
 		if ( $option !== null ) {
 			$option = maybe_unserialize( $option );
 		}
 
 		if ( $return_error && $option === null && ! empty($wpdb->last_error) ) {
-			EPKB_Logging::add_log( "DB failure: " . $wpdb->last_error, 'Option Name: ' . $option_name );
-			return new WP_Error(__( 'Database failure', 'echo-knowledge-base' ), $wpdb->last_error);
+			$wpdb_last_error = $wpdb->last_error;   // add_log changes last_error so store it first
+			EPKB_Logging::add_log( "DB failure: " . $wpdb_last_error, 'Option Name: ' . $option_name );
+			return new WP_Error(__( 'Error occurred', 'echo-knowledge-base' ), $wpdb_last_error);
 		}
 
-		// if KB option is missing then return defaults
+		// if WP option is missing then return defaults
 		if ( $option === null || ( $is_array && ! is_array($option) ) ) {
 			return $default;
 		}
@@ -750,17 +773,13 @@ class EPKB_Utilities {
 	 *
 	 * @return array|WP_Error if option cannot be serialized or db insert failed
 	 */
-	public static function save_kb_option( $kb_id, $option_name, array $option_value, $sanitized ) {
+	public static function save_kb_option( $kb_id, $option_name, $option_value, $sanitized ) {
 		$full_option_name = $option_name . '_' . $kb_id;
 		return self::save_wp_option( $full_option_name, $option_value, $sanitized );
 	}
 
 	/**
-	 * Use to save:
-	 *  a) PLUGIN-WIDE option not specific to any KB with e p k b prefix.
-	 *  b) ADD-ON-SPECIFIC option with ADD-ON prefix.
-	 *  b) KB-SPECIFIC configuration with e p k b prefix and KB ID suffix.
-	 *
+	 * Save WP option
 	 * @param $option_name
 	 * @param $option_value
 	 * @param $sanitized
@@ -769,10 +788,6 @@ class EPKB_Utilities {
 	public static function save_wp_option( $option_name, $option_value, $sanitized ) {
 		/** @var $wpdb Wpdb */
 		global $wpdb;
-
-		if ( $sanitized !== true ) {
-			return new WP_Error( '433', __( 'Option value was not sanitized for option: ', 'echo-knowledge-base' ) . $option_name );
-		}
 
 		// do not store null
 		if ( $option_value === null ) {
@@ -784,7 +799,7 @@ class EPKB_Utilities {
 		if ( is_array( $option_value ) || is_object( $option_value ) ) {
 			$serialized_value = maybe_serialize($option_value);
 			if ( empty($serialized_value) ) {
-				return new WP_Error( '434', __( 'Failed to serialize value for option: ', 'echo-knowledge-base' ) . $option_name );
+				return new WP_Error( '434', __( 'Error occurred', 'echo-knowledge-base' ) . ' ' . $option_name );
 			}
 		}
 
@@ -828,21 +843,22 @@ class EPKB_Utilities {
 		}
 
 		if ( ! self::is_positive_int( $post_id) ) {
-			return $return_error ? new WP_Error( __( 'Invalid Post ID', 'echo-knowledge-base' ), self::get_variable_string( $post_id ) ) : $default;
+			return $return_error ? new WP_Error( __( 'Error occurred', 'echo-knowledge-base' ), self::get_variable_string( $post_id ) ) : $default;
 		}
 
-		// retrieve specific KB option
+		// retrieve specific option
 		$option = $wpdb->get_var( $wpdb->prepare("SELECT meta_value FROM $wpdb->postmeta WHERE post_id = %d and meta_key = '%s'", $post_id, $meta_key ) );
 		if ($option !== null ) {
 			$option = maybe_unserialize( $option );
 		}
 
 		if ( $return_error && $option === null && ! empty($wpdb->last_error) ) {
-			EPKB_Logging::add_log( "DB failure: " . $wpdb->last_error, 'Meta Key: ' . $meta_key );
-			return new WP_Error(__( 'Database failure', 'echo-knowledge-base' ), $wpdb->last_error);
+			$wpdb_last_error = $wpdb->last_error;   // add_log changes last_error so store it first
+			EPKB_Logging::add_log( "DB failure: " . $wpdb_last_error, 'Meta Key: ' . $meta_key );
+			return new WP_Error(__( 'Error occurred', 'echo-knowledge-base' ), $wpdb_last_error);
 		}
 
-		// if KB option is missing then return defaults
+		// if the option is missing then return defaults
 		if ( $option === null || ( $is_array && ! is_array($option) ) ) {
 			return $default;
 		}
@@ -867,11 +883,11 @@ class EPKB_Utilities {
 		global $wpdb;
 
 		if ( ! self::is_positive_int( $post_id) ) {
-			return new WP_Error( __( 'Invalid Post ID', 'echo-knowledge-base' ), self::get_variable_string( $post_id ) );
+			return new WP_Error( __( 'Error occurred', 'echo-knowledge-base' ), self::get_variable_string( $post_id ) );
 		}
 
 		if ( $sanitized !== true ) {
-			return new WP_Error( '433', __( 'Option value was not sanitized for meta key: ', 'echo-knowledge-base' ) . $meta_key );
+			return new WP_Error( '433', __( 'Error occurred', 'echo-knowledge-base' ) . ' ' . $meta_key );
 		}
 
 		// do not store null
@@ -884,33 +900,34 @@ class EPKB_Utilities {
 		if ( is_array( $meta_value ) || is_object( $meta_value ) ) {
 			$serialized_value = maybe_serialize($meta_value);
 			if ( empty($serialized_value) ) {
-				return new WP_Error( '434', __( 'Failed to serialize value for meta key: ', 'echo-knowledge-base' ) . $meta_key );
+				return new WP_Error( '434', __( 'Error occurred', 'echo-knowledge-base' ) . ' ' . $meta_key );
 			}
 		}
 
 		// check if the meta field already exists before doing 'upsert'
 		$result = $wpdb->get_row( $wpdb->prepare( "SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = '%s' AND post_id = %d", $meta_key, $post_id ) );
 		if ( $result === null && ! empty($wpdb->last_error) ) {
-			EPKB_Logging::add_log( "DB failure: " . $wpdb->last_error );
-			return new WP_Error(__( 'Database failure', 'echo-knowledge-base' ), $wpdb->last_error);
+			$wpdb_last_error = $wpdb->last_error;   // add_log changes last_error so store it first
+			EPKB_Logging::add_log( "DB failure: " . $wpdb_last_error );
+			return new WP_Error(__( 'Error occurred', 'echo-knowledge-base' ), $wpdb_last_error);
 		}
 
 		// INSERT or UPDATE the meta field
 		if ( empty($result) ) {
 			if ( false === $wpdb->query( $wpdb->prepare( "INSERT INTO $wpdb->postmeta (`meta_key`, `meta_value`, `post_id`) VALUES (%s, %s, %d)", $meta_key, $serialized_value, $post_id ) ) ) {
 				EPKB_Logging::add_log("Failed to insert meta data. ", $meta_key);
-				return new WP_Error( '33', __( 'Failed to insert meta data', 'echo-knowledge-base' ) );
+				return new WP_Error( '33', __( 'Error occurred', 'echo-knowledge-base' ) );
 			}
 		} else {
 			if ( false === $wpdb->query( $wpdb->prepare( "UPDATE $wpdb->postmeta SET meta_value = %s WHERE meta_key = '%s' AND post_id = %d", $serialized_value, $meta_key, $post_id ) ) ) {
 				EPKB_Logging::add_log("Failed to update meta data. ", $meta_key);
-				return new WP_Error( '33', __( 'Failed to update meta data', 'echo-knowledge-base' ) );
+				return new WP_Error( '33', __( 'Error occurred', 'echo-knowledge-base' ) );
 			}
 		}
 
 		if ( $result === false ) {
 			EPKB_Logging::add_log( 'Failed to update meta key', $meta_key );
-			return new WP_Error( '435', __( 'Failed to update meta key ', 'echo-knowledge-base' ) . $meta_key );
+			return new WP_Error( '435', __( 'Error occurred', 'echo-knowledge-base' ) . ' ' . $meta_key );
 		}
 
 		self::$postmeta[$post_id][$meta_key] = $meta_value;
@@ -934,7 +951,7 @@ class EPKB_Utilities {
 			return false;
 		}
 
-		// delete specific KB option
+		// delete specific option
 		if ( false === $wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->postmeta WHERE post_id = %d and meta_key = '%s'", $post_id, $meta_key ) ) ) {
 			EPKB_Logging::add_log( "Could not delete post '" . self::get_variable_string($meta_key) . "'' metadata: ", $post_id);
 			return false;
@@ -946,191 +963,9 @@ class EPKB_Utilities {
 
 	/**************************************************************************************************************************
 	 *
-	 *                     CATEGORIES
-	 *
-	 *************************************************************************************************************************/
-
-    /**
-     *
-     * USED TO HANDLE ALL CATEGORIES REGARDLESS OF USER PERMISSIONS.
-     *
-     * Get all existing KB categories.
-     *
-     * @param $kb_id
-     * @param string $order_by
-     * @return array|null - return array of KB categories (empty if not found) or null on error
-     */
-    public static function get_kb_categories_unfiltered( $kb_id, $order_by='name' ) {
-        /** @var wpdb $wpdb */
-        global $wpdb;
-
-        $order = $order_by == 'name' ? 'ASC' : 'DESC';
-        $order_by = $order_by == 'date' ? 'term_id' : $order_by;   // terms don't have date so use id
-        $kb_category_taxonomy_name = EPKB_KB_Handler::get_category_taxonomy_name( $kb_id );
-        $result = $wpdb->get_results( $wpdb->prepare("SELECT t.*, tt.*
-												   FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy AS tt ON t.term_id = tt.term_id
-												   WHERE tt.taxonomy IN (%s) ORDER BY " . esc_sql('t.' . $order_by) . ' ' . $order . ' ', $kb_category_taxonomy_name ) );
-        return isset($result) && is_array($result) ? $result : null;
-    }
-
-	/**
-	 * USED TO HANDLE ALL CATEGORIES REGARDLESS OF USER PERMISSIONS.
-	 *
-	 * Get KB Article categories.
-	 *
-	 * @param $kb_id
-	 * @param $article_id
-	 * @return array|null - categories belonging to the given KB Article or null on error
-	 */
-	public static function get_article_categories_unfiltered( $kb_id, $article_id ) {
-		/** @var $wpdb Wpdb */
-		global $wpdb;
-
-		if ( empty($article_id) ) {
-			return null;
-		}
-
-		// get article categories
-		$post_taxonomy_objs = $wpdb->get_results( $wpdb->prepare(
-											"SELECT * FROM $wpdb->term_taxonomy
-																	 WHERE taxonomy = '%s' and term_taxonomy_id in
-																	(SELECT term_taxonomy_id FROM $wpdb->term_relationships WHERE object_id = %d) ",
-											EPKB_KB_Handler::get_category_taxonomy_name( $kb_id ), $article_id ) );
-		if ( ! empty($wpdb->last_error) ) {
-			return null;
-		}
-
-		return $post_taxonomy_objs === null || ! is_array($post_taxonomy_objs) ? array() : $post_taxonomy_objs;
-	}
-
-	/**
-	 * USED TO HANDLE ALL CATEGORIES REGARDLESS OF USER PERMISSIONS.
-	 *
-	 * Retrieve KB Category.
-	 *
-	 * @param $kb_id
-	 * @param $kb_category_id
-	 * @return WP_Term|false
-	 */
-    public static function get_kb_category_unfiltered( $kb_id, $kb_category_id ) {
-	    $term = get_term_by('id', $kb_category_id, EPKB_KB_Handler::get_category_taxonomy_name( $kb_id ) );
-	    if ( empty($term) || ! $term instanceof WP_Term ) {
-		    EPKB_Logging::add_log( "Category is not KB Category: " . $kb_category_id . "(35)", $kb_id);
-		    return false;
-	    }
-
-	    return $term;
-    }
-
-	/**
-	 * USED TO HANDLE ALL CATEGORIES REGARDLESS OF USER PERMISSIONS.
-	 *
-	 * Retrieve KB Category by its slug.
-	 *
-	 * @param $kb_id
-	 * @param $kb_category_slug
-	 * @return WP_Term|false
-	 */
-	public static function get_kb_category_by_slug_unfiltered( $kb_id, $kb_category_slug ) {
-		$term = get_term_by('slug', $kb_category_slug, EPKB_KB_Handler::get_category_taxonomy_name( $kb_id ) );
-		if ( empty($term) || ! $term instanceof WP_Term ) {
-			EPKB_Logging::add_log( "Category is not KB Category: " . $kb_category_slug . "(34)", $kb_id);
-			return false;
-		}
-
-		return $term;
-	}
-
-	/**
-	 * Insert KB Category
-	 *
-	 * @param $kb_id
-	 * @param $category_name
-	 * @param $args
-	 * @return array|null - new term or null on error
-	 */
-    public static function insert_kb_category( $kb_id, $category_name, $args=array() ) {
-
-	    $kb_category_taxonomy_name = EPKB_KB_Handler::get_category_taxonomy_name( $kb_id );
-
-	    $new_term = wp_insert_term( $category_name, $kb_category_taxonomy_name, $args );
-	    if ( is_wp_error($new_term) ) {
-		    EPKB_Logging::add_log( 'Failed to insert category. cat name: ' . $category_name . ', taxonomy: ' . $kb_category_taxonomy_name . ' kb id: ' . $kb_id, $args, $new_term );
-		    return null;
-	    }
-	    if ( ! isset($new_term['term_id']) ) {
-		    EPKB_Logging::add_log( 'Failed to insert category. cat name: ' . $category_name . ', taxonomy: ' . $kb_category_taxonomy_name . ' kb id: ' . $kb_id, $args );
-		    return null;
-	    }
-
-	    return $new_term;
-    }
-
-	/**
-	 *
-	 *  USED TO HANDLE ALL CATEGORIES REGARDLESS OF USER PERMISSIONS.
-	 *
-	 * Get KB Article categories.
-	 *
-	 * @param $kb_id
-	 * @param $article_id
-	 * @return array|null - categories belonging to the given KB Article or null on error
-	 */
-	public static function get_article_category_ids_unfiltered( $kb_id, $article_id ) {
-		/** @var $wpdb Wpdb */
-		global $wpdb;
-
-		if ( empty($article_id) ) {
-			return null;
-		}
-
-		// get article categories
-		$post_taxonomy_objs = $wpdb->get_results( $wpdb->prepare(
-										"SELECT term_id FROM $wpdb->term_taxonomy
-										 WHERE taxonomy = '%s' and term_taxonomy_id in 
-										(SELECT term_taxonomy_id FROM $wpdb->term_relationships WHERE object_id = %d) ",
-										EPKB_KB_Handler::get_category_taxonomy_name( $kb_id ), $article_id ) );
-		if ( $post_taxonomy_objs === null || ! is_array( $post_taxonomy_objs ) ) {
-			return null;
-		}
-
-		$article_category_ids = array();
-		foreach( $post_taxonomy_objs as $post_taxonomy_obj ) {
-			if ( isset($post_taxonomy_obj->term_id) ) {
-				$article_category_ids[] = $post_taxonomy_obj->term_id;
-			}
-		}
-		return $article_category_ids;
-	}
-
-	/**************************************************************************************************************************
-	 *
 	 *                     OTHER
 	 *
 	 *************************************************************************************************************************/
-
-	/**
-	 * Retrieve KB ID.
-	 *
-	 * @param WP_Post $post
-	 * @return int or null on ERROR
-	 */
-	public static function get_kb_id( $post=null ) {
-		global $eckb_kb_id;
-
-		$post = $post === null ? get_post() : $post;
-		if ( ! empty($post) && $post instanceof WP_Post ) {
-			$kb_id = EPKB_KB_Handler::get_kb_id_from_post_type( $post->post_type );
-		}
-
-		$kb_id = empty($kb_id) || is_wp_error($kb_id) ? ( empty($eckb_kb_id) ? '' : $eckb_kb_id ) : $kb_id;
-		if ( empty($kb_id) ) {
-			EPKB_Logging::add_log("KB ID not found", $kb_id);
-			return null;
-		}
-
-		return $kb_id;
-	}
 
 	/**
 	 * Return string representation of given variable for logging purposes
@@ -1190,12 +1025,12 @@ class EPKB_Utilities {
 	private static function get_variable_not_array( $var ) {
 
 		if ( $var === null ) {
-			return '<' . __( 'null', 'echo-knowledge-base' ) . '>';
+			return '<' . 'null' . '>';
 		}
 
 		if ( ! isset($var) ) {
             /** @noinspection HtmlUnknownAttribute */
-            return '<' . __( 'not set', 'echo-knowledge-base' ) . '>';
+            return '<' . 'not set' . '>';
 		}
 
 		if ( is_array($var) ) {
@@ -1214,7 +1049,7 @@ class EPKB_Utilities {
 			return $var;
 		}
 
-		return '<' . __( 'unknown', 'echo-knowledge-base' ) . '>';
+		return '<' . 'unknown' . '>';
 	}
 
 	/**
@@ -1260,6 +1095,10 @@ class EPKB_Utilities {
 		return array_diff_assoc($array1, $array2);
 	}
 
+	public static function mb_strtolower( $string ) {
+		return function_exists( 'mb_strtolower' ) ? mb_strtolower( $string ) : strtolower( $string );
+	}
+
 	/**
 	 * Get current user.
 	 *
@@ -1280,14 +1119,62 @@ class EPKB_Utilities {
 		return $user;
 	}
 
+	public static function is_logged_on() {
+		$user = self::get_current_user();
+		return ! empty( $user );
+	}
+
+	/**
+	 * Determine if current user is WP administrator WITHOUT calling current_user_can()
+	 *
+	 * @param null $user
+	 * @return bool
+	 */
+	public static function is_user_admin( $user=null ) {
+
+		// get current user
+        $user = empty( $user ) ? self::get_current_user() : $user;
+		if ( empty( $user ) || empty( $user->roles ) ) {
+			return false;
+		}
+
+		return in_array('administrator', $user->roles) || array_key_exists('manage_options', $user->allcaps);
+	}
+
+	/**
+	 * Check first installed version. Return true if $version less or equal than first installed version. Also return true if epkb_version_first was removed. Use to apply some functions only to new users
+	 * @param $version
+	 * @return bool
+	 */
+	public static function is_new_user( $version ) {
+		$plugin_first_version = self::get_wp_option( 'epkb_version_first', $version );
+		return ! version_compare( $plugin_first_version, $version, '<' );
+	}
+
+	/**
+	 * Check the first installed version. Return true if $version less or equal than first installed version or not defined.
+	 * Also return false if epkb_version_first was removed. Use to apply some functions only to new users
+	 * @param $version
+	 * @return bool
+	 */
+	public static function is_new_user_2( $version ) {
+
+		$plugin_first_version = self::get_wp_option( 'epkb_version_first', '' );
+		if ( empty( $plugin_first_version ) ) {
+			return false;
+		}
+
+		return ! version_compare( $plugin_first_version, $version, '<' );
+	}
+
 	/**
 	 * Output inline CSS style based on configuration.
 	 *
 	 * @param string $styles A list of Configuration Setting styles
-	 * @param $kb_config
+	 * @param $config
 	 * @return string
 	 */
-	public static function get_inline_style( $styles, $kb_config ) {
+	public static function get_inline_style( $styles, $config ) {
 
 		if ( empty($styles) || ! is_string($styles) ) {
 			return '';
@@ -1306,13 +1193,77 @@ class EPKB_Utilities {
 				continue;
 			}
 
-			$output .= $key_value[0] . ': ';
+			if ( $key_value[0] != 'typography' ) {
+				$output .= $key_value[0] . ': ';
+			}
 
-			// true if using KB config value
+			// true if using config value
 			if ( count($key_value) == 2 && isset($key_value[1]) ) {
-				$output .= $key_value[1];
-			} else if ( isset($key_value[2]) && isset($kb_config[$key_value[2]]) ) {
-				$output .= $kb_config[ $key_value[2] ];
+
+				if ( $key_value[0] == 'justify-content' ) {
+
+					if ( $key_value[1] == 'left' ) {
+						$output .= 'flex-start';
+					} else if ( $key_value[1] == 'right' ) {
+						$output .= 'flex-end';
+					} else {
+						$output .= $key_value[1];
+					}
+
+				} else if( $key_value[0] == ' text-align' ) {
+
+					if ( $key_value[1] == 'left' ) {
+						$output .= 'start';
+					} else if ( $key_value[1] == 'right' ) {
+						$output .= 'end';
+					} else {
+						$output .= $key_value[1];
+					}
+
+				} else {
+					$output .= $key_value[1];
+				}
+
+			} else if ( $key_value[0] == 'typography' && isset($config[$key_value[2]]) ) { // typography field
+
+				$typography_values = array_merge( EPKB_Typography::$typography_defaults, $config[$key_value[2]] );
+				if ( ! empty($typography_values['font-family']) ) {
+					$output .= 'font-family:' . $typography_values['font-family'] . ';';
+				}
+
+				if ( ! empty($typography_values['font-size']) ) {
+					$output .= 'font-size:' . $typography_values['font-size'] . $typography_values['font-size-units'] . ';';
+				}
+
+				if ( ! empty($typography_values['font-weight']) ) {
+					$output .= 'font-weight:' . $typography_values['font-weight'] . ';';
+				}
+
+			} else if ( isset($key_value[2]) && isset($config[$key_value[2]]) ) {
+
+				if ( $key_value[0] == 'justify-content' ) {
+
+					if ( $config[ $key_value[2] ] == 'left' ) {
+						$output .= 'flex-start';
+					} else if ( $config[ $key_value[2] ] == 'right' ) {
+						$output .= 'flex-end';
+					} else {
+						$output .= $config[ $key_value[2] ];
+					}
+
+				} else if ( $key_value[0] == 'text-align' ) {
+
+					if ( $config[ $key_value[2] ] == 'left' ) {
+						$output .= 'start';
+					} else if ( $config[ $key_value[2] ] == 'right' ) {
+						$output .= 'end';
+					} else {
+						$output .= $config[ $key_value[2] ];
+					}
+
+				} else {
+					$output .= $config[ $key_value[2] ];
+				}
 
 				switch ( $key_value[0] ) {
 					case 'border-radius':
@@ -1343,17 +1294,17 @@ class EPKB_Utilities {
 			$output .= '; ';
 		}
 
-		return trim($output) . '"';
+		return ' ' . trim( $output ) . '" ';
 	}
 
 	/**
 	 * Output CSS classes based on configuration.
 	 *
 	 * @param $classes
-	 * @param $kb_config
+	 * @param $config
 	 * @return string
 	 */
-	public static function get_css_class( $classes, $kb_config ) {
+	public static function get_css_class( $classes, $config ) {
 
 		if ( empty($classes) || ! is_string($classes) ) {
 			return '';
@@ -1362,27 +1313,67 @@ class EPKB_Utilities {
 		$output = ' class="';
 		foreach( array_map( 'trim', explode(',', $classes) ) as $class ) {
 			$class_name = trim(str_replace(':', '', $class));
-			$is_kb_config = $class != $class_name;
+			$is_config = $class != $class_name;
 
-			if ( $is_kb_config && empty($kb_config[$class_name]) ) {
+			if ( $is_config && empty( $config[$class_name] ) ) {
 				continue;
 			}
 
-			$output .= ( $is_kb_config ? $kb_config[$class_name] : $class ) . ' ';
+			$output .= ( $is_config ? $config[$class_name] : $class ) . ' ';
 		}
 		return trim($output) . '"';
 	}
 
-	/**
-	 * Check if KB is ARCHIVED.
-	 *
-	 * @param $kb_status
-	 * @return bool
-	 */
-	public static function is_kb_archived( $kb_status ) {
-		return $kb_status === 'archived';
+	public static function get_typography_config( $typography ) {
+		$typography_styles = '';
+
+		if ( empty( $typography ) || ! is_array( $typography ) ) {
+			$typography = EPKB_Typography::$typography_defaults;
+		}
+
+		if ( ! empty( $typography['font-family'] ) ) {
+			$typography_styles .= 'font-family: ' . $typography['font-family'] . ' !important;';
+		}
+
+		if ( ! empty( $typography['font-size'] ) && empty( $typography['font-size-units'] ) ) {
+			$typography_styles .= 'font-size: ' . $typography['font-size'] . 'px !important;';
+		}
+
+		if ( ! empty( $typography['font-size'] ) && ! empty( $typography['font-size-units'] ) ) {
+			$typography_styles .= 'font-size: ' . $typography['font-size'] . $typography['font-size-units'] . ' !important;';
+		}
+
+		if ( ! empty( $typography['font-weight'] ) ) {
+			$typography_styles .= 'font-weight: ' . $typography['font-weight'] . ' !important;';
+		}
+
+		return $typography_styles;
 	}
 
+	/**
+	 * Check if Aaccess Manager is considered active.
+	 *
+	 * @param bool $is_active_check_only
+	 * @return bool
+	 */
+	public static function is_amag_on( $is_active_check_only=true ) {
+		/** @var $wpdb Wpdb */
+		global $wpdb;
+
+		if ( defined( 'AMAG_PLUGIN_NAME' ) ) {
+			return true;
+		}
+
+		if ( $is_active_check_only ) {
+			return false;
+		}
+
+		$table = $wpdb->prefix . 'am'.'gr_kb_groups';
+		$result = $wpdb->get_var( "SHOW TABLES LIKE '" . $table ."'" );
+
+		return ( ! empty($result) && ( $table == $result ) );
+	}
+	
 	/**
 	 * Check if given articles belong to the currently selected langauge. Return ones that are.
 	 * @param $articles
@@ -1413,26 +1404,37 @@ class EPKB_Utilities {
 	}
 
 	/**
-	 * Is WPML enabled? Only for KB CORE. ADD-ONs to call this function in core
-	 * @param array $kb_config
+	 * Is WPML enabled?
+	 *
+	 * @param array $config
 	 * @return bool
 	 */
-	public static function is_wpml_enabled( $kb_config=array() ) {
-		return ! empty($kb_config['wpml_is_enabled']) && $kb_config['wpml_is_enabled'] === 'on' && ! defined( 'AMAG_PLUGIN_NAME' );
+	public static function is_wpml_enabled( $config=array() ) {
+		return ! empty( $config['wpml_is_enabled'] ) && $config['wpml_is_enabled'] === 'on' && ! defined( 'AMAG_PLUGIN_NAME' );
 	}
 
-	public static function is_advanced_search_enabled( $kb_config ) {
-		return defined('AS'.'EA_PLUGIN_NAME') &&
+	/**
+	 * Is WPML plugin activated?
+	 *
+	 * @return bool
+	 */
+	public static function is_wpml_plugin_active() {
+		return defined('ICL_SITEPRESS_VERSION');
+	}
+
+	public static function is_advanced_search_enabled( $kb_config=array() ) {
+
+		if ( ! defined('AS'.'EA_PLUGIN_NAME') ) {
+			return false;
+		}
+
+		return empty($kb_config) || (
 		       $kb_config['kb_articles_common_path'] != 'demo-1-knowledge-base-basic-layout' &&
 		       $kb_config['kb_articles_common_path'] != 'demo-2-knowledge-base-basic-layout' &&
 		       $kb_config['kb_articles_common_path'] != 'demo-3-knowledge-base-tabs-layout' &&
 		       $kb_config['kb_articles_common_path'] != 'demo-4-knowledge-base-tabs-layout' &&
-		       $kb_config['kb_articles_common_path'] != 'demo-12-knowledge-base-image-layout';
+		       $kb_config['kb_articles_common_path'] != 'demo-12-knowledge-base-image-layout' );
 	}
-
-	public static function is_advanced_search_enabled_simple() {
-	   return defined('AS'.'EA_PLUGIN_NAME');
-   }
 
 	public static function is_article_rating_enabled() {
 	   return defined( 'EP' . 'RF_PLUGIN_NAME' );
@@ -1445,109 +1447,91 @@ class EPKB_Utilities {
 	public static function is_multiple_kbs_enabled() {
 		return defined('E'.'MKB_PLUGIN_NAME');
 	}
-	
+
+	public static function is_article_features_enabled() {
+		return defined('E'.'ART_PLUGIN_NAME');
+	}
+
 	public static function is_export_import_enabled() {
 		return defined('E'.'PIE_PLUGIN_NAME');
 	}
-	
+
 	public static function is_creative_addons_widgets_enabled() {
 		return defined( 'CREATIVE_ADDONS_VERSION' ) && defined( 'ELEMENTOR_VERSION' );
 	}
-	
-	public static function is_elementor_enabled() {
-		return defined( 'ELEMENTOR_VERSION' );
-	}
 
 	public static function is_link_editor_enabled() {
-		return defined('KBLK_PLUGIN_NAME');
+		return defined('KB'.'LK_PLUGIN_NAME');
+	}
+
+	public static function is_kb_widgets_enabled() {
+		return defined('WI'.'DG_PLUGIN_NAME');
+	}
+
+	public static function is_help_dialog_enabled() {
+		return defined('EP'.'HD_PLUGIN_NAME');
+	}
+
+	public static function is_help_dialog_pro_enabled() {
+		return defined('EP'.'HP_PLUGIN_NAME');
+	}
+
+	public static function is_knowledge_base_enabled() {
+		return defined('EP'.'KB_PLUGIN_NAME');
 	}
 
 	public static function is_link_editor( $post ) {
 		return ! empty($post->post_mime_type) && ( $post->post_mime_type == 'kb_link' or $post->post_mime_type == 'kblink' );
 	}
 
-	public static function is_kb_main_page() {
-		global $eckb_is_kb_main_page;
-		$ix = (isset($eckb_is_kb_main_page) && $eckb_is_kb_main_page) || EPKB_Utilities::get('is_kb_main_page') == 1 ? 'mp' : 'ap';
-		return $ix == 'mp';
-	}
-
 	/**
-	 * Show error message at the top of WordPress page
-	 * @param $message
-	 * @param null $button_text
-	 * @param null $button_url
-	 */
-	public static function output_top_error_message( $message, $button_text=null, $button_url=null ) {  ?>
-		<div class="wrap">
-			<h1></h1>
-		</div>
-		<div class="notice notice-error">
-			<p>				<?php
-				_e( $message, 'echo-knowledge-base' );
-				if ( ! empty($button_text) && ! empty($button_url) ) {
-					echo ' <a class="button button-primary" href="' . esc_url( $button_url ) . '">' . __( $button_text, 'echo-knowledge-base' ) . '</a>';
-				}   ?>
-			</p>
-		</div>		<?php
-	}
-
-	/**
-	 * Common way to show support link
-	 * @return string
-	 */
-	public static function contact_us_for_support() {
-
-		$label = ' ' .  _x('Please contact us for support:', 'echo-knowledge-base') . ' ';
-		$click_text =  _x('click here', 'echo-knowledge-base');
-
-		return $label . '<a href="https://www.echoknowledgebase.com/technical-support/" target="_blank" rel="noopener noreferrer">' . $click_text . '</a>';
-	}
-
-	/**
-	 * For given Main Page, retrieve its slug.
+	 * Check if certain KB's plugin is enabled
 	 *
-	 * @param $kb_main_page_id
-	 *
-	 * @return string
+	 * @param $plugin_id
+	 * @return bool
 	 */
-	public static function get_main_page_slug( $kb_main_page_id ) {
+	public static function is_plugin_enabled( $plugin_id ) {
 
-		$kb_page = get_post( $kb_main_page_id );
-		if ( empty($kb_page) ) {
-			return '';
+		switch ( $plugin_id ) {
+			case 'core' : return true;
+			case 'em'.'kb' : return self::is_multiple_kbs_enabled();
+			case 'ep'.'ie' : return self::is_export_import_enabled();
+			case 'el'.'ay' : return self::is_elegant_layouts_enabled();
+			case 'kb'.'lk' : return self::is_link_editor_enabled();
+			case 'ep'.'rf' : return self::is_article_rating_enabled();
+			case 'as'.'ea' : return self::is_advanced_search_enabled();
+			case 'wi'.'dg' : return self::is_kb_widgets_enabled();
+			case 'ep'.'hd' : return self::is_help_dialog_enabled();
+			case 'cr'.'el' : return self::is_creative_addons_widgets_enabled();
+			default: return false;
+		}
+	}
+
+	/**
+	 * Check if Classic Editor plugin is active.
+	 * By KAGG Design
+	 * @return bool
+	 */
+	public static function is_block_editor_active() {
+		// Gutenberg plugin is installed and activated.
+		$gutenberg = ! ( false === has_filter( 'replace_editor', 'gutenberg_init' ) );
+
+		// Block editor since 5.0.
+		$block_editor = version_compare( $GLOBALS['wp_version'], '5.0-beta', '>' );
+
+		if ( ! $gutenberg && ! $block_editor ) {
+			return false;
 		}
 
-		$slug      = urldecode(sanitize_title_with_dashes( $kb_page->post_name, '', 'save' ));
-		$ancestors = get_post_ancestors( $kb_page );
-		foreach ( $ancestors as $ancestor_id ) {
-			$post_ancestor = get_post( $ancestor_id );
-			if ( empty($post_ancestor) ) {
-				continue;
-			}
-			$slug = urldecode(sanitize_title_with_dashes( $post_ancestor->post_name, '', 'save' )) . '/' . $slug;
-			if ( $kb_main_page_id == $ancestor_id ) {
-				break;
-			}
+		if ( self::is_classic_editor_plugin_active() ) {
+			$editor_option       = get_option( 'classic-editor-replace' );
+			$block_editor_active = array( 'no-replace', 'block' );
+			return in_array( $editor_option, $block_editor_active, true );
 		}
 
-		return $slug;
+		return true;
 	}
 
-	/**
-	 * Show KB page missing message
-	 * @param $kb_config
-	 */
-	public static function kb_page_with_shortcode_missing_msg( $kb_config ) {
-		$message_shortcode = "[epkb-knowledge-base id=" . $kb_config['id'] ."]";
-		$message = sprintf( __( 'We did not detect any page with KB shortcode for your knowledge base "%s". If you do have ' .
-		                        'such a page please re-save it and come back. Otherwise create a page and insert KB ' .
-		                        'shortcode in the format of %s', 'echo-knowledge-base' ), $kb_config['kb_name'], $message_shortcode);		?>
-		<div class="epkb-kb-page-missing-alert">
-			<h4 class='epkb-wizard-error-note'><?php echo $message; ?></h4>
-		</div>  <?php
-	}
-	
 	/**
 	 * Check if Classic Editor plugin is active.
 	 * By KAGG Design
@@ -1561,62 +1545,444 @@ class EPKB_Utilities {
 		return is_plugin_active( 'classic-editor/classic-editor.php' );
 	}
 
-	/*************************************************************************************************
-	 *
-	 *   KB CORE
-	 *
-	 ************************************************************************************************/
-
 	/**
-	 * @param $kb_config
-	 * @param string $main_page_zone_name
-	 * @param string $article_page_zone_name
-	 * @param string $archive_page_zone_name
-	 * @return array
+	 * Send email using WordPress email facility.
+	 *
+	 * @param $message
+	 * @param string $to_support_email - usually admin or support
+	 * @param string $reply_to_email - usually customer email
+	 * @param string $reply_to_name - usually customer name
+	 * @param string $subject - which functionality is this email coming from
+	 *
+	 * @return string - return '' if email sent otherwise return error message
 	 */
-	public static function get_editor_urls( $kb_config, $main_page_zone_name='settings', $article_page_zone_name='settings', $archive_page_zone_name='settings' ) {
+	public static function send_email( $message, $to_support_email='', $reply_to_email='', $reply_to_name='', $subject='' ) {
 
-		$main_url = EPKB_KB_Handler::get_first_kb_main_page_url( $kb_config );
-		$main_url = empty($main_url) ? '' : add_query_arg( array('preopen' => $main_page_zone_name, 'action' => 'epkb_load_editor'), $main_url );
+		// validate MESSAGE
+		if ( empty( $message ) || strlen( $message ) > 5000 ) {
+			EPKB_Logging::add_log( 'Invalid or too long email message', $message );
+			return __( 'Error occurred', 'echo-knowledge-base' ) . ' (0)';
+		}
+		$message = sanitize_textarea_field( $message );
 
-		$article_url = EPKB_KB_Handler::get_first_kb_article_url( $kb_config );
-		$article_url = empty($article_url) ? '' : add_query_arg( array('preopen' => $article_page_zone_name, 'action' => 'epkb_load_editor'), $article_url );
+		// validate TO email
+		if ( empty( $to_support_email ) ) { // send to admin if empty
+			$to_support_email = get_option( 'admin_email' );
+		}
 
-		$archive_url = EPKB_KB_Handler::get_kb_category_with_most_articles_url( $kb_config );
-		$archive_url = empty($archive_url) ? '' : add_query_arg( array('preopen' => $archive_page_zone_name, 'action' => 'epkb_load_editor'), $archive_url );
+		$to_support_email = sanitize_email( $to_support_email );
+		if ( empty( $to_support_email ) || strlen( $to_support_email) > 100 ) {
+			return __( 'Invalid email', 'echo-knowledge-base' ) . ' (1)';
+		}
 
-		return [ 
-			'main_page_url' => $main_url,
-			'article_page_url' => $article_url,
-			'archive_url' => $archive_url ];
+		if ( ! is_email( $to_support_email ) ) {
+			return __( 'Invalid email', 'echo-knowledge-base' ) . ' (2)';
+		}
+
+		// validate REPLY TO email/name
+		if ( empty( $reply_to_email ) ) {
+			$reply_to_email = get_option( 'admin_email' );
+		}
+
+		$reply_to_email = sanitize_email( $reply_to_email );
+		if ( empty( $reply_to_email ) || strlen( $reply_to_email ) > 100 ) {
+			return __( 'Invalid email', 'echo-knowledge-base' ) . ' (3)';
+		}
+		
+		if ( ! is_email( $reply_to_email ) ) {
+			return __( 'Invalid email', 'echo-knowledge-base' ) . ' (4)';
+		}
+		
+		if ( strlen( $reply_to_name ) > 100 ) {
+			return __( 'Error occurred', 'echo-knowledge-base' ) . ' (5)';
+		}
+		
+		$reply_to_name = sanitize_text_field( $reply_to_name );
+
+		// validate SUBJECT
+		$subject = sanitize_text_field( $subject );
+		if ( empty( $subject ) ) {
+			$subject = esc_html__( 'New message', 'echo-knowledge-base' ) . ' ' . esc_html_x( 'from', 'email sent from someone', 'echo-knowledge-base' ) . ' ' . esc_attr( get_bloginfo( 'name' ) );
+		}
+
+		if ( strlen( $subject ) > 200 ) {
+			return __( 'Invalid subject', 'echo-knowledge-base' );
+		}
+
+		if ( strlen( $message ) > 10000 ) {
+			return __( 'Email message is too long', 'echo-knowledge-base' );
+		}
+
+		// setup Email header
+		$from_name = get_bloginfo( 'name' ); // Site title (set in Settings > General)
+		$from_email = get_option( 'admin_email' );
+		$headers = array(
+			"From: {$from_name} <{$from_email}>\r\n",
+			"Reply-To: {$reply_to_name} <{$reply_to_email}>\r\n",
+			"Content-Type: text/html; charset=utf-8\r\n",
+		);
+
+		// setup Email message
+		$message =
+			'<html>
+				<body>' . esc_html( $message ) .  '
+				</body>
+			</html>';
+
+		// convert text to HTML - clickable links, turning line breaks into <p> and <br/> tags
+		//$message = wpautop( make_clickable( $message ), false );
+		$message = str_replace( '&#038;', '&amp;', $message );
+		$message = str_replace( [ "\r\n", '\r\n', "\n", '\n', "\r", '\r' ], '<br />', $message );
+
+		global /** @var WP_Error $epkb_email_error - email error from Wordpress wp_mail() function */
+		$epkb_email_error;
+
+		$epkb_email_error = false;
+		add_action( 'wp_mail_failed', [ 'EPKB_Utilities', 'check_email_errors' ] );
+
+		// we to add filter to allow HTML in the email content to make sure the content type was not changed by third-party code
+		add_filter( 'wp_mail_content_type', array( 'EPKB_Utilities', 'set_html_content_type' ), 999 );
+
+		// send email
+		$result = wp_mail( $to_support_email, $subject, $message, $headers );
+
+		// remove filter that allows HTML in the email content
+		remove_filter( 'wp_mail_content_type', array( 'EPKB_Utilities', 'set_html_content_type' ), 999 );
+		remove_action( 'wp_mail_failed', [ 'EPKB_Utilities', 'check_email_errors' ] );
+
+		// Log email errors if need
+		$error_message = __( 'Failed to send the email.', 'echo-knowledge-base' );
+
+		/** $epkb_email_error @ WP_Error */
+		if ( is_wp_error( $epkb_email_error ) ) {
+			EPKB_Logging::add_log( 'Email error: ' . $epkb_email_error->get_error_message() );
+			$error_message = $epkb_email_error->get_error_message();
+		}
+
+		return $result == false ? $error_message : '';
 	}
 
 	/**
-	 * @param $page_type
-	 * @param $zone_name
-	 * @return array|mixed|string
+	 * Called by WordPress to store Error when submitting email to the Mail Server
+	 * @param WP_Error$error
 	 */
-	public static function get_one_editor_url( $page_type, $zone_name='settings' ) {
-		$kb_config = epkb_get_instance()->kb_config_obj->get_current_kb_configuration();
-		if ( is_wp_error( $kb_config ) ) {
+	public static function check_email_errors( $error ) {
+		global $epkb_email_error;
+		$epkb_email_error = $error;
+	}
+
+	public static function set_html_content_type( $content_type ) {
+		return 'text/html';
+	}
+
+	/**
+	 * Get Category Link
+	 * @param $category_id
+	 * @param string $taxonomy
+	 * @return string
+	 */
+	public static function get_term_url( $category_id, $taxonomy = '' ) {
+
+		$category_url = empty( $taxonomy ) ? get_term_link( $category_id ) : get_term_link( $category_id, $taxonomy );
+		if ( empty($category_url) || is_wp_error( $category_url )) {
 			return '';
 		}
 
-		$url = '';
-		if ( $page_type == 'main_page' ) {
-			$url = self::get_editor_urls( $kb_config, $zone_name );
-			$url = $url['main_page_url'];
+		return $category_url;
+	}
 
-		} else if ( $page_type == 'article_page' ) {
-			$url = self::get_editor_urls( $kb_config, 'settings',$zone_name );
-			$url = $url['article_page_url'];
+	/**
+     * Return current page url without domain. Working only for the admin side
+	 * @return string
+	 */
+    public static function get_current_admin_url() {
 
-		} else if ( $page_type == 'archive_page' ) {
-			$url = self::get_editor_urls( $kb_config, 'settings', 'settings', $zone_name );
-			$url = $url['archive_url'];
+        $uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+        $uri = preg_replace( '|^.*/wp-admin/|i', '', $uri );
+        if ( empty( $uri ) ) {
+            return '';
+        }
+
+        return remove_query_arg( array( '_wpnonce', '_wc_notice_nonce', 'wc_db_update', 'wc_db_update_nonce', 'wc-hide-notice' ), $uri );
+	}
+
+	/**
+	 * Return allowed HTML tags and attributes for front-end and wp editor
+	 *
+	 * @param $is_frontend
+	 * @return array
+	 */
+	public static function get_extended_html_tags( $is_frontend=false ) {
+
+		$extended_post_tags = [];
+		if ( $is_frontend || self::is_user_allowed_unfiltered_html() ) {
+			$extended_post_tags = [
+				'source' => [
+					'src' => true,
+					'type' => true
+				]
+			];
 		}
 
-		return $url;
+		return array_merge( wp_kses_allowed_html( 'post' ), $extended_post_tags );
+    }
+
+	/**
+	 * Return allowed HTML tags and attributes for ADMIN UI
+	 *
+	 * @param $extra_tags
+	 * @return array
+	 */
+	public static function get_admin_ui_extended_html_tags( $extra_tags=[] ) {
+
+		$extended_post_tags = [
+			'input'     => self::get_admin_ui_extended_html_attributes(),
+			'select'    => self::get_admin_ui_extended_html_attributes(),
+			'option'    => self::get_admin_ui_extended_html_attributes(),
+			'form'      => self::get_admin_ui_extended_html_attributes()
+		];
+
+		foreach( $extra_tags as $extra_tag ) {
+			$extended_post_tags += [ $extra_tag => self::get_admin_ui_extended_html_attributes() ];
+		}
+
+		return array_merge( wp_kses_allowed_html( 'post' ), $extended_post_tags );
+	}
+
+	/**
+	 * Return list of HTML attributes allowed in admin UI
+	 *
+	 * @return bool[]
+	 */
+	private static function get_admin_ui_extended_html_attributes() {
+		return [
+			'name'              => true,
+			'type'              => true,
+			'value'             => true,
+			'class'             => true,
+			'style'             => true,
+			'data-*'            => true,
+			'id'                => true,
+			'checked'           => true,
+			'selected'          => true,
+			'method'            => true,
+			'src'               => true,
+			'width'             => true,
+			'height'            => true,
+			'title'             => true,
+			'frameborder'       => true,
+			'allow'             => true,
+			'allowfullscreen'   => true,
+			'enctype' 			=> true,
+			'autocomplete'      => true
+		];
+	}
+
+	/**
+	 * Add specific CSS styles allowed in admin UI
+	 *
+	 * @param $safe_style_css
+	 * @return array
+	 */
+	public static function admin_ui_safe_style_css( $safe_style_css ) {
+		return array_merge( $safe_style_css, array(
+			'display',
+		) );
+	}
+
+	/**
+	 * Wrapper for WordPress 'wp_kses' to use for HTML filtering in admin UI
+	 *
+	 * @param $html
+	 * @param array $extra_tags
+	 * @return string
+	 */
+	public static function admin_ui_wp_kses( $html, $extra_tags=[] ) {
+
+		// allow specific CSS styles that are disabled by default in WordPress core
+		add_filter( 'safe_style_css', array( 'EPKB_Utilities', 'admin_ui_safe_style_css' ) );
+
+		$sanitized_html = wp_kses( $html, self::get_admin_ui_extended_html_tags( $extra_tags ) );
+
+		// disallow specific CSS styles
+		remove_filter( 'safe_style_css', array( 'EPKB_Utilities', 'admin_ui_safe_style_css' ) );
+
+		return $sanitized_html;
+	}
+
+	public static function is_user_allowed_unfiltered_html() {
+		if ( ! function_exists( 'wp_get_current_user' ) ) {
+			return false;
+		}
+
+		return current_user_can( 'unfiltered_html' ) || current_user_can( 'manage_options' );
+	}
+
+	/**
+	 * Adjust list of safe CSS properties that allowed in wp_kses
+	 *
+	 * @param $styles
+	 *
+	 * @return mixed
+	 */
+	public static function safe_inline_css_properties( $styles ) {
+		$styles[] = 'display';
+		return $styles;
+	}
+
+	/**
+	 * Get classes based on theme name for specific targeting
+	 * @param $prefix
+	 * @return string
+	 */
+	public static function get_active_theme_classes( $prefix = 'mp' ) {
+
+		$current_theme = wp_get_theme();
+		if ( ! empty( $current_theme ) && is_object( $current_theme ) && get_class( $current_theme ) != 'WP_Theme' ) {
+			return '';
+		}
+
+		// get parent theme class if this is child theme
+		$current_theme_parent = $current_theme->parent();
+		if ( ! empty( $current_theme_parent ) && is_object( $current_theme_parent ) && get_class( $current_theme_parent ) == 'WP_Theme' ) {
+			return 'eckb_' . $prefix . '_active_theme_' . $current_theme_parent->get_stylesheet();
+		}
+
+		return 'eckb_' . $prefix . '_active_theme_' . $current_theme->get_stylesheet();
+	}
+
+	/**
+	 * Return 'true' if the current user cannot view given article
+	 *
+	 * @param $article_id
+	 *
+	 * @return bool
+	 */
+	public static function is_article_allowed_for_current_user( $article_id ) {
+
+		// AMAG handles this separately
+		if ( self::is_amag_on() ) {
+			return true;
+		}
+
+		$article = get_post( $article_id );
+
+		// disallow article that failed to retrieve
+		if ( empty( $article ) || empty( $article->post_status ) ) {
+			return false;
+		}
+
+		// only check permissions for private articles
+		if ( $article->post_status != 'private' ) {
+			return true;
+		}
+
+		// for private articles user needs to be logged in
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+
+		return current_user_can( 'read_private_posts' ) || get_current_user_id() == $article->post_author;
+	}
+
+	/**
+	 * Same code as wp_slash has in WP-5.5.0 (introduced in WP-3.6.0)
+	 * The wp_slash_strings_only is now deprecated (introduced in WP-5.3.0),
+	 * But the wp_slash does not handle non-string values until WP-5.5.0
+	 * We need this function to support newest and oldest WP versions
+	 *
+	 * @param string|array $value
+	 *
+	 * @return string|array
+	 */
+	public static function slash_strings_only( $value ) {
+
+		if ( is_array( $value ) ) {
+			$value = array_map( 'wp_slash', $value );
+		}
+
+		if ( is_string( $value ) ) {
+			return addslashes( $value );
+		}
+
+		return $value;
+	}
+
+	public static function get_post_type_labels( $disallowed_post_types, $allowed_post_types=[], $exclude_kb=false ) {
+
+		$cpts = [];
+
+		$wp_cpts = get_post_types( [ 'public' => true ], 'object' );
+		foreach ( $wp_cpts as $post_type => $post_type_object ) {
+
+			if ( $exclude_kb && EPKB_KB_Handler::is_kb_post_type( $post_type ) ) {
+				continue;
+			}
+
+			if ( in_array( $post_type, $disallowed_post_types ) ) {
+				continue;
+			}
+
+			if ( ! EPKB_KB_Handler::is_kb_post_type( $post_type ) && ! empty( $allowed_post_types ) && ! in_array( $post_type, $allowed_post_types ) ) {
+				continue;
+			}
+
+			$cpts[ $post_type ] = EPKB_Utilities::get_post_type_label( $post_type_object );
+		}
+
+		return $cpts;
+	}
+
+	/**
+	 * Return pretty label for post type
+	 *
+	 * @param $post_type_object - see get_post_types() results
+	 * @return string
+	 */
+	public static function get_post_type_label( $post_type_object ) {
+
+		// Standard
+		if ( $post_type_object->name == 'post' ) {
+			return __( 'Post' );
+		}
+
+		if ( $post_type_object->name == 'page' ) {
+			return __( 'Page' );
+		}
+
+		if ( in_array( $post_type_object->name, ['ip_lesson', 'ip_quiz', 'ip_question', 'ip_course'] ) ) {
+			return $post_type_object->label . ' (LearnPress)';
+		}
+
+		if ( in_array( $post_type_object->name, ['sfwd-lessons', 'sfwd-quiz', 'sfwd-topic'] ) ) {
+			return $post_type_object->label . ' (LearnDash)';
+		}
+
+		if ( in_array( $post_type_object->name, ['forum', 'topic'] ) ) {
+			return $post_type_object->label . ' (bbPress)';
+		}
+
+		// BasePress
+		if ( $post_type_object->name == 'knowledgebase' && count($post_type_object->taxonomies) == 1 && isset( $post_type_object->taxonomies[0] ) && $post_type_object->taxonomies[0] == 'knowledgebase_cat' ) {
+			return $post_type_object->label . ' (BasePress)';
+		}
+
+		// weDocs
+		if ( $post_type_object->name == 'docs' && count($post_type_object->taxonomies) == 1 && isset( $post_type_object->taxonomies[0] ) && $post_type_object->taxonomies[0] == 'doc_tag' ) {
+			return $post_type_object->label . ' (WeDocs)';
+		}
+
+		// BetterDocs
+		if ( $post_type_object->name == 'docs' && count($post_type_object->taxonomies) == 0 ) {
+			return $post_type_object->label . ' (BetterDocs)';
+		}
+
+		// Woocommerce
+		if ( $post_type_object->name == 'product' ) {
+			return $post_type_object->label . ' (WooCommerce)';
+		}
+
+		return $post_type_object->label;
 	}
 
 }

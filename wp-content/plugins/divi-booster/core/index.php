@@ -3,17 +3,22 @@
 // === Load the functions and hooks ===
 include(dirname(__FILE__).'/divi/divi.php'); 
 include(dirname(__FILE__).'/functions.php'); 
-include(dirname(__FILE__).'/classes/classes.php'); 
+include(dirname(__FILE__).'/classes/classes.php');
 include(dirname(__FILE__).'/hooks/index.php');
 
-// === Load plugin compatibity files ===
+// Initialize assets
+DBDBMagnificPopup::create()->init();
+DBDBETModulesFont::create()->load_full_font();
+DBDBDynamicAsset::socialMediaFollowCss()->init();
+
+// === Load plugin compatibity / deprecation files ===
 include(dirname(__FILE__).'/compat/compat.php');
+include(dirname(__FILE__).'/deprecated/deprecated-icons/deprecated-icons.php');
 
 // === Load the core plugin class ===
 include(dirname(__FILE__).'/wtfplugin_1_0.class.php');
 
 // === Load the update checker ===
-//include(dirname(__FILE__).'/updates/plugin-update-checker.php');
 if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
 	require dirname(__FILE__).'/plugin-update-checker/plugin-update-checker.php';
 }
@@ -26,6 +31,9 @@ include(dirname(__FILE__).'/module-options.php'); // Load the module options
 
 // === Load the icon sets ===
 include(dirname(__FILE__).'/icons/socicon.php'); 
+if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
+    include(dirname(__FILE__).'/icons/divi-booster-icons/divi-booster-icons.php');
+} 
 
 // === Load additional features ===
 include(dirname(__FILE__).'/features/features.php');
@@ -35,11 +43,10 @@ function booster_enable_updates($file) {
 	try {
 		if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
 			$myUpdateChecker = \DiviBooster\Puc_v4_Factory::buildUpdateChecker(
-				dbdb_update_url(),
+				DBDBUpdateServer::create()->updatesUrl(),
 				$file, //Full path to the main plugin file or functions.php.
 				dbdb_slug()
 			);
-			//$MyUpdateChecker = new Divi_Booster_PluginUpdateChecker(dbdb_update_url(), $file, dbdb_slug());
 		}
 	} catch (Exception $e) { }
 }

@@ -15,3 +15,7 @@ RewriteRule . /wikitest/index.php [L]
 </IfModule>
 
 # END WordPress
+# BEGIN wtfdivi
+
+
+# END wtfdivi

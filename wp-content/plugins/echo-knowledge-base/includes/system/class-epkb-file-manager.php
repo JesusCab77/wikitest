@@ -14,16 +14,19 @@ class EPKB_File_Manager {
 	 */
 	public static function get_plugin_base_uploads_dir() {
 
-		if ( ! empty(self::$wp_uploads_dir) ) {
+		if ( ! empty( self::$wp_uploads_dir ) ) {
 			return self::$wp_uploads_dir;
 		}
 
 		$wp_upload_dir = wp_upload_dir();
 		if ( $wp_upload_dir['error'] ) {
-			return null; // TODO
+			return new WP_Error( 'upload_dir_error', $wp_upload_dir['error'] );
 		}
 
 		self::$wp_uploads_dir = $wp_upload_dir['basedir'] . '/' . self::UPLOADS_DIR;
+
+		// check if directory exist and create if not
+		self::make_directory( self::$wp_uploads_dir );
 
 		return self::$wp_uploads_dir;
 	}
@@ -37,17 +40,20 @@ class EPKB_File_Manager {
 	 */
 	public static function get_plugin_base_uploads_url() {
 
-		if ( ! empty(self::$wp_uploads_url) ) {
+		if ( ! empty( self::$wp_uploads_url ) ) {
 			return self::$wp_uploads_url;
 		}
 
 		$wp_upload_dir = wp_upload_dir();
 
 		if ( $wp_upload_dir['error'] ) {
-			// TODO see get_write_permissions()
+			return new WP_Error( 'upload_dir_error', $wp_upload_dir['error'] );
 		}
 
 		self::$wp_uploads_url = $wp_upload_dir['baseurl'] . '/' . self::UPLOADS_DIR;
+
+		// check if directory exist and create if not
+		self::make_directory( self::$wp_uploads_dir );
 
 		return self::$wp_uploads_url;
 	}
@@ -79,8 +85,8 @@ class EPKB_File_Manager {
 	 *
 	 * @return false|string
 	 */
-	public static function read( $file_path, $default='' ) {
-		return is_readable($file_path) ?  file_get_contents( $file_path ) : $default;
+	public static function read( $file_path, $default = '' ) {
+		return is_readable( $file_path ) ? file_get_contents( $file_path ) : $default;
 	}
 
 	/**
@@ -105,7 +111,7 @@ class EPKB_File_Manager {
 	 * @param $file_name
 	 */
 	public static function delete_file( $file_name ) {
-		unlink($file_name);
+		unlink( $file_name );
 	}
 
 	/**
@@ -119,5 +125,47 @@ class EPKB_File_Manager {
 				unlink( $file );
 			}
 		}
+	}
+
+	/**
+	 * Get file path by file name
+	 * @param $file_name
+	 * return string
+	 */
+	public static function get_file_path( $file_name ) {
+		$dir_path  = self::get_plugin_base_uploads_dir();
+		if ( is_wp_error( $dir_path ) ) {
+			return $dir_path;
+		}
+
+		$file_path = $dir_path . $file_name;
+
+		return $file_path;
+	}
+
+	/**
+	 * Get file url by file name or false if file not exist
+	 * @param $file_name
+	 * @return string|false
+	 */
+	public static function get_file_url( $file_name ) {
+
+		$file_path = self::get_file_path( $file_name );
+		if ( is_wp_error( $file_path ) ) {
+			return $file_path;
+		}
+
+		if ( ! file_exists( $file_path ) ) {
+			return false;
+		}
+
+		$dir_path  = self::get_plugin_base_uploads_url();
+		if ( is_wp_error( $dir_path ) ) {
+			return $dir_path;
+		}
+
+		$file_path = $dir_path . $file_name;
+
+		return $file_path;
 	}
 }

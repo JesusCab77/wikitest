@@ -10,53 +10,42 @@
 class EPKB_KB_Wizard_Ordering {
 
 	var $kb_config = array();
-	/** @var  EPKB_KB_Config_Elements */
-	var $form;
 	var $feature_specs = array();
-	/** @var EPKB_HTML_Elements */
-	var $html;
 	var $kb_id;
 
 	function __construct() {
 		add_action( 'epkb-wizard-ordering-page-feature-selection-container', array( $this, 'article_category_ordering' ) );
-		$_POST['epkb-wizard-demo-data'] = true;
 	}
 
 	/**
-	 * Show Wizard page
+	 * Get Wizard page
+	 *
 	 * @param $kb_config
+	 * @return false|string|void
 	 */
-	public function display_kb_wizard( $kb_config ) {
+	public function show_article_ordering( $kb_config ) {
 
-		$this->kb_config              = $kb_config;
-		$this->kb_id                  = $this->kb_config['id'];
-		$this->feature_specs          = EPKB_KB_Config_Specs::get_fields_specification( $this->kb_config['id'] );
-		$this->form                   = new EPKB_KB_Config_Elements();
-		$this->html                   = new EPKB_HTML_Elements();
-		
+		$this->kb_config = $kb_config;
+		$this->kb_id = $this->kb_config['id'];
+		$this->feature_specs = EPKB_KB_Config_Specs::get_fields_specification( $this->kb_config['id'] );
+        $HTML = NEW EPKB_HTML_Forms();
+
+		ob_start();
+
 		// core handles only default KB
 		if ( $this->kb_id != EPKB_KB_Config_DB::DEFAULT_KB_ID && ! defined( 'E' . 'MKB_PLUGIN_NAME' ) ) {
-			echo '<div class="epkb-wizard-error-note">' . __('Ensure that Multiple KB add-on is active and refresh this page. ', 'echo-knowledge-base') . EPKB_Utilities::contact_us_for_support() . '</div>';
-			return;
+
+            return $HTML::notification_box_middle (
+                array(
+                    'type' => 'error-no-icon',
+                    'desc' => 'Ensure that Multiple KB add-on is active and refresh this page. '.EPKB_Utilities::contact_us_for_support() ,
+                ) ,true );
 		}       ?>
-		
-		<div class="eckb-wizard-ordering" id="epkb-config-wizard-content">
+
+		<div id="eckb-wizard-ordering__page" class="eckb-wizard-ordering epkb-config-wizard-content">
 			<div class="epkb-config-wizard-inner">
 
-				<!------- Wizard Header ------------>
-				<div class="epkb-wizard-header">
-					<div class="epkb-wizard-header__info">
-						<h1 class="epkb-wizard-header__info__title">
-							<?php _e( 'Ordering Settings', 'echo-knowledge-base'); ?>
-						</h1>
-						<span class="epkb-wizard-header__info__current-kb">							<?php
-							$kb_name = $this->kb_config['kb_name'];
-							echo __( 'for', 'echo-knowledge-base' ) . ' ' . '<span id="epkb_current_kb_name" class="epkb-wizard-header__info__current-kb__name">' . esc_html( $kb_name ) . '</span>';  ?>
-						</span>
-					</div>
-				</div>
-
-				<!------- Wizard Status Bar ------->
+					<!------- Wizard Status Bar ------->
 				<div class="epkb-wizard-status-bar">
 					<ul>
 						<li id="epkb-wsb-step-1" class="epkb-wsb-step epkb-wsb-step--active"><?php _e( 'Choose Type of Order', 'echo-knowledge-base'); ?></li>
@@ -75,7 +64,7 @@ class EPKB_KB_Wizard_Ordering {
 				<div class="epkb-wizard-footer">
 					<?php $this->wizard_buttons(); ?>
 				</div>
-				
+
 				<div id='epkb-ajax-in-progress' style="display:none;">
 					<?php esc_html__( 'Saving configuration', 'echo-knowledge-base' ); ?> <img class="epkb-ajax waiting" style="height: 30px;" src="<?php echo Echo_Knowledge_Base::$plugin_url . 'img/loading_spinner.gif'; ?>">
 				</div>
@@ -85,6 +74,8 @@ class EPKB_KB_Wizard_Ordering {
 				<div class="eckb-bottom-notice-message"></div>
 			</div>
 		</div> <?php
+
+		return ob_get_clean();
 	}
 
 	// Wizard: Step 1 - Main Page
@@ -105,54 +96,6 @@ class EPKB_KB_Wizard_Ordering {
 		</div>	<?php
 	}
 
-	// Wizard: Step 5 - Finish
-	private function wizard_step_finish() {     ?>
-
-			<?php
-
-		// display link to KB Main Page if any
-		$link_output = EPKB_KB_Handler::get_first_kb_main_page_url( $this->kb_config );     ?>
-
-		<div id="epkb-wsb-step-3-panel" class="epkb-wc-step-panel eckb-wizard-step-5" style="display: none">
-			<div class="epkb-wizard-row-1">
-				<p><?php _e( 'See your KB on the front-end:', 'echo-knowledge-base' ); ?></p>
-				<a id="epkb-kb-main-page-link" href="<?php echo empty($link_output) ? '' : $link_output; ?>" target="_blank" class="epkb-wizard-button">
-					<span class="epkb-wizard-btn-search"><?php _e( 'View My Knowledge base', 'echo-knowledge-base' ); ?></span>
-					<span class="epkb-wizard-btn-icon dashicons-before dashicons-welcome-learn-more"></span>
-				</a>
-			</div>
-
-			<div class="epkb-wizard-row-1">
-				<p><?php _e( 'Create Categories from the Categories menu.', 'echo-knowledge-base' ); ?></p>
-				<a href="<?php echo admin_url('edit-tags.php?taxonomy=' . EPKB_KB_Handler::get_category_taxonomy_name( $this->kb_id ) .'&post_type=' . EPKB_KB_Handler::get_post_type( $this->kb_id )); ?>" target="_blank" class="epkb-wizard-button">
-					<span class="epkb-wizard-btn-text"><?php _e( 'Create Categories', 'echo-knowledge-base' ); ?></span>
-					<span class="epkb-wizard-btn-icon epkbfa epkbfa-book"></span></a>
-			</div>
-
-			<div class="epkb-wizard-row-1">
-				<p><?php _e( 'Create Articles from the Add New Article menu.', 'echo-knowledge-base' ); ?></p>
-				<a href="<?php echo esc_url( admin_url('edit.php?post_type=' . EPKB_KB_Handler::get_post_type( $this->kb_id )) ); ?>" target="_blank" class="epkb-wizard-button">
-					<span class="epkb-wizard-btn-text"><?php _e( 'Create Articles', 'echo-knowledge-base' ); ?></span>
-					<span class="epkb-wizard-btn-icon epkbfa epkbfa-file-text-o "></span>
-				</a>
-			</div>
-
-			<div class="epkb-wizard-row-1">
-				<p><?php _e( 'Documentation for Knowledge Base and add-ons.', 'echo-knowledge-base' ); ?></p>
-				<a href="https://www.echoknowledgebase.com/documentation/setup-your-initial-knowledge-base/" target="_blank" class="epkb-wizard-button">
-					<span class="epkb-wizard-btn-text"><?php _e( 'KB Documentation', 'echo-knowledge-base' ); ?></span>
-					<span class="epkb-wizard-btn-icon epkbfa epkbfa-book"></span></a>
-			</div>
-
-			<div class="epkb-wizard-row-1">
-				<p><?php _e( 'Submit a technical support question.', 'echo-knowledge-base' ); ?></p>
-				<a href="https://www.echoknowledgebase.com/contact-us/" target="_blank" class="epkb-wizard-button">
-					<span class="epkb-wizard-btn-text"><?php _e( 'Support', 'echo-knowledge-base' ); ?></span>
-					<span class="epkb-wizard-btn-icon epkbfa epkbfa-book"></span></a>
-			</div>
-		</div>			<?php
-	}
-
 	//Wizard: Previous / Next Buttons / Apply Buttons
 	public function wizard_buttons() {      ?>
 
@@ -169,15 +112,6 @@ class EPKB_KB_Wizard_Ordering {
 				<button value="apply" id="epkb-wizard-button-apply" class="epkb-wizard-button epkb-wizard-button-apply"  data-wizard-type="ordering"><?php _e( 'Apply', 'echo-knowledge-base' ); ?></button>
 
 				<input type="hidden" id="_wpnonce_apply_wizard_changes" name="_wpnonce_apply_wizard_changes" value="<?php echo wp_create_nonce( "_wpnonce_apply_wizard_changes" ); ?>">
-			</div>
-			<div class="epkb-wizard-link epkb-wizard-button-container__support-wizard">
-				<a href="<?php echo esc_url( admin_url('edit.php?post_type=' . EPKB_KB_Handler::get_post_type( $this->kb_config['id'] ) . '&epkb-wizard-tab' ) ); ?>&page=epkb-kb-configuration" class="epkb-wizard-button epkb-wizard-button__exit" >
-					<?php _e( 'Exit', 'echo-knowledge-base' ); ?>
-				</a>
-				<a href="https://www.echoknowledgebase.com/technical-support/" target="_blank">
-					<?php _e( 'Support', 'echo-knowledge-base' ); ?>
-					<span class="epkbfa epkbfa-external-link"></span>
-				</a>
 			</div>
 		</div>	<?php
 	}
@@ -201,39 +135,110 @@ class EPKB_KB_Wizard_Ordering {
 		$kb_id = $args['id'];
 		$kb_config = $args['config'];
 		$feature_specs = EPKB_KB_Config_Specs::get_fields_specification( $kb_id );
-		$form = new EPKB_KB_Config_Elements();
 
-		$form->option_group_wizard( $feature_specs, array(
+		self::option_group_wizard( $feature_specs, array(
 			'option-heading'    => __( 'I want organize Categories and Articles', 'echo-knowledge-base' ),
 			'class'             => 'eckb-wizard-features',
 			'inputs' => array(
-				'0' => $form->radio_buttons_vertical( $feature_specs['categories_display_sequence'] + array(
+				'0' => EPKB_HTML_Elements::radio_buttons_vertical( $feature_specs['categories_display_sequence'] + array(
 						'id'        => 'front-end-columns',
 						'value'     => $kb_config['categories_display_sequence'],
-						'current'   => $kb_config['categories_display_sequence'],
 						'input_group_class' => 'eckb-wizard-radio-btn-vertical',
 						'main_label_class'  => 'config-col-12',
 						'input_class'       => 'config-col-12',
 						'radio_class'       => 'config-col-12'
 					) ),
-				'1' => $form->radio_buttons_vertical( $feature_specs['articles_display_sequence'] + array(
+				'1' => EPKB_HTML_Elements::radio_buttons_vertical( $feature_specs['articles_display_sequence'] + array(
 						'id'        => 'front-end-columns',
 						'value'     => $kb_config['articles_display_sequence'],
-						'current'   => $kb_config['articles_display_sequence'],
 						'input_group_class' => 'eckb-wizard-radio-btn-vertical' . ( ($kb_config['kb_main_page_layout'] == 'Grid') ? ' epkb-grid-option-hide-show' : ''),
 						'main_label_class'  => 'config-col-12',
 						'input_class'       => 'config-col-12',
 						'radio_class'       => 'config-col-12'
 					) ),
-				'2' => $form->radio_buttons_vertical( $feature_specs['show_articles_before_categories'] + array(
+				'2' => EPKB_HTML_Elements::radio_buttons_vertical( $feature_specs['show_articles_before_categories'] + array(
 						'value'     => $kb_config['show_articles_before_categories'],
-						'current'   => $kb_config['show_articles_before_categories'],
 						'input_group_class' => 'eckb-wizard-radio-btn-vertical',
-						'main_label_class'  => 'config-col-4',
-						'input_class'       => 'config-col-8',
+						'main_label_class'  => 'config-col-12',
+						'input_class'       => 'config-col-12',
 						'radio_class'       => 'config-col-12'
 					) ),	
 				)));           
+	}
+
+	/**
+	 * Display configuration options
+	 * @param $feature_specs
+	 * @param array $args
+	 */
+	private static function option_group_wizard( $feature_specs, $args = array() ) {
+
+		$defaults = array(
+			'info' => '',
+			'option-heading' => '',
+			'class' => ' ',
+			'addition_info' => '',
+		);
+		$args = array_merge( $defaults, $args );
+
+		// there might be multiple classes
+		$classes = explode(' ', $args['class']);
+		$class_string = '';
+		foreach( $classes as $class ) {
+			$class_string .= $class . '-content ';
+		}
+
+		$depends = '';
+
+		if ( isset($args['depends']) ) {
+			$depends = "data-depends='" . htmlspecialchars( json_encode( $args['depends'] ), ENT_QUOTES, 'UTF-8' ) . "'";
+		}		?>
+
+		<div class="<?php echo $class_string; ?>" <?php echo $depends; ?>>	        <?php
+
+			if ( $args['option-heading'] ) {    ?>
+				<div class="eckb-wizard-option-heading">
+					<h4><?php echo __( $args['option-heading'], 'echo-knowledge-base' ); ?>
+						<span class="epkbfa epkbfa-caret-right"></span>
+						<span class="epkbfa epkbfa-caret-down"></span>
+					</h4>
+					<span class="ep_font_icon_info option-info-icon"></span>
+				</div>            <?php
+
+			} else {     ?>
+				<div class="config-option-info">
+					<span class="ep_font_icon_info option-info-icon"></span>
+				</div>            <?php
+
+			}           ?>
+
+			<div class="option-info-content hidden">
+				<h5 class="option-info-title"><?php _e( 'Help', 'echo-knowledge-base' ); ?></h5>                    <?php
+				if ( $feature_specs ) {
+					if ( is_array( $args['info']) ) {
+						foreach( $args['info'] as $item ) {
+							if ( empty($feature_specs[$item]) ) {
+								continue;
+							}
+							echo '<h6>' . $feature_specs[$item]['label'] . '</h6>';
+							echo '<p>' . $feature_specs[$item]['info'] . '</p>';
+						}
+					} else {
+						echo '<p>' .$args['info']. '</p>';
+					}
+				}		            ?>
+			</div>            <?php
+
+			foreach ( $args['inputs'] as $input ) {
+				echo $input;
+			}
+
+			// Add content after Settings
+			if ( ! empty($args['addition_info']) ) {
+				echo '<div class="eckb-wizard-default-note">' . $args['addition_info'] . '</div>';
+			}		?>
+
+		</div><!-- config-option-group -->        <?php
 	}
 
 	public static function show_loader_html() { ?>

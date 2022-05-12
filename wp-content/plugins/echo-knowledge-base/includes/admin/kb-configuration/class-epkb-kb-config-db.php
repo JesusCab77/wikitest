@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Manage KB configuration FOR CORE in the database.
+ * Manage plugin configuration FOR CORE in the database.
  *
  * @copyright   Copyright (C) 2018, Echo Plugins
  * @license http://opensource.org/licenses/gpl-2.0.php GNU Public License
@@ -51,7 +51,7 @@ class EPKB_KB_Config_DB {
 		// retrieve all KB options for existing knowledge bases from WP Options table
 		$kb_options = $wpdb->get_results("SELECT option_value FROM $wpdb->options WHERE option_name LIKE '" . self::KB_CONFIG_PREFIX . "%'", ARRAY_A );
 		if ( empty($kb_options) || ! is_array($kb_options) ) {
-			EPKB_Logging::add_log("Did not retrieve any kb config. Using defaults (22). Last error: " . $wpdb->last_error, $kb_options);
+			EPKB_Logging::add_log( "Did not retrieve any kb config. Using defaults (22). Last error: " . $wpdb->last_error, $kb_options );
 			$kb_options = array();
 		}
 
@@ -65,21 +65,17 @@ class EPKB_KB_Config_DB {
 
 			$config = maybe_unserialize( $row['option_value'] );
 			if ( $config === false ) {
-				EPKB_Logging::add_log("Could not unserialize configuration: ", EPKB_Utilities::get_variable_string($row['option_value']));
+				EPKB_Logging::add_log( "Could not unserialize configuration: ", EPKB_Utilities::get_variable_string( $row['option_value'] ) );
 				continue;
 			}
 
 			if ( empty($config) || ! is_array($config) ) {
-				EPKB_Logging::add_log("Did not find configuration");
+				EPKB_Logging::add_log( "Did not find configuration" );
 				continue;
 			}
 
-			if ( count($config) < 100 ) {
-				EPKB_Logging::add_log("Found KB configuration is incomplete", count($config));
-			}
-
 			if ( empty($config['id']) ) {
-				EPKB_Logging::add_log("Found invalid configuration", $config);
+				EPKB_Logging::add_log( "Found invalid configuration", $config );
 				continue;
 			}
 
@@ -91,6 +87,10 @@ class EPKB_KB_Config_DB {
 			// with WPML we need to trigger hook to have configuration names translated
 			if ( EPKB_Utilities::is_wpml_enabled( $config ) ) {
 				$config = get_option( self::KB_CONFIG_PREFIX . $kb_id );
+				if ( empty($config) || ! is_array($config) ) {
+					EPKB_Logging::add_log( "Did not find KB configuration, the default was used instead.", $kb_id );
+					$config = array();
+				}
 			}
 
 			// use defaults for missing or empty fields
@@ -98,7 +98,7 @@ class EPKB_KB_Config_DB {
 			$kb_options_checked[$kb_id]['id'] = $kb_id;
 
 			// filter kb config for Editor
-			$kb_options_checked[$kb_id] = EPKB_Editor_Controller::filter_kb_config( $kb_options_checked[$kb_id] );
+			$kb_options_checked[$kb_id] = EPKB_Editor_Utilities::update_kb_from_editor_config( $kb_options_checked[$kb_id] );
 
 			// cached the settings for future use
 			$this->cached_settings[$kb_id] = $kb_options_checked[$kb_id];
@@ -108,7 +108,7 @@ class EPKB_KB_Config_DB {
 
 		// if no valid KB configuration found use default
 		if ( empty($kb_options_checked) || ! isset($kb_options_checked[self::DEFAULT_KB_ID]) ) {
-			EPKB_Logging::add_log("Need at least default configuration.");
+			EPKB_Logging::add_log( "Need at least default configuration." );
 			$kb_options_checked[self::DEFAULT_KB_ID] = EPKB_KB_Config_Specs::get_default_kb_config( self::DEFAULT_KB_ID );
 		}
 
@@ -118,16 +118,20 @@ class EPKB_KB_Config_DB {
 	/**
 	 * Get IDs for all existing knowledge bases. If missing, return default KB ID
 	 *
+	 * @param bool $ignore_error
+	 *
 	 * @return array containing all existing KB IDs
 	 */
-	public function get_kb_ids() {
+	public function get_kb_ids( $ignore_error=false ) {
 		/** @var $wpdb Wpdb */
 		global $wpdb;
 
 		// retrieve all KB option names for existing knowledge bases from WP Options table
 		$kb_option_names = $wpdb->get_results("SELECT option_name FROM $wpdb->options WHERE option_name LIKE '" . self::KB_CONFIG_PREFIX . "%'", ARRAY_A );
 		if ( empty($kb_option_names) || ! is_array($kb_option_names) ) {
-			EPKB_Logging::add_log("Did not retrieve any kb config. Try to deactivate and active KB plugin to see if the issue will be fixed (11). Last error: " . $wpdb->last_error, $kb_option_names);
+			if ( ! $ignore_error ) {
+				EPKB_Logging::add_log( "Did not retrieve any kb config. Try to deactivate and active KB plugin to see if the issue will be fixed (11). Last error: " . $wpdb->last_error, $kb_option_names );
+			}
 			$kb_option_names = array();
 		}
 
@@ -156,9 +160,10 @@ class EPKB_KB_Config_DB {
 	 * Logs all errors so the caller does not need to.
 	 *
 	 * @param String $kb_id to get configuration for
+	 * @param bool $return_error
 	 * @return array|WP_Error return current KB configuration
 	 */
-	public function get_kb_config( $kb_id ) {
+	public function get_kb_config( $kb_id, $return_error=false ) {
 		/** @var $wpdb Wpdb */
 		global $wpdb;
 
@@ -166,7 +171,7 @@ class EPKB_KB_Config_DB {
 		// internal error that causes this
 		$kb_id = ( $kb_id === self::DEFAULT_KB_ID ) ? $kb_id : EPKB_Utilities::sanitize_get_id( $kb_id );
 		if ( is_wp_error($kb_id) ) {
-			return $kb_id;
+			return $return_error ? $kb_id : EPKB_KB_Config_Specs::get_default_kb_config( self::DEFAULT_KB_ID );
 		}
 		/** @var int $kb_id */
 
@@ -175,8 +180,7 @@ class EPKB_KB_Config_DB {
 			$config = wp_parse_args( $this->cached_settings[$kb_id], EPKB_KB_Config_Specs::get_default_kb_config( $kb_id ) );
 			$config['id'] = $kb_id;
 			// filter kb config for Editor 
-			$config = EPKB_Editor_Controller::filter_kb_config( $config );
-			return $config;
+			return EPKB_Editor_Utilities::update_kb_from_editor_config( $config );
 		}
 
 		// retrieve specific KB configuration
@@ -188,16 +192,16 @@ class EPKB_KB_Config_DB {
 		// with WPML we need to trigger hook to have configuration names translated
 		if ( EPKB_Utilities::is_wpml_enabled( $config ) ) {
 			$config = get_option( self::KB_CONFIG_PREFIX . $kb_id );
+			if ( empty($config) || ! is_array($config) ) {
+				EPKB_Logging::add_log( "Did not find KB configuration, the default was used instead.", $kb_id );
+				$config = array();
+			}
 		}
 
 		// if KB configuration is missing then return error
 		if ( empty($config) || ! is_array($config) ) {
-			EPKB_Logging::add_log("Did not find KB configuration (DB231).", $kb_id);
-			return new WP_Error('DB231', "Did not find KB configuration. Try to deactivate and reactivate KB plugin to see if this fixes the issue. " . EPKB_Utilities::contact_us_for_support() );
-		}
-
-		if ( count($config) < 100 ) {
-			EPKB_Logging::add_log("Found KB configuration is incomplete", count($config));
+			return $return_error ? new WP_Error('DB231', "Did not find KB configuration. Try to deactivate and reactivate KB plugin to see if this fixes the issue. " . EPKB_Utilities::contact_us_for_support() )
+								 : EPKB_KB_Config_Specs::get_default_kb_config( self::DEFAULT_KB_ID );
 		}
 
 		// use defaults for missing or empty fields
@@ -205,7 +209,7 @@ class EPKB_KB_Config_DB {
 		$config['id'] = $kb_id;
 
 		// filter kb config for Editor
-		$config = EPKB_Editor_Controller::filter_kb_config( $config );
+		$config = EPKB_Editor_Utilities::update_kb_from_editor_config( $config );
 
 		// cached the settings for future use
 		$this->cached_settings[$kb_id] = $config;
@@ -222,7 +226,7 @@ class EPKB_KB_Config_DB {
 	public function get_kb_config_or_default( $kb_id ) {
 
 		$kb_config = $this->get_kb_config( $kb_id );
-		if ( is_wp_error( $kb_config ) ) {
+		if ( empty( $kb_config ) || ! is_array( $kb_config) || is_wp_error( $kb_config ) ) {
 			return EPKB_KB_Config_Specs::get_default_kb_config( $kb_id );
 		}
 
@@ -232,14 +236,14 @@ class EPKB_KB_Config_DB {
 	/**
 	 * GET CURRENT KB CONFIGURATION from the WP Options table. Return default if not found.
 	 *
-	 * @return String|WP_Error - return current KB configuration or error if not found
+	 * @return array - return current KB configuration or default if not found
 	 */
 	public function get_current_kb_configuration() {
 
 		// get ID based on currently selected KB post type
 		$kb_id = EPKB_KB_Handler::get_current_kb_id();
 		if ( empty($kb_id) ) {
-			return new WP_Error('22', "Current KB ID not found.");
+			return EPKB_KB_Config_Specs::get_default_kb_config( self::DEFAULT_KB_ID );
 		}
 
 		return self::get_kb_config( $kb_id );
@@ -248,30 +252,26 @@ class EPKB_KB_Config_DB {
 	/**
 	 * Return specific value from the KB configuration. Values are automatically trimmed.
 	 *
-	 * @param $setting_name
 	 * @param string $kb_id
+	 * @param $setting_name
 	 * @param string $default
-	 * @return string|array with value or $default value if this settings not found
+	 * @return string|array with value or specs $default value if this settings not found
 	 */
-	public function get_value( $setting_name, $kb_id = '', $default = '' ) {
+	public function get_value( $kb_id, $setting_name, $default = '' ) {
 
-		if ( empty($setting_name) ) {
+		if ( empty( $setting_name ) ) {
 			return $default;
 		}
 
-		$kb_config = empty($kb_id) ? $this->get_current_kb_configuration() : $this->get_kb_config( $kb_id );
-		if ( is_wp_error( $kb_config ) ) {
-			EPKB_Logging::add_log( "Could not retrieve KB configuration (15a). Settings name: ", $setting_name, $kb_config );
-			return $default;
-		}
+		$kb_config = empty( $kb_id ) ? $this->get_current_kb_configuration() : $this->get_kb_config( $kb_id );
 
-		if ( isset($kb_config[$setting_name]) ) {
+		if ( isset( $kb_config[$setting_name] ) ) {
 			return $kb_config[$setting_name];
 		}
 
 		$default_settings = EPKB_KB_Config_Specs::get_default_kb_config( self::DEFAULT_KB_ID );
 
-		return  isset($default_settings[$setting_name]) ? $default_settings[$setting_name] : $default;
+		return isset( $default_settings[$setting_name] ) ? $default_settings[$setting_name] : $default;
 	}
 
 	/**
@@ -284,7 +284,7 @@ class EPKB_KB_Config_DB {
 	 */
 	public function set_value( $kb_id, $key, $value ) {
 
-		$kb_config = $this->get_kb_config( $kb_id );
+		$kb_config = $this->get_kb_config( $kb_id, true );
 		if ( is_wp_error($kb_config) ) {
 			return $kb_config;
 		}
@@ -314,10 +314,11 @@ class EPKB_KB_Config_DB {
 		$input_filter = new EPKB_Input_Filter();
 		$sanitized_config = $input_filter->validate_and_sanitize_specs( $config, $fields_specification );
 		if ( is_wp_error($sanitized_config) ) {
-			EPKB_Logging::add_log( 'Could not update KB configuration', $kb_id, $sanitized_config );
+			EPKB_Logging::add_log( 'Could not update the configuration', $kb_id, $sanitized_config );
 			return $sanitized_config;
 		}
 
+		// use defaults for missing configuration
 		$sanitized_config = wp_parse_args( $sanitized_config, EPKB_KB_Config_Specs::get_default_kb_config( $kb_id ) );
 
 		return $this->save_kb_config( $sanitized_config, $kb_id );
@@ -349,12 +350,13 @@ class EPKB_KB_Config_DB {
 			return new WP_Error( 'save_kb_config', 'Failed to serialize kb config for kb_id ' . $kb_id );
 		}
 
-		$result = $wpdb->query( $wpdb->prepare( "INSERT INTO $wpdb->options (`option_name`, `option_value`, `autoload`) VALUES (%s, %s, %s)
- 												 ON DUPLICATE KEY UPDATE `option_name` = VALUES(`option_name`), `option_value` = VALUES(`option_value`), `autoload` = VALUES(`autoload`)",
+		$result = $wpdb->query( $wpdb->prepare( "INSERT INTO $wpdb->options (option_name, option_value, autoload) VALUES (%s, %s, %s)
+ 												 ON DUPLICATE KEY UPDATE option_name = VALUES(option_name), option_value = VALUES(option_value), autoload = VALUES(autoload)",
 												$option_name, $serialized_config, 'no' ) );
 		if ( $result === false ) {
-			EPKB_Logging::add_log( 'Failed to update kb config for kb_id', $kb_id, 'Last DB ERROR: (' . $wpdb->last_error . ')' );
-			return new WP_Error( 'save_kb_config', 'Failed to update kb config for kb_id ' . $kb_id . ' Last DB ERROR: (' . $wpdb->last_error . ')');
+			$wpdb_last_error = $wpdb->last_error;   // add_log changes last_error so store it first
+			EPKB_Logging::add_log( 'Failed to update kb config for kb_id', $kb_id, 'Last DB ERROR: (' . $wpdb_last_error . ')' );
+			return new WP_Error( 'save_kb_config', 'Failed to update kb config for kb_id ' . $kb_id . ' Last DB ERROR: (' . $wpdb_last_error . ')' );
 		}
 
 		// cached the settings for future use

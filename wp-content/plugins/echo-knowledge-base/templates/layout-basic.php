@@ -16,21 +16,21 @@ $kb_config = epkb_get_instance()->kb_config_obj->get_kb_config_or_default( $kb_i
 get_header();
 
 // initialize Main Page title
-if ( $kb_config[ 'templates_display_main_page_main_title' ] === 'off' ) {
+if ( $kb_config[ 'template_main_page_display_title' ] === 'off' ) {
 	$kb_main_pg_title = '';
 } else {
 	$kb_main_pg_title = '<h1 class="eckb_main_title">' . get_the_title() . '</h1>';
 }
 
 $template_style1 = EPKB_Utilities::get_inline_style(
-           'padding-top::       templates_for_kb_padding_top,
-	        padding-bottom::    templates_for_kb_padding_bottom,
-	        padding-left::      templates_for_kb_padding_left,
-	        padding-right::     templates_for_kb_padding_right,
-	        margin-top::        templates_for_kb_margin_top,
-	        margin-bottom::     templates_for_kb_margin_bottom,
-	        margin-left::       templates_for_kb_margin_left,
-	        margin-right::      templates_for_kb_margin_right,', $kb_config );       ?>
+           'padding-top::       template_main_page_padding_top,
+	        padding-bottom::    template_main_page_padding_bottom,
+	        padding-left::      template_main_page_padding_left,
+	        padding-right::     template_main_page_padding_right,
+	        margin-top::        template_main_page_margin_top,
+	        margin-bottom::     template_main_page_margin_bottom,
+	        margin-left::       template_main_page_margin_left,
+	        margin-right::      template_main_page_margin_right,', $kb_config );       ?>
 
 	<div class="eckb-kb-template" <?php echo $template_style1; ?>>	        <?php
 
@@ -61,7 +61,7 @@ $template_style1 = EPKB_Utilities::get_inline_style(
 			$plugin_first_version = empty($plugin_first_version) ? '6.7.0' : $plugin_first_version;
 			$generate_main_page_directly = ( empty($striped_content) || strlen($striped_content) < 27 );
 			
-			if ( EPKB_Utilities::is_elementor_enabled() || version_compare( $plugin_first_version, '6.6.0', '>' ) ) {
+			if ( EPKB_Site_Builders::is_elementor_enabled() || version_compare( $plugin_first_version, '6.6.0', '>' ) ) {
 				$generate_main_page_directly = false; // always show with the_content for new users that are have elementor
 			}
 		

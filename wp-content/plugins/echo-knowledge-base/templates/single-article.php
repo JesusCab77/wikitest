@@ -21,14 +21,14 @@ $kb_config = epkb_get_instance()->kb_config_obj->get_kb_config_or_default( $kb_i
 get_header();
 
 $template_style1 = EPKB_Utilities::get_inline_style(
-    ' padding-top::       templates_for_kb_article_padding_top,
-	        padding-bottom::    templates_for_kb_article_padding_bottom,
-	        padding-left::      templates_for_kb_article_padding_left,
-	        padding-right::     templates_for_kb_article_padding_right,
-	        margin-top::        templates_for_kb_article_margin_top,
-	        margin-bottom::     templates_for_kb_article_margin_bottom,
-	        margin-left::       templates_for_kb_article_margin_left,
-	        margin-right::      templates_for_kb_article_margin_right,', $kb_config );
+    ' padding-top::       template_article_padding_top,
+	        padding-bottom::    template_article_padding_bottom,
+	        padding-left::      template_article_padding_left,
+	        padding-right::     template_article_padding_right,
+	        margin-top::        template_article_margin_top,
+	        margin-bottom::     template_article_margin_bottom,
+	        margin-left::       template_article_margin_left,
+	        margin-right::      template_article_margin_right,', $kb_config );
 
 //CSS Article Reset / Defaults
 $article_class = '';
@@ -54,7 +54,11 @@ if ( $kb_config[ 'templates_for_kb_article_defaults'] === 'on' ) {
 			}
 			$epkb_password_checked = true;
 
-			the_content();
+			$content = get_the_content();
+			$content = apply_filters( 'the_content', $content );
+			$content = str_replace( ']]>', ']]&gt;', $content );
+			$content = EPKB_Layouts_Setup::get_kb_page_output_hook( $content, false );
+			echo $content;
 
 		}          	?>
 

@@ -12,7 +12,7 @@ class EPKB_Icons {
 	const DEFAULT_CATEGORY_TYPE = 'font';   // OR 'image'
 	const DEFAULT_CATEGORY_IMAGE_SIZE = 'full';
 	const DEFAULT_CATEGORY_IMAGE_ID = 0;
-	const DEFAULT_IMAGE_SLUG = 'img/demo-icons/info-icon.png';
+	const DEFAULT_IMAGE_SLUG = 'img/demo-icons/icons/info-icon.png';
 
 	public static function get_common_icons() {
 		$common_kb_icons = array(
@@ -2327,10 +2327,143 @@ class EPKB_Icons {
 
 	public static function is_theme_with_image_icons( $kb_config ) {
 		return ! empty($kb_config['theme_name']) && in_array($kb_config['theme_name'], array(
-				'theme_image',
-				'theme_grid_basic',
-				'theme_elegant',
-				'theme_organized_2',
+				'modern',
+				'image',
+				'basic',
+				'elegant',
+				'organized_2',
+				'grid_basic'
 			));
+	}
+
+	public static function is_theme_with_photo_icons( $theme_name ) {
+		return ! empty($theme_name) && in_array($theme_name, array(
+				'image',
+				'basic'
+			));
+	}
+
+	public static function get_theme_icons( $theme_name ) {
+
+		$theme_icons = array(
+			'default' => array(
+				'image_1'                               => 'img/demo-icons/icons/getting-started.png',
+				'image_2'                               => 'img/demo-icons/icons/reports-and-analytics.png',
+				'image_3'                               => 'img/demo-icons/icons/tutorials-and-tips.png',
+				'image_4'                               => 'img/demo-icons/icons/FAQs.png',
+				'image_5'                               => 'img/demo-icons/icons/operations.png',
+				'image_6'                               => 'img/demo-icons/icons/users.png',
+			),
+			'image' => array(
+				'image_1'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/faqs-2-example.jpg',
+				'image_2'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/users-example.jpg',
+				'image_3'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/getting-started-example.jpg',
+				'image_4'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/operations-example.jpg',
+				'image_5'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/reports-and-analytics-example.jpg',
+				'image_6'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/tutorials-and-tips-example.jpg'
+			),
+			'basic' => array(
+				'image_1'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/users-circle-example.png',
+				'image_2'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/faqs-circle-example.png',
+				'image_3'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/getting-started-circle-example.png',
+				'image_4'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/operations-circle-example.png',
+				'image_5'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/reports-analytics-circle-example.png',
+				'image_6'                               => 'https://www.echoknowledgebase.com/wp-content/uploads/2021/02/tutorials-and-tips-circle-example.png'
+			)
+		);
+
+		return isset($theme_icons[$theme_name]) ? $theme_icons[$theme_name] : $theme_icons['default'];
+	}
+
+	/**
+	 * Show demo icons for Editor preview based on selected theme
+	 *
+	 * @param $kb_config
+	 * @param $theme_name
+	 * @return array
+	 */
+	public static function get_demo_category_icons( $kb_config, $theme_name ) {
+
+		$default_font_icons = array(
+			'image_1'    => 'epkbfa-user',      
+			'image_2'    => 'epkbfa-pencil',
+			'image_3'    => 'epkbfa-sitemap',         
+			'image_4'    => 'epkbfa-area-chart',       
+			'image_5'    => 'epkbfa-table',
+			'image_6'    => 'epkbfa-cubes'
+		);
+
+		if ( empty($theme_name) ) {
+			return array();
+		}
+
+		$use_default = false;
+		if ( ! EPKB_Icons::is_theme_with_image_icons( $kb_config ) ) {
+			$use_default = true;
+		}
+
+		$all_kb_terms = EPKB_Core_Utilities::get_kb_categories_unfiltered( $kb_config['id'] );
+		if ( empty($all_kb_terms) ) {
+			return array();
+		}
+
+		// handle WPML
+		if ( EPKB_Utilities::is_wpml_enabled( $kb_config ) ) {
+			$current_lang = apply_filters( 'wpml_current_language', null );
+			foreach ( $all_kb_terms as $ix => $term ) {
+				if ( EPKB_WPML::remove_language_category( $term->term_id, $current_lang ) ) {
+					unset($all_kb_terms[$ix]);
+				}
+			}
+		}
+
+		$ix = 0;
+		$categories_icons = array();
+		$theme_icons = EPKB_Icons::get_theme_icons( $theme_name );
+		foreach( $all_kb_terms as $term ) {
+
+			// does this preset have icons/images for sub-categories as well?
+			if ( ! empty($term->parent) && ! in_array($theme_name, array('organized_2', 'basic')) ) {
+				continue;
+			}
+
+			// just replace first six icons
+			$ix++;
+			if ( $ix > 6 ) {
+				$ix = 1;
+			}
+
+			// handle font icons here
+			if ( $use_default ) {
+				$image_icon = array(
+					'type' => 'font',
+					'name' => $default_font_icons['image_' . $ix],
+					'image_id' => EPKB_Icons::DEFAULT_CATEGORY_IMAGE_ID,
+					//'image_size' => EPKB_Icons::DEFAULT_CATEGORY_IMAGE_SIZE,
+					'image_thumbnail_url' => '',
+					//'color' => '#000000'
+				);
+				$categories_icons[$term->term_id] = $image_icon;
+				continue;
+			}
+
+			// icon images are local and photo images are elsewhere
+			if ( self::is_theme_with_photo_icons( $theme_name ) ) {
+				$icon_url = $theme_icons['image_' . $ix];
+			} else {
+				$icon_url = Echo_Knowledge_Base::$plugin_url . ( empty($theme_icons['image_' . $ix]) ? EPKB_Icons::DEFAULT_IMAGE_SLUG : $theme_icons['image_' . $ix] );
+			}
+
+			$image_icon = array(
+				'type' => 'image',
+				'image_id' => EPKB_Icons::DEFAULT_CATEGORY_IMAGE_ID,
+				'image_size' => EPKB_Icons::DEFAULT_CATEGORY_IMAGE_SIZE,
+				'image_thumbnail_url' => $icon_url,
+				'color' => '#000000'
+			);
+			$categories_icons[$term->term_id] = $image_icon;
+		}
+
+		return $categories_icons;
 	}
 }

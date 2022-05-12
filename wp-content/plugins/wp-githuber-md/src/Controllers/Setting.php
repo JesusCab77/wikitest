@@ -881,6 +881,7 @@ class Setting extends ControllerAbstract {
 						'default'    => __( 'default', 'wp-githuber-md' ),
 						'cloudflare' => 'cdnjs.cloudflare.com',
 						'jsdelivr'   => 'cdn.jsdelivr.net',
+						'custom'     => __( 'custom', 'wp-githuber-md' )
 					)
 				),
 

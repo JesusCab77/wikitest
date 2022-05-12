@@ -8,8 +8,17 @@
  */
 class EPKB_HTML_Elements {
 
-    // Form Elements------------------------------------------------------------------------------------------/
-	private function add_defaults( array $input_array, array $custom_defaults=array() ) {
+	// Form Elements------------------------------------------------------------------------------------------/
+
+	/**
+	 * Add Default Fields
+	 *
+	 * @param array $input_array
+	 * @param array $custom_defaults
+	 *
+	 * @return array
+	 */
+	public static function add_defaults( array $input_array, array $custom_defaults=array() ) {
 
 		$defaults = array(
 			'id'                => '',
@@ -22,7 +31,9 @@ class EPKB_HTML_Elements {
 			'label_class'       => '',
 			'input_class'       => '',
 			'input_group_class' => '',
+			'radio_class'       => '',
 			'action_class'      => '',
+			'container_class'   => '',
 			'desc'              => '',
 			'info'              => '',
 			'placeholder'       => '',
@@ -33,42 +44,22 @@ class EPKB_HTML_Elements {
 			'disabled'          => false,
 			'size'              => 3,
 			'max'               => 50,
-			'current'           => null,
 			'options'           => array(),
-            'label_wrapper'     => '',
-            'input_wrapper'     => '',
-            'return_html'       => false,
-            'unique'            => true,
-            'radio_class'       => ''
-		);
-		$defaults = array_merge( $defaults, $custom_defaults );
-		return array_merge( $defaults, $input_array );
-	}
-
-	private function add_common_defaults( array $input_array, array $custom_defaults=array() ) {
-		$defaults = array(
-			'id'                => '',
-			'name'              => 'text',
-			'value'             => '',
-			'label'             => '',
-			'title'             => '',
-			'class'             => '',
-			'main_label_class'  => '',
-			'label_class'       => '',
-			'input_class'       => '',
-			'input_group_class' => '',
-			'desc'              => '',
-			'info'              => '',
-			'placeholder'       => '',
-			'readonly'          => false,  // will not be submitted
-			'required'          => '',
-			'autocomplete'      => false,
-			'data'              => false,
-			'disabled'          => false,
-			'size'              => 3,
-			'max'               => 50,
-			'current'           => null,
-			'options'           => array()
+			'label_wrapper'     => '',
+			'input_wrapper'     => '',
+			'icon_color'        => '',
+			'return_html'       => false,
+			'unique'            => true,
+			'text_class'        => '',
+			'icon'              => '',
+			'list'              => array(),
+			'btn_text'          => '',
+			'btn_url'           => '',
+			'more_info_text'    => '',
+			'more_info_url'     => '',
+			'tooltip_title'     => '',
+			'tooltip_body'      => '',
+			'is_pro'            => ''
 		);
 		$defaults = array_merge( $defaults, $custom_defaults );
 		return array_merge( $defaults, $input_array );
@@ -81,17 +72,16 @@ class EPKB_HTML_Elements {
 	 * @param bool $return_html
 	 * @return false|string
 	 */
-	public function text( $args = array(), $return_html=false ) {
+	public static function text( $args = array(), $return_html=false ) {
 
 		if ( $return_html ) {
 			ob_start();
 		}
-		
-		$args = $this->add_defaults( $args );
 
-		$id             =  esc_attr( $args['name'] );
-		$autocomplete   = ( $args['autocomplete'] ? 'on' : 'off' );
-		$readonly       = $args['readonly'] ? ' readonly' : '';
+		$args = self::add_defaults( $args );
+		$args = self::get_specs_info( $args );
+
+		$readonly = $args['readonly'] ? ' readonly' : '';
 
 		$data = '';
 		if ( ! empty( $args['data'] ) ) {
@@ -99,42 +89,43 @@ class EPKB_HTML_Elements {
 				$data .= 'data-' . $key . '="' . $value . '" ';
 			}
 		}
-		$main_tag = '';
+
 		if ( empty( $args['main_tag'] ) ) {
 			$main_tag = 'li';
 		} else {
 			$main_tag = $args['main_tag'];
-		}
+		}		?>
 
+		<<?php echo ( $main_tag == 'li' ? $main_tag : 'div' ); ?> class="input_group <?php echo esc_html( $args['input_group_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>_group" >
 
-		?>
-		
-		<<?php echo $main_tag; ?> class="input_group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id ?>_group" >
-
-			<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id ?>">
-				<?php echo esc_html( $args['label'] )?>
+			<label class="<?php echo esc_attr( $args['label_class'] ); ?>" for="<?php echo esc_attr( $args['name'] ); ?>">  <?php
+			    echo esc_html( $args['label'] );
+			    if ( ! empty( $args['tooltip_title'] ) ) {
+			        EPKB_HTML_Admin::display_tooltip( $args['tooltip_title'], $args['tooltip_body'] );
+			    }
+				if ( $args['is_pro'] ) {
+					EPKB_HTML_Admin::display_pro_setting_tag( $args['label'] );
+				}        ?>
 			</label>
 
-			<div class="input_container <?php echo esc_html( $args['input_class'] ); ?>" id="">
-				<input type="text"
-				       name="<?php echo $id ?>"
-				       id="<?php echo $id ?>"
-				       autocomplete="<?php echo $autocomplete; ?>"
-				       value="<?php echo esc_attr( $args['value'] ); ?>"
-				       placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>"
-						<?php
-						echo $data . $readonly
-						?>
-                       maxlength="<?php echo $args['max']; ?>"
-				/>
+			<div class="input_container <?php echo esc_attr( $args['input_class'] ); ?>">
+			    <input type="text"
+			           name="<?php echo  esc_attr( $args['name'] ); ?>"
+			           id="<?php echo  esc_attr( $args['name'] ); ?>"
+			           autocomplete="<?php echo ( $args[ 'autocomplete' ] ? 'on' : 'off' ); ?>"
+			           value="<?php echo esc_attr( $args['value'] ); ?>"
+			           placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>"						<?php
+			    echo $data . $readonly;						?>
+			           maxlength="<?php echo esc_attr( $args['max'] ); ?>"
+			    />
 			</div>
 
-		</<?php echo $main_tag; ?>>		<?php
+		</<?php echo ( $main_tag == 'li' ? $main_tag : 'div' ); ?>>		<?php
 
 		if ( $return_html ) {
 			return ob_get_clean();
 		}
-		
+
 		return '';
 	}
 
@@ -143,122 +134,141 @@ class EPKB_HTML_Elements {
 	 *
 	 * @param array $args Arguments for the textarea
 	 */
-	public function textarea( $args = array() ) {
+	public static function textarea( $args = array() ) {
 
 		$defaults = array(
 			'name'        => 'textarea',
 			'class'       => 'large-text',
-			'rows'        => 4
+			'rows'        => 4,
 		);
-		$args = $this->add_defaults( $args, $defaults );
+		$args = self::add_defaults( $args, $defaults );
 
-		$disabled = '';
-		if( $args['disabled'] ) {
-			$disabled = ' disabled="disabled"';
-		}
+		if ( empty( $args['main_tag'] ) ) {
+			$main_tag = 'li';
+		} else {
+			$main_tag = $args['main_tag'];
+		}		?>
 
-		$id =  esc_attr( $args['name'] );		?>
+		<<?php echo ( $main_tag == 'li' ? $main_tag : 'div' ); ?> class="epkb-input-group <?php echo esc_attr( $args['input_group_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>_group" >
 
-		<li class="input_group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id ?>_group" >
-
-		<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id ?>">
-			<?php echo esc_html( $args['label'] )?>
+		<label class="<?php echo esc_attr( $args['label_class'] ); ?>" for="<?php echo esc_attr( $args['name'] ); ?>">
+			<?php echo esc_html( $args['label'] ); ?>
 		</label>
-			<div class="input_container <?php echo esc_html( $args['input_class'] )?>" id="">
+		<div class="input_container <?php echo esc_attr( $args['input_class'] ); ?>">
 				<textarea
-					   rows="<?php echo esc_attr( $args['rows'] ); ?>"
-				       name="<?php echo esc_attr( $args['name'] ); ?>"
-				       id="<?php echo $id ?>"
-				       value="<?php echo esc_attr( $args['value'] ); ?>"
-				       placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>"
-					<?php echo $disabled; ?> >
+						rows="<?php echo esc_attr( $args['rows'] ); ?>"
+						name="<?php echo esc_attr( $args['name'] ); ?>"
+						id="<?php echo esc_attr( $args['name'] ); ?>"
+						value="<?php echo esc_attr( $args['value'] ); ?>"
+						placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>"
+					<?php echo ( $args['disabled'] ? ' disabled="disabled"' : '' ); ?> ><?php echo esc_html( $args['value'] ); ?>
 				</textarea>
-			</div>
+		</div>
 
-		</li>		<?php
+		</<?php echo ( $main_tag == 'li' ? $main_tag : 'div' ); ?>>		<?php
 
 		if ( ! empty( $args['info'] ) ) { ?>
-			<span class="info-icon"><p class="hidden"><?php echo $args['info']; ?></p></span>		<?php 
+			<span class="info-icon"><p class="hidden"><?php echo esc_html( $args['info'] ); ?></p></span>		<?php
 		}
-
 	}
 
 	/**
 	 * Renders an HTML Checkbox
 	 *
 	 * @param array $args
+	 * @param bool $return_html
+	 *
 	 * @return string
 	 */
-	public function checkbox( $args = array(), $return_html=false ) {
-	
+	public static function checkbox( $args = array(), $return_html=false ) {
+
 		if ( $return_html ) {
 			ob_start();
 		}
-		
+
 		$defaults = array(
 			'name'         => 'checkbox',
-			'class'        => '',
 		);
-		$args = $this->add_defaults( $args, $defaults );
-		$id             =  esc_attr( $args['name'] );
-		$checked = checked( "on", $args['value'], false );		?>
+		$args = self::add_defaults( $args, $defaults );	?>
 
-		<div class="config-input-group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id; ?>_group">
+		<div class="config-input-group <?php echo esc_attr( $args['input_group_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>_group">
 
-			<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id; ?>">
+			<label class="<?php echo esc_attr( $args['label_class'] ); ?>" for="<?php echo esc_attr( $args['name'] ); ?>">
 				<?php echo esc_html( $args['label'] ); ?>
 			</label>
 
-			<div class="input_container <?php echo esc_html( $args['input_class'] ); ?>" id="">
+			<div class="input_container <?php echo esc_attr( $args['container_class'] ); ?>">
 				<input type="checkbox"
-				       name="<?php echo $id ?>"
-				       id="<?php echo $id ?>"
+				       name="<?php echo esc_attr( $args['name'] ); ?>"
+				       id="<?php echo esc_attr( $args['name'] ); ?>"
 				       value="on"
-					<?php echo $checked; ?> />
+				       class="<?php echo esc_attr( $args['input_class'] ); ?>"
+					<?php echo checked( "on", $args['value'], false ); ?> />
 			</div>
 		</div>			<?php
-		
+
 		if ( $return_html ) {
 			return ob_get_clean();
 		}
-		
+
 		return '';
 	}
 
 	/**
-	 * Renders an HTML radio button
+	 * Renders an HTML Toggle ( checkbox )
 	 *
 	 * @param array $args
+	 * textLoc - left, right
+	 * @return false|string
 	 */
-	public function radio_button( $args = array() ) {
-		
+	public static function checkbox_toggle( $args = array() ) {
 		$defaults = array(
-			'name'         => 'radio-buttons',
-			'class'        => '',
+			'name'          => '',
+			'text'          => '',
+			'data'          => '',
+			'topDesc'       => '',
+			'bottomDesc'    => '',
+			'textLoc'       => 'left',
+			'checked'       => false,
+			'toggleOnText'  => __( 'yes', 'echo-knowledge-base' ),
+			'toggleOffext'  => __( 'no', 'echo-knowledge-base' ),
+			'return_html'   => false,
 		);
-		$args = $this->add_defaults( $args, $defaults );
-		$id =  esc_attr( $args['name'] );
-		$checked = checked( 1, $args['value'], false );		?>
+		$args       = self::add_defaults( $args, $defaults );
+		$text       = $args['text'];
+		$topDesc    = $args['topDesc'];
+		$bottomDesc = $args['bottomDesc'];
 
-		<li class="input_group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id ?>_group">
+		if ( $args['return_html'] ) {
+			ob_start();
+		}   ?>
 
-			<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id ?>">
-				<?php echo esc_html( $args['label'] )?>
-			</label>
+		<div id="<?php echo esc_attr( $args['id'] ); ?>" class="epkb-settings-control-container epkb-settings-control-type-toggle <?php echo 'epkb-settings-control-type-toggle--' . esc_attr( $args['textLoc'] ); ?>" data-field="<?php echo esc_attr( $args['data'] ); ?>">     <?php
 
-			<div class="input_container <?php echo esc_html( $args['input_class'] )?>" id="">
-				<input type="radio"
-				       name="<?php echo $id ?>"
-				       id="<?php echo $id ?>"
-				       value="<?php echo esc_attr( $args['value'] ); ?>"
-					<?php echo $checked; ?> />
+			if ( ! empty( $topDesc ) ) {    ?>
+				<div class="epkb-settings-control__description"><?php echo wp_kses_post( $topDesc ); ?></div>  <?php
+			}   ?>
+
+			<div class="epkb-settings-control__field">
+				<label class="epkb-settings-control__title"><?php echo esc_html( $text ); ?></label>
+				<div class="epkb-settings-control__input">
+					<label class="epkb-settings-control-toggle">
+						<input type="checkbox" class="epkb-settings-control__input__toggle" value="on" name="<?php echo esc_attr( $args['name'] ); ?>" <?php checked( true, $args['checked'] ); ?>/>
+						<span class="epkb-settings-control__input__label" data-on="<?php echo esc_attr( $args['toggleOnText'] ); ?>" data-off="<?php echo esc_attr( $args['toggleOffext'] ); ?>"></span>
+						<span class="epkb-settings-control__input__handle"></span>
+					</label>
+				</div>
 			</div>			<?php
-			
-			if ( ! empty( $args['info'] ) ) { ?>
-				<span class='info-icon'><p class='hidden'><?php echo $args['info']; ?></p></span>";			<?php 
-			} ?>
 
-		</li>		<?php
+			if ( ! empty( $bottomDesc ) ) {     ?>
+				<div class="epkb-settings-control__description"><?php echo wp_kses_post( $bottomDesc ); ?></div>  <?php
+			}   ?>
+
+		</div>		<?php
+
+		if ( $args['return_html'] ) {
+			return ob_get_clean();
+		}
 	}
 
 	/**
@@ -266,76 +276,83 @@ class EPKB_HTML_Elements {
 	 *
 	 * @param array $args
 	 */
-	public function dropdown( $args = array() ) {
+	public static function dropdown( $args = array() ) {
 
-		$defaults = array(
-			'name'         => 'select',
-		);
-		$args = $this->add_defaults( $args, $defaults );
+		$args = self::add_defaults( $args );
+		$args = self::get_specs_info( $args );  ?>
 
-		$id =  esc_attr( $args['name'] );		?>
-		
-		<li class="input_group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id ?>_group">
-			<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id ?>">
-				<?php echo esc_html( $args['label'] )?>
+		<div class="epkb-input-group <?php echo esc_attr( $args['input_group_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>_group">
+			<label class="<?php echo esc_attr( $args['label_class'] ); ?>" for="<?php echo esc_attr( $args['name'] ); ?>">  <?php
+				echo esc_html( $args['label'] );
+				if ( ! empty( $args['tooltip_title'] ) ) {
+					EPKB_HTML_Admin::display_tooltip( $args['tooltip_title'], $args['tooltip_body'] );
+				}
+				if ( $args['is_pro'] ) {
+					EPKB_HTML_Admin::display_pro_setting_tag( $args['label'] );
+				}                ?>
 			</label>
 
-			<div class="input_container <?php echo esc_html( $args['input_class'] )?>" id="">
+			<div class="input_container <?php echo esc_attr( $args['input_class'] ); ?>" id="">
 
-				<select name="<?php echo $id ?>" id="<?php echo $id ?>">     <?php
+				<select name="<?php echo esc_attr( $args['name'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>">     <?php
 					foreach( $args['options'] as $key => $label ) {
-						$selected = selected( $key, $args['current'], false );
-						echo '<option value="' . esc_attr($key) . '"' . $selected . '>' . esc_html($label) . '</option>';
+						$selected = selected( $key, $args['value'], false );
+						echo '<option value="' . esc_attr( $key ) . '"' . $selected . '>' . esc_html( $label ) . '</option>';
 					}  ?>
 				</select>
 			</div>		<?php
-			
+
 			if ( ! empty( $args['info'] ) ) { ?>
-				<span class='info-icon'><p class='hidden'><?php echo $args['info']; ?></p></span>			<?php 
+				<span class='info-icon'><p class='hidden'><?php echo esc_html( $args['info'] ); ?></p></span>			<?php
 			}	?>
-			
-		</li>		<?php 
+
+		</div>		<?php
 	}
 
 	/**
 	 * Renders several HTML radio buttons in a row
+     *      desc_condition  if checked (value) matches it will show the description text. If the value is not set it will always show the description.
 	 *
 	 * @param array $args
 	 */
-	public function radio_buttons_horizontal( $args = array() ) {
+	public static function radio_buttons_horizontal( $args = array() ) {
 
 		$defaults = array(
 			'id'                => 'radio',
 			'name'              => 'radio-buttons',
-			'main_label_class'  => '',
-			'radio_class'       => '',
+            'desc_condition'    => '',
 		);
-		$args = $this->add_defaults( $args, $defaults );
-		$id =  esc_attr( $args['name'] );
-		$ix = 0;   		?>
+		$args = self::add_defaults( $args, $defaults );
+		$ix = 0; ?>
 
-		<li class="input_group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id ?>_group" >
+		<div class="epkb-input-group <?php echo esc_attr( $args['input_group_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>_group" >
 
-			<span class="main_label <?php echo esc_html( $args['main_label_class'] )?>"><?php echo esc_html( $args['label'] ); ?></span>
+			<span class="main_label <?php echo esc_attr( $args['main_label_class'] ); ?>"><?php echo esc_html( $args['label'] ); ?></span>
 
-			<div class="radio-buttons-horizontal <?php echo esc_html( $args['input_class'] )?>" id="<?php echo $id ?>">
+			<div class="radio-buttons-horizontal <?php echo esc_attr( $args['input_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>">
 				<ul>					<?php
-				
-					foreach( $args['options'] as $key => $label ) {
-						$checked = checked( $key, $args['current'], false );						?>
 
-						<li class="<?php echo esc_html( $args['radio_class'] )?>">
+					foreach( $args['options'] as $key => $label ) {
+
+						if ( (string) $key === (string) $args['value'] ) {
+							$activeClass = "epkb-radio--active ";
+						} else {
+							$activeClass = '';
+						} ?>
+
+						<li class="<?php echo esc_attr( $activeClass ).esc_attr( $args['radio_class'] ); ?>">
 							<div class="input_container">
 								<input type="radio"
 								       name="<?php echo esc_attr( $args['name'] ); ?>"
-								       id="<?php echo $id.$ix; ?>"
-								       value="<?php echo esc_attr( $key ); ?>"									<?php
-									echo $checked				?> 
+								       id="<?php echo esc_attr( $args['name'].$ix ); ?>"
+								       value="<?php echo esc_attr( $key ); ?>"
+								       autocomplete="<?php echo ( $args['autocomplete'] ? 'on' : 'off' ); ?>"									<?php
+										checked( $key, $args['value'] )			?>
 								/>
 							</div>
 
-							<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id.$ix ?>">
-								<?php echo esc_html( $label )?>
+							<label class="<?php echo esc_attr( $args['label_class'] ); ?>" for="<?php echo esc_attr( $args['name'] ).$ix ?>">
+								<?php echo esc_html( $label ); ?>
 							</label>
 						</li>						<?php
 
@@ -345,237 +362,271 @@ class EPKB_HTML_Elements {
 				</ul>  <?php
 
 				if ( ! empty( $args['info'] ) ) { ?>
-					<span class="info-icon"><p class="hidden"><?php echo ( $args['info'] ); ?></p></span>
-				<?php } ?>
-			</div>
+					<span class="info-icon"><p class="hidden"><?php echo esc_html( $args['info'] ); ?></p></span>				<?php
+				} ?>
+			</div><?php
 
-		</li>		<?php
+			if ( $args['desc'] ) {
+
+                $showDesc = '';
+
+                // If there is a condition check for which option is checked.
+				if ( isset( $args['desc_condition'] ) ) {
+					if ( (string) esc_attr( $args['desc_condition'] ) === (string) esc_attr( $args['value'] ) ) {
+						$showDesc = 'radio-buttons-horizontal-desc--show';
+					}
+				} else {  // If no Condition show desc all the time.
+					$showDesc = 'radio-buttons-horizontal-desc--show';
+				}
+				echo '<span class="radio-buttons-horizontal-desc '.$showDesc.'">'.$args['desc'].'</span>';
+
+			} ?>
+
+		</div>		<?php
+	}
+
+	/**
+	 * Renders several HTML radio buttons in a row but as Icons.
+	 *
+	 * @param array $args
+	 *  options key     = icon CSS name
+	 *  option value    = text ( Hidden )*
+	 */
+	public static function radio_buttons_icon_selection( $args = array() ) {
+
+		$defaults = array(
+			'id'                => 'radio',
+			'name'              => 'radio-buttons',
+		);
+		$args = self::add_defaults( $args, $defaults );
+		$args = self::get_specs_info( $args );
+
+		$ix = 0;   		?>
+
+		<div class="epkb-input-group epkb-admin__radio-icons <?php echo esc_attr( $args['input_group_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>_group" >
+
+			<span class="epkb-main_label <?php echo esc_attr( $args['main_label_class'] ); ?>"><?php echo esc_html( $args['label'] );
+            if ( $args['is_pro'] ) {
+					EPKB_HTML_Admin::display_pro_setting_tag( $args['label'] );
+				} ?>
+            </span>
+
+			<div class="epkb-radio-buttons-container <?php echo esc_attr( $args['input_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>">              <?php 
+			
+				foreach( $args['options'] as $key => $label ) {	?>
+
+					<div class="epkb-input-container">
+						<label class="epkb-label" for="<?php echo esc_attr( $args['name'] ).$ix ?>">
+							<span class="epkb-label__text"><?php echo esc_html( $label ); ?></span>
+							<input class="epkb-input" type="radio"
+								name="<?php echo esc_attr( $args['name'] ); ?>"
+								id="<?php echo esc_attr( $args['name'] . $ix ); ?>"
+								value="<?php echo esc_attr( $key ); ?>"
+								autocomplete="<?php echo ( $args['autocomplete'] ? 'on' : 'off' ); ?>"<?php
+								checked( $key, $args['value'] )	?>
+							/>
+
+                            <?php
+                            switch ($key) {
+	                            case 'ep_font_icon_help_dialog':
+		                            echo '<span class="'.esc_attr( $key ).' epkbfa-input-icon"></span>';
+		                            break;
+	                            default:
+		                            echo '<span class="epkbfa epkbfa-font epkbfa-'.esc_attr( $key ).' epkbfa-input-icon"></span>';
+
+                            } ?>
+
+						</label>
+					</div> <?php
+
+					$ix++;
+				} //foreach
+
+				if ( ! empty( $args['tooltip_title'] ) ) {
+					EPKB_HTML_Admin::display_tooltip( $args['tooltip_title'], $args['tooltip_body'] );
+				}
+
+
+				if ( ! empty( $args['info'] ) ) { ?>
+					<span class="info-icon"><p class="hidden"><?php echo esc_html( $args['info'] ); ?></p></span> <?php
+				} ?>
+			</div> <?php
+
+			if ( $args['desc'] ) {
+				echo $args['desc'];
+			} ?>
+
+		</div>	<?php
 	}
 
 	/**
 	 * Renders several HTML radio buttons in a column
 	 *
 	 * @param array $args
+	 *
+	 * @return false|string
 	 */
-	public function radio_buttons_vertical( $args = array() ) {
+	public static function radio_buttons_vertical( $args = array() ) {
 
 		$defaults = array(
-			'id'           => 'radio',
-			'name'         => 'radio-buttons',
-			'class'        => '',
+			'id'                => 'radio',
+			'name'              => 'radio-buttons',
+			'data'              => array()
 		);
-		$args = $this->add_defaults( $args, $defaults );
-
+		$args = self::add_defaults( $args, $defaults );
+		$id =  esc_attr( $args['name'] );
 		$ix = 0;
-		$id =  esc_attr( $args['name'] );	?>
-		
-		<li class="input_group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id ?>_group" >
 
-			<span class="main_label <?php echo esc_html( $args['main_label_class'] )?>"><?php echo esc_html( $args['label'] ); ?></span>
+		$data_escaped = '';
+		foreach ( $args['data'] as $key => $value ) {
+			$data_escaped .= 'data-' . esc_attr( $key ) . '="' . esc_attr( $value ) . '" ';
+		}
 
-			<div class="radio-buttons-vertical <?php echo esc_html( $args['input_class'] )?>" id="<?php echo $id ?>">
-				<ul>					<?php
+		if ( ! empty($args['data']['example_image']) ) {
+			$args['input_group_class'] =  $args['input_group_class'] . ' eckb-wizard-radio-btn-vertical-example ';
+		}
+
+		ob_start();		?>
+
+		<div class="config-input-group <?php echo esc_attr( $args['input_group_class'] ); ?>" id="<?php echo $id; ?>_group">		<?php
+
+			if ( ! empty($args['data']['example_image']) ) {
+				echo '<div class="eckb-wizard-radio-btn-vertical-example__icon epkbfa epkbfa-eye"></div>';
+			}
+
+			if ( ! empty($args['label']) ) {     ?>
+				<span class="main_label <?php echo esc_attr( $args['main_label_class'] ); ?>">
+					<?php echo esc_html( $args['label'] ); ?>
+				</span>            <?php
+			}                       ?>
+
+			<div class="radio-buttons-vertical <?php echo esc_attr( $args['input_class'] ); ?>" id="<?php echo $id; ?>">
+				<ul>	                <?php
 
 					foreach( $args['options'] as $key => $label ) {
-						$id = empty($args['name']) ? '' :  esc_attr($args['name'] ) . '_choice_' . $ix;
-						$checked = checked( $key, $args['current'], false );
-						$checked_list   = '';
+						$checked = checked( $key, $args['value'], false );		                ?>
 
-						if( $args['current'] == $key ) {
-						    $checked_list = 'epkb-radio-checked';
-						}						?>
+						<li class="<?php echo esc_attr( $args['radio_class'] ); ?>">			                <?php
 
-						<li class="<?php echo esc_html( $args['radio_class'] ).' '.$checked_list; ?>">
-							<div class="input_container">
+							$checked_class ='';
+							if ( $args['value'] == $key ) {
+								$checked_class = 'checked-radio';
+							} ?>
+
+							<div class="input_container config-col-1 <?php echo $checked_class; ?>">
 								<input type="radio"
 								       name="<?php echo esc_attr( $args['name'] ); ?>"
-								       id="<?php echo $id; ?>"
-								       value="<?php echo esc_attr( $key ); ?>"									<?php
-									echo $checked;	?> 
-								/>
+								       id="<?php echo $id . $ix; ?>"
+								       value="<?php echo esc_attr( $key ); ?>"					                <?php
+								echo $data_escaped . ' ' . $checked; ?> />
 							</div>
-							<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id; ?>">
-								<?php echo esc_html( $label )?>
+							<label class="<?php echo esc_attr( $args['label_class'] ); ?> config-col-10" for="<?php echo $id . $ix; ?>">
+								<?php echo wp_kses_post( $label ); ?>
 							</label>
-						</li>						<?php
+						</li>		                <?php
 
 						$ix++;
-					}//foreach					?>
-					
+					} //foreach	                ?>
+
 				</ul>
+
 			</div>
 
-		</li>		<?php
+		</div>        <?php
+
+		return ob_get_clean();
 	}
 
 	/**
 	 * Single Inputs for text_fields_horizontal function
 	 * @param array $args
 	 */
-	public function horizontal_text_input( $args = array() ){
+	public static function horizontal_text_input( $args = array() ) {
 
-		$args = $this->add_defaults( $args );
+		$args = self::add_defaults( $args );
 
-		//Set Values
-		$id             =  esc_attr( $args[ 'name' ] );
-		$autocomplete   = ( $args[ 'autocomplete' ] ? 'on' : 'off' );
-		$disabled       = $args[ 'disabled' ] ? ' disabled="disabled"' : '';
-
-		$data = '';
+		$data_escaped = '';
 		if ( ! empty( $args['data'] ) ) {
 			foreach ( $args['data'] as $key => $value ) {
-				$data .= 'data-' . $key . '="' . $value . '" ';
+				$data_escaped .= 'data-' . esc_attr( $key ) . '="' . esc_attr( $value ) . '" ';
 			}
 		}		?>
 
-		<li class="<?php echo esc_html( $args['text_class'] )?>">
+		<div class="<?php echo esc_attr( $args['text_class'] ); ?>">     <?php
 
-			<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id; ?>">
-				<?php echo esc_html( $args['label'] )?>
-			</label>
+			if ( ! empty( $args['label'] ) ) {    ?>
+				<label class="<?php echo esc_attr( $args['label_class'] ); ?>" for="<?php echo esc_attr( $args['name'] ); ?>">
+					<?php echo esc_html( $args['label'] ); ?>
+				</label>    <?php
+			}   ?>
+
 			<div class="input_container">
 				<input type="text"
-				       name="<?php echo $id; ?>"
-				       id="<?php echo $id; ?>"
-				       autocomplete='<?php echo $autocomplete; ?>'
+				       name="<?php echo esc_attr( $args['name'] ); ?>"
+				       <?php echo empty( $args['id'] ) ? '' : ' id="' . esc_attr( $args['id'] ) . '"'; ?>
+				       autocomplete="<?php echo ( $args['autocomplete'] ? 'on' : 'off' ); ?>"
 				       value="<?php echo esc_attr( $args['value'] ); ?>"
 				       placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>"
-				       maxlength="<?php echo $args['max']; ?>"					<?php
-						echo $data . $disabled;	?>	/>
+				       maxlength="<?php echo esc_attr( $args['max'] ); ?>"					<?php
+				echo $data_escaped . ( $args[ 'disabled' ] ? ' disabled="disabled"' : '' );	?> />
 			</div>
 
-		</li>	<?php 
-	}
-
-	/**
-	 * Renders two text fields. The second text field depends in some way on the first one
-	 *
-	 * @param array $common - configuration for the main classes
-	 * @param array $args1  - configuration for the first text field
-	 * @param array $args2  - configuration for the second field
-	 */
-	public function text_fields_horizontal( $common = array(), $args1 = array(), $args2 = array() ) {
-
-		$defaults = array(
-			'name'         => 'text',
-			'class'        => '',
-		);
-
-		$common = $this->add_common_defaults( $common, $defaults );
-
-		$args1 = $this->add_defaults( $args1, $defaults );
-		$args2 = $this->add_defaults( $args2, $defaults );		?>
-		
-		<li class="input_group <?php echo esc_html( $common['input_group_class'] )?>" id="<?php echo $common['id']; ?>_group" >
-			<span class="main_label <?php echo esc_html( $common['main_label_class'] )?>"><?php echo esc_html( $common['label'] ); ?></span>
-			<div class="text-fields-horizontal <?php echo esc_html( $common['input_class'] )?>">
-				<ul>   <?php
-
-					$this->horizontal_text_input($args1);
-					$this->horizontal_text_input($args2); ?>
-
-				</ul>
-			</div>
-		</li>		<?php
-	}
-
-	/**
-	 * Renders two text fields that related to each other. One field is text and other is select.
-	 *
-	 * @param array $common
-	 * @param array $args1
-	 * @param array $args2
-	 */
-	public function text_and_select_fields_horizontal( $common = array(), $args1 = array(), $args2 = array() ) {
-
-		$args1 = $this->add_defaults( $args1 );
-		$args2 = $this->add_defaults( $args2 );
-		$common = $this->add_common_defaults( $common );		?>
-
-		<li class="input_group <?php echo esc_html( $common['input_group_class'] )?>" id="<?php echo $common['id']; ?>_group" >
-			<span class="main_label <?php echo esc_html( $common['main_label_class'] )?>"><?php echo esc_html( $common['label'] ); ?></span>
-			<div class="text-select-fields-horizontal <?php echo esc_html( $common['input_class'] )?>">
-				<ul>  <?php
-
-					$this->text($args1);
-					$this->dropdown($args2);
-
-					// HELP
-					$help_text = $common['info'];
-					if ( ! empty( $help_text ) ) { ?>
-						<span class='info-icon'><p class='hidden'><?php echo $help_text; ?></p></span>					<?php 
-					}	?>
-
-				</ul>
-			</div>
-		</li>		<?php
+		</div>	<?php
 	}
 
 	/**
 	 * Renders several HTML checkboxes in several columns
 	 *
 	 * @param array $args
-	 * @param $is_multi_select_not
 	 */
-	public function checkboxes_multi_select( $args = array(), $is_multi_select_not ) {
+	public static function checkboxes_multi_select( $args = array() ) {
 
 		$defaults = array(
 			'id'           => 'checkbox',
 			'name'         => 'checkbox',
 			'value'        => array(),
-			'class'        => '',
 			'main_class'   => '',
-			'main_tag' => 'li'
+			'main_tag'     => 'li'
 		);
-		$args = $this->add_defaults( $args, $defaults );
-		$id =  esc_attr( $args['name'] );
+		$args = self::add_defaults( $args, $defaults );
 		$ix = 0;    	?>
 
-		<<?php echo esc_html( $args['main_tag'] )?> class="input_group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id ?>_group" >
+		<<?php echo esc_html( $args['main_tag'] ); ?> class=" <?php echo esc_attr( $args['input_group_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>_group" >   <?php
 
-			<span class="main_label <?php echo esc_html( $args['main_label_class'] )?>"><?php echo esc_html( $args['label'] ); ?></span>
+		if ( $args['label'] != '' ) {   ?>
+			<div class="main_label <?php echo esc_attr( $args['main_label_class'] ); ?>"><?php echo esc_html( $args['label'] ); ?></div>  <?php
+		}   ?>
 
-			<div class="checkboxes-vertical <?php echo esc_html( $args['input_class'] )?>" id="<?php echo $id ?>">
-				<ul>  		<?php
+		<div class="epkb-checkboxes-horizontal <?php echo esc_attr( $args['input_class'] ); ?>" id="<?php echo esc_attr( $args['name'] ); ?>">
+			 		<?php
 
-					foreach( $args['options'] as $key => $label ) {
+				foreach( $args['options'] as $key => $label ) {
 
-						$tmp_value = is_array($args['value']) ? $args['value'] : array();
+					$tmp_value = is_array( $args['value'] ) ? $args['value'] : array();
+					$checked = in_array( $key, $tmp_value );
+					$label = str_replace( ',', '', $label );
+					$input_id = $args['name'] . '-' . $ix;  ?>
 
-						if ( $is_multi_select_not ) {
-							$checked = in_array($key, array_keys($tmp_value)) ? '' : 'checked';
-						} else {
-							$checked = in_array($key, array_keys($tmp_value)) ? 'checked' : '';
-						}
+					<div class="epkb-input-group">
+						<label class="<?php echo esc_attr( $args['label_class'] ); ?>" for="<?php echo esc_attr( $input_id ); ?>">
+							<?php echo esc_html( $label ); ?>
+						</label>
+						<div class="input_container <?php echo esc_html( $args['input_class'] ); ?>">
+							<input type="checkbox"
+							       name="<?php echo esc_attr( $args['name'] ); ?>"
+							       id="<?php echo esc_attr( $input_id ); ?>"
+							       autocomplete="<?php echo ( $args['autocomplete'] ? 'on' : 'off' ); ?>"
+							       value="<?php echo esc_attr( $key ); ?>"
+								<?php checked( true, $checked ); ?>
+							/>
+						</div>
+					</div>   	<?php
 
-						$label = str_replace(',', '', $label);   			?>
+					$ix++;
+				} //foreach   	?>
 
-						<li class="input_group <?php echo esc_html( $args['input_group_class'] )?>" id="<?php echo $id; ?>_group">
-							<?php
-							if ( $is_multi_select_not ) { ?>
-								<input type="hidden" value="<?php echo esc_attr( $key . '[[-HIDDEN-]]' . $label ); ?>" name="<?php echo esc_attr( $args['name'] ) . '_' . $ix; ?>">
-							<?php }	?>
-
-							<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id.$ix; ?>">
-								<?php echo esc_html( $args['label'] ); ?>
-							</label>
-
-							<div class="input_container <?php echo esc_html( $args['input_class'] )?>" id="">
-								<input type="checkbox"
-								       name="<?php echo $id. '_' . $ix; ?>"
-								       id="<?php echo $id.$ix; ?>"
-								       value="<?php echo esc_attr( $key . '[[-,-]]' . $label ); ?>"
-									<?php echo $checked; ?>
-								/>
-							</div>
-						</li>   	<?php
-
-						$ix++;
-					} //foreach   	?>
-
-				</ul>
-			</div>
-		</<?php echo esc_html( $args['main_tag'] )?>>   <?php
+		</div>
+		</<?php echo esc_html( $args['main_tag'] ); ?>>   <?php
 	}
 
 	/**
@@ -583,37 +634,38 @@ class EPKB_HTML_Elements {
 	 *
 	 * @param string $button_label
 	 * @param string $action
-	 * @param string $class
+	 * @param string $main_class
 	 * @param string $html - any additional hidden fields
 	 * @param bool $unique_button - is this unique button or a group of buttons - use 'ID' for the first and 'class' for the other
-	 *
+	 * @param bool $return_html
+	 * @param string $inputClass
 	 * @return string
 	 */
-	public function submit_button( $button_label, $action, $class='', $html='', $unique_button=true, $return_html=false  ) {
-
+	public static function submit_button_v2( $button_label, $action, $main_class='', $html='', $unique_button=true, $return_html=false, $inputClass='' ) {
 
 		if ( $return_html ) {
 			ob_start();
 		}		?>
-		
-		<div class=" <?php echo $class; ?>">
-			<input type="hidden" id="_wpnonce_<?php echo $action; ?>" name="_wpnonce_<?php echo $action; ?>" value="<?php echo wp_create_nonce( "_wpnonce_$action" ); ?>"/>
-            <input type="hidden" name="action" value="<?php echo $action; ?>"/>     <?php
-            if ( $unique_button ) {  ?>
-	            <input type="submit" id="<?php echo $action; ?>" class="primary-btn" value="<?php echo $button_label; ?>" />  <?php
-            } else {    ?>
-	            <input type="submit" class="<?php echo $action; ?> primary-btn" value="<?php echo $button_label; ?>" />  <?php
-            }
-			echo $html;  ?>
+
+		<div class="submit <?php echo esc_attr( $main_class ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( $action ); ?>"/>     <?php
+
+			if ( $unique_button ) {  ?>
+				<input type="hidden" name="_wpnonce_epkb_ajax_action" value="<?php echo wp_create_nonce( "_wpnonce_epkb_ajax_action" ); ?>"/>
+				<input type="submit" id="<?php echo esc_attr( $action ); ?>" class="<?php echo esc_attr( $inputClass ); ?>" value="<?php echo esc_attr( $button_label ); ?>" />  <?php
+			} else {    ?>
+				<input type="submit" class="<?php echo esc_attr( $action ) . ' ' . esc_attr( $inputClass ); ?>" value="<?php echo esc_attr( $button_label ); ?>" />  <?php
+			}
+
+			echo wp_kses_post( $html );  ?>
 		</div>  <?php
 
 		if ( $return_html ) {
 			return ob_get_clean();
 		}
+
 		return '';
 	}
-
-	// Basic Form Elements------------------------------------------------------------------------------------------/
 
 	/**
 	 * Renders an HTML Text field
@@ -622,9 +674,9 @@ class EPKB_HTML_Elements {
 	 * @param array $args Arguments for the text field
 	 * @return string Text field
 	 */
-	public function text_basic( $args = array() ) {
+	public static function text_basic( $args = array() ) {
 
-		$args = $this->add_defaults( $args );
+		$args = self::add_defaults( $args );
 		$id             = $args['name'];
 		$autocomplete   = $args['autocomplete'] ? 'on' : 'off';
 		$readonly       = $args['readonly'] ? ' readonly' : '';
@@ -639,439 +691,114 @@ class EPKB_HTML_Elements {
 				$data .= 'data-' . $key . '="' . $value . '" ';
 			}
 		}
-        if ( ! empty( $args['label_wrapper']) ) {
-	        $label_wrap_open   = '<' . esc_html( $args['label_wrapper'] ) . ' class="' . esc_html( $args['main_label_class'] ) . '" >';
-	        $label_wrap_close  = '</' . esc_html( $args['label_wrapper'] ) . '>';
-        }
+		if ( ! empty( $args['label_wrapper']) ) {
+			$label_wrap_open   = '<' . esc_html( $args['label_wrapper'] ) . ' class="' . esc_attr( $args['main_label_class'] ) . '" >';
+			$label_wrap_close  = '</' . esc_html( $args['label_wrapper'] ) . '>';
+		}
 		if ( ! empty( $args['input_wrapper']) ) {
-			$label_wrap_open   = '<' . esc_html( $args['input_wrapper'] ) . ' class="' . esc_html( $args['input_group_class'] ) . '" >';
+			$label_wrap_open   = '<' . esc_html( $args['input_wrapper'] ) . ' class="' . esc_attr( $args['input_group_class'] ) . '" >';
 			$label_wrap_close  = '<' . esc_html( $args['input_wrapper'] ) . '>';
 		}
 
-		if ( $args['return_html'] ) {
+		if ( ! empty( $args['return_html'] ) ) {
 			ob_start();
-        }
+		}
 
-        echo $label_wrap_open;  ?>
-		<label class="<?php echo esc_html( $args['label_class'] ); ?>" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $args['label'] ); ?></label>		<?php
-        echo $label_wrap_close;
+		echo $label_wrap_open;  ?>
+		<label class="<?php echo esc_attr( $args['label_class'] ); ?>" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $args['label'] ); ?></label>		<?php
+		echo $label_wrap_close;
 
-        echo  $input_wrap_open; ?>
-		<input type="text" name="<?php echo esc_attr( $id ); ?>" id="<?php echo esc_attr( $id ); ?>" class="<?php echo esc_html( $args['input_class'] ); ?>"
-               autocomplete="<?php echo $autocomplete; ?>" value="<?php echo esc_attr( $args['value'] ); ?>"
-               placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>" maxlength="<?php echo $data; ?>" <?php echo $readonly; ?> />		<?php
-        echo  $input_wrap_close;
+		echo  $input_wrap_open; ?>
+		<input type="text" name="<?php echo esc_attr( $id ); ?>" id="<?php echo esc_attr( $id ); ?>" class="<?php echo esc_attr( $args['input_class'] ); ?>"
+		       autocomplete="<?php echo $autocomplete; ?>" value="<?php echo esc_attr( $args['value'] ); ?>"
+		       placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>" maxlength="<?php echo esc_attr( $data ); ?>" <?php echo $readonly; ?> />		<?php
+		echo  $input_wrap_close;
 
-		if ( $args['return_html'] ) {
+		if ( ! empty( $args['return_html'] ) ) {
 			return ob_get_clean();
 		}
 		return '';
 	}
 
-	/**
-	 * Return submit button that has minimum HTML.
-	 *
-	 * @param  array  $args Arguments for the submit field
-     * @return string Submit field
-	 */
-	public function submit_basic( $args = array() ) {
+	private static function get_specs_info( $args ) {
 
-        $args = $this->add_defaults( $args );
-        $action = esc_attr( $args['action'] );
-
-        $button_id = '';
-        if ( $args['unique'] ) {
-            $button_id = $action;
-        }
-
-        if ( $args['return_html'] ) {
-            ob_start();
-        } ?>
-
-        <input type="hidden" id="_wpnonce_<?php echo $action; ?>" name="_wpnonce_<?php echo $action; ?>" value="<?php echo wp_create_nonce( "_wpnonce_$action" ); ?>"/>
-        <input type="hidden" name="action" value="<?php echo $action; ?>"/>
-        <input type="submit" id="<?php echo $button_id; ?>" class="<?php echo esc_html( $args['input_class'] ) ?>" value="<?php echo esc_attr( $args['value'] ); ?>" />        <?php
-
-        if ( $args['return_html'] ) {
-            return ob_get_clean();
-        }
-        return '';
-	}
-
-	/**
-	 * Renders an HTML Checkbox
-	 *
-	 * @param array $args
-	 */
-	public function checkbox_basic( $args = array() ) {
-
-		$defaults = array(
-			'name'         => 'checkbox',
-			'class'        => '',
-		);
-		$args = $this->add_defaults( $args, $defaults );
-		$id             =  esc_attr( $args['name'] );
-		$checked = checked( "on", $args['value'], false );		?>
-
-		<label class="<?php echo esc_html( $args['label_class'] )?>" for="<?php echo $id; ?>">
-				<?php echo wp_kses( $args['label'], array(
-					'a' => array(
-						'href' => array(),
-						'title' => array()
-					),
-					'br' => array(),
-					'em' => array(),
-					'strong' => array(),
-				) ); ?>
-		</label>
-		<input type="checkbox"
-		       name="<?php echo $id ?>"
-		       id="<?php echo $id ?>"
-		       value="on"
-			<?php echo $checked; ?>
-		/>
-
-		<?php
-
-			if ( !empty( $args['info'] ) ) { ?>
-				<span class='info-icon'><p class='hidden'><?php echo $args['info']; ?></p></span>			<?php
-			} ?>
-
-		<?php
-	}
-
-	// Other Elements------------------------------------------------------------------------------------------/
-
-	/*
-		HTML Notification box with Title and Body text.
-
-		Copied HTML / CSS from CREL Plugin
-		$values:
-		@param: string $value['id']            ( Optional ) Container ID, used for targeting with other JS
-		@param: string $value['type']          ( Required ) ( error, success, warning, info )
-		@param: string $value['title']         ( Required ) The big Bold Main text
-		@param: HTML   $value['desc']          ( Required ) Any HTML P, List etc...
-		@since version 6.8.0
-	 */
-	public function notification_box_basic( $args = array() ) {
-
-		$icon = '';
-		switch ( $args['type']) {
-			case 'error':   $icon = 'epkbfa-exclamation-triangle';
-			break;
-			case 'success': $icon = 'epkbfa-check-circle';
-			break;
-			case 'warning': $icon = 'epkbfa-exclamation-circle';
-			break;
-			case 'info':    $icon = 'epkbfa-info-circle';
-			break;
-
+		if ( empty( $args['specs'] ) ) {
+			return $args;
 		}
 
-		?>
+		$specs_name = $args['specs'];
+		$field_specs = EPKB_KB_Config_Specs::get_fields_specification( EPKB_KB_Config_DB::DEFAULT_KB_ID );
 
-		<div <?php echo isset($args['id']) ? 'id="'.$args['id'].'"' : ''; ?>class="epkb-notification-box-basic <?php echo 'epkb-notification-box-basic--'.$args['type']; ?>">
+		if ( empty( $field_specs[$specs_name] ) ) {
+			return $args;
+		}
 
-				<div class="epkb-notification-box-basic__icon">
-					<div class="epkb-notification-box-basic__icon__inner epkbfa <?php echo $icon; ?>"></div>
-				</div>
+		$field_spec = $field_specs[$specs_name];
+		$field_spec = wp_parse_args( $field_spec, EPKB_KB_Config_Specs::get_defaults() );
 
-				<div class="epkb-notification-box-basic__body">
-					<h4 class="epkb-notification-box-basic__body__title"><?php echo $args['title']; ?></h4>
-					<div class="epkb-notification-box-basic__body__desc"><?php echo $args['desc']; ?></div>
-				</div>
+		// FUTURE TO DO fix input_class
+		$args_specs = array(
+			'name'              => $field_spec['name'],
+			'label'             => $field_spec['label'],
+			'type'              => $field_spec['type'],
+			'input_group_class' => 'epkb-admin__input-field epkb-admin__' . $field_spec['type'] . '-field ',
+			'tooltip_title'     => $field_spec['label'],
+			'tooltip_body'      => $field_spec['tooltip_body'],
+			'input_class'       => $field_spec['is_pro'] && ! EPKB_Utilities::is_elegant_layouts_enabled() ? 'epkb-admin__input-disabled' : '',
+			'is_pro'            => $field_spec['is_pro']
+		);
 
-		</div>    <?php
+		if ( $args_specs['type'] == 'select' ) {
+			$args['options'] = $field_spec['options'];
+		}
+
+		return array_merge( $args, $args_specs );
 	}
 
-	/*
-		HTML Notification box with paragraph / checkbox options and submit / cancel buttons.
-		$values:
-		@param: string $value['id']            ( Required ) Container ID, used for targeting with other JS
-		@param: string $value['type']          ( Required ) How it will look ( epkb-error = Red  )
-		@param: string $value['header']        ( Required ) The big Bold Main text
-		@param: HTML   $value['content']       ( Required ) Any HTML P, List etc...
-		@param: array  $value['checkboxes']    ( Optional ) Pass in an array of text labels.
+	/**
+	 * Display settings as an admin form field
+	 *
+	 * @param $field_value
+	 * @param $field_specs
+	 * @param $tooltip
+	 * @param bool $pro_disabled
 	 */
-	public function confirmation_box_with_checkboxes( $args ) { ?>
+	public static function display_admin_settings_field( $field_value, $field_specs, $tooltip='', $pro_disabled=false ) {
 
-        <div class="epkb-notification-box">
+		// shared args
+		$args = array(
+			'name'              => $field_specs['name'],
+			'label'             => $field_specs['label'],
+			'input_group_class' => 'epkb-admin__input-field epkb-admin__' . $field_specs['type'] . '-field'
+		);
 
-            <form id="<?php echo $args['form_id']; ?>" class="<?php echo $args['type']; ?>">
+		// tooltip args
+		if ( $tooltip != '' ) {
+			$args['tooltip_title'] = $field_specs['label'];
+			$args['tooltip_body'] = $tooltip;
+		}
 
-                <section class="epkb-header">
-                    <h3><?php echo $args['header']; ?></h3>
-                </section>
+		// add input disabled class
+		if ( ! empty( $pro_disabled ) ) {
+			$args['input_class'] = 'epkb-admin__input-disabled';
+		}
 
-                <section class="epkb-body">					<?php
+		// custom args
+		switch ( $field_specs['type'] ) {
 
-                    if ( isset( $args['content'] ) ) {      ?>
-                        <div class="epkb-body-content"><?php echo $args['content']; ?></div>                    <?php
-                    }
+			case 'select':
+				$args['options'] = $field_specs['options'];
+				$args['value'] = $field_value;
+				self::dropdown( $args );
+				break;
 
-					if ( isset( $args['checkboxes'] ) ) {   ?>
-                        <div class="epkb-body-checkboxes">
-                            <ul>
-                                <?php foreach ( $args['checkboxes'] as $checkbox ) {
-	                                $this->checkbox( $checkbox );
-                               } ?>
-                            </ul>
-                        </div>					<?php
-					}   ?>
-
-                </section>
-
-                <section class="epkb-footer">   <?php
-					if ( isset ( $args['cancel_button'] ) ) {   ?>
-                        <button id="epkb-notification-box-cancel" class="epkb-error-btn"><?php echo $args['cancel_button']; ?></button>       <?php
-					}   ?>
-                    <button id="epkb-notification-box-apply" class="epkb-success-btn"><?php echo $args['apply_button']; ?></button>
-                </section>  <?php
-
-	            wp_nonce_field(  $args['wpnonce'],  $args['wpnonce'] );  ?>
-
-            </form>
-
-        </div>    <?php
-	}
-
-	/*
-		HTML Notification box with paragraph / checkbox options and submit / cancel buttons. With collapsed checkboxes and submit buttons.
-		$values:
-		@param: string $value['id']            ( Required ) Container ID, used for targeting with other JS
-		@param: string $value['type']          ( Required ) How it will look ( epkb-error = Red  )
-		@param: string $value['header']        ( Required ) The big Bold Main text
-		@param: HTML   $value['content']       ( Required ) Any HTML P, List etc...
-		@param: array  $value['checkboxes']    ( Optional ) Pass in an array of text labels.
-	 */
-	public function confirmation_box_with_checkboxes_collapse( $args ) { ?>
-
-        <div class="epkb-notification-box epkb-collapse">
-
-            <form id="<?php echo $args['form_id']; ?>" class="<?php echo $args['type']; ?>">
-
-                <section class="epkb-header">
-                    <h3><?php echo $args['header']; ?></h3>
-                </section>
-
-
-                <section class="epkb-body">
-                    <?php if ( isset( $args['content'] ) ) { ?>
-                        <div class="epkb-body-content"><?php echo $args['content']; ?></div>
-                        <?php }	?>
-	                <div class="epkb-content-toggle"><?php echo $args['toggle_text']; ?><span class="epkbfa epkbfa-arrow-circle-down"></span> </div>
-
-					<?php if ( isset( $args['checkboxes'] ) ) {   ?>
-                        <div class="epkb-body-checkboxes">
-                            <ul>
-								<?php foreach ( $args['checkboxes'] as $checkbox ) {
-									$this->checkbox( $checkbox );
-								} ?>
-                            </ul>
-                        </div>					<?php
-					}   ?>
-
-                </section>
-                <section class="epkb-footer">   <?php
-					if ( isset ( $args['cancel_button'] ) ) {   ?>
-                        <button id="epkb-notification-box-cancel" class="epkb-error-btn"><?php echo $args['cancel_button']; ?></button>       <?php
-					}   ?>
-                    <button id="epkb-notification-box-apply" class="epkb-success-btn"><?php echo $args['apply_button']; ?></button>
-                </section>  <?php
-
-				wp_nonce_field(  $args['wpnonce'],  $args['wpnonce'] );  ?>
-
-            </form>
-
-        </div>    <?php
-	}
-
-	/*
-		HTML toggle Box.
-		$values:
-		@param: string $value['id']            ( Required ) Container ID, used for targeting with other JS
-		@param: string $value['title']         ( Required ) The text while its collapsed
-		@param: HTML   $value['content']       ( Required ) Any HTML P, List etc...
-	 */
-	public function toggle_box( $args ) { ?>
-
-        <div id="<?php echo $args['id']; ?>" class="epkb-toggle-box epkb-toggle-closed">
-
-                <section class="epkb-toggle-box-header">
-                    <h3>
-                        <?php echo $args['title']; ?>
-                        <span class="epkb-toggle-box-icon epkbfa epkbfa-arrow-circle-down"></span>
-                    </h3>
-
-                </section>
-
-                <section class="epkb-toggle-box-body">
-                    <div class="epkb-toggle-box-content"><?php echo $args['content']; ?></div>
-                </section>
-
-        </div>    <?php
-	}
-
-	/*
-		HTML Info Box.
-		$values:
-		@param: string $value['id']            ( Required ) Container ID, used for targeting with other JS
-		@param: string $value['title']         ( Required ) The text title
-		@param: HTML   $value['content']       ( Required ) Any HTML P, List etc...
-	 */
-	public function info_box( $args ) {  ?>
-
-        <span id="<?php echo $args['id']; ?>" class="epkb-info-box epkb-info-toggle-closed">
-
-            <div class="epkb-info-box-icon epkbfa epkbfa-info-circle"></div>
-
-
-            <div class="epkb-info-box-popup">
-                <div class="epkb-info-box-container">
-                    <span class="epkb-info-box-close epkbfa epkbfa-times"></span>
-                    <span class="epkb-info-box-icon-max epkbfa epkbfa-expand"></span>
-                    <span class="epkb-info-box-icon-min epkbfa epkbfa-compress"></span>
-                    <section class="epkb-info-box-header">
-                        <h3><?php echo $args['title']; ?></h3>
-                    </section>
-                    <section class="epkb-info-box-body">
-                        <div class="epkb-info-box-content"><?php echo $args['content']; ?></div>
-                    </section>
-                </div>
-            </div>
-
-        </span>	<?php
-	}
-
-	/*
-		HTML Info Box Version 2
-		$values:
-		@param: string $icon            Icon to display
-		@param: string $title           The text title
-		@param: string $dec             Text for box
-		@param: string $buttonText      Text for Button
-		@param: string $buttonURL       Link
-	 */
-	public function info_box_v2( $icon, $title, $dec, $buttonText, $buttonURL, $buttonClass = 'epkb-aibb-btn--blue', $buttonText2='', $buttonURL2='' ) { ?>
-
-		<div class="epkb-admin-info-box">
-
-			<div class="epkb-admin-info-box__header">
-				<div class="epkb-admin-info-box__header__icon <?php echo $icon; ?>"></div>
-				<div class="epkb-admin-info-box__header__title"><?php echo $title; ?></div>
-			</div>
-
-			<div class="epkb-admin-info-box__body">
-				<p><?php echo $dec; ?></p>
-				<?php if ( $buttonText ) { ?>
-					<a href="<?php echo $buttonURL; ?>" target="_blank" class="epkb-aibb-btn <?php echo $buttonClass; ?>"><?php echo $buttonText; ?></a>
-				<?php } ?>
-				<?php if ( $buttonText2 ) { ?>
-					<a href="<?php echo $buttonURL2; ?>" target="_blank" class="epkb-aibb-btn epkb-aibb-btn--blue"><?php echo $buttonText2; ?></a>
-				<?php } ?>
-			</div>
-
-		</div>	<?php 
-	}
-
-	/*
-		HTML Info Box with image
-		$values:
-		@param: string $icon            Icon to display
-		@param: string $title           The text title
-		@param: string $dec             Text for box
-		@param: string $buttonText      Text for Button
-		@param: string $buttonURL       Link
-		@param: string $img_url         URL of image.
-	 */
-	public function info_box_with_img( $icon, $title, $dec, $buttonText, $buttonURL, $img_url ) { ?>
-
-		<div class="epkb-admin-info-box-img">
-
-			<div class="epkb-admin-info-box-img__header">
-				<div class="epkb-admin-info-box-img__header__icon <?php echo $icon; ?>"></div>
-				<div class="epkb-admin-info-box-img__header__title"><?php echo $title; ?></div>
-			</div>
-
-			<div class="epkb-admin-info-box-img__body">
-				<img class="epkb-admin-info-box-img__body__img" src="<?php echo $img_url; ?>" alt="Info box image">
-				<p><?php echo $dec; ?></p>
-				<?php if ( $buttonText ) { ?>
-					<a href="<?php echo $buttonURL; ?>" target="_blank" class="epkb-aibb-btn epkb-aibb-btn--blue"><?php echo $buttonText; ?></a>
-				<?php } ?>
-			</div>
-
-		</div>	<?php
-	}
-
-	/*
-		HTML Advertisement Box
-		This box will have a title, image, either a description or list a button and more info link.
-		$values:
-	    @param: string $args['id']              ( Optional ) Container ID, used for targeting with other JS
-	    @param: string $args['class']           ( Optional ) Container CSS, used for targeting with CSS
-	    @param: string $args['icon']            ( Optional ) Icon to display ( from this list: https://fontawesome.com/v4.7.0/icons/ )
-	    @param: string $args['title']           ( Required ) The text title
-	    @param: string $args['img_url']         ( Required ) URL of image.
-	    @param: string $args['desc']            ( Optional ) Paragraph Text
-	    @param: array  $args['list']            ( Optional ) array() of list items.
-
-	    @param: string $args['btn_text']        ( Optional ) Button Text
-	    @param: string $args['btn_url']         ( Optional ) Button URL
-	    @param: string $args['btn_color']       ( Required ) blue,yellow,orange,red,green
-
-		@param: string $args['more_info_text']  ( Optional ) More Info Text
-	    @param: string $args['more_info_url']   ( Optional ) More Info URL
-	    @param: string $args['more_info_color'] ( Required ) blue,yellow,orange,red,green
-	 */
-	public function advertisement_ad_box( $args ) {
-
-		$args = $this->add_defaults( $args );		?>
-
-		<div id="<?php echo $args['id']; ?>" class="epkb-admin-ad-container <?php echo $args['class']; ?>">
-
-			<!----- Box Type ----->
-			<span class="epkb-admin-ad-container__widget"> <i class="epkbfa epkbfa-puzzle-piece " aria-hidden="true"></i><?php echo __( 'Plugin', 'echo-knowledge-base'); ?></span>
-
-			<!----- Header ----->
-			<div class="epkb-aa__header-container">
-				<div class="epkb-header__icon epkbfa <?php echo $args['icon']; ?>"></div>
-				<div class="epkb-header__title"><?php echo $args['title']; ?></div>
-			</div>
-
-			<!----- Body ---=--->
-			<div class="epkb-aa__body-container">
-				<div class="featured_img">
-					<img class="epkb-body__img" src="<?php echo $args['img_url']; ?>" alt="<?php echo $args['title']; ?>">
-				</div>
-				<p class="epkb-body__desc"><?php echo $args['desc']; ?></p>
-
-				<ul class="epkb-body__check-mark-list-container">					<?php
-					if ( $args['list'] ) {
-						foreach ($args['list'] as $item) {
-							echo '<li class="epkb-check-mark-list__item">';
-							echo '<span class="epkb-check-mark-list__item__icon epkbfa epkbfa-check"></span>';
-							echo '<span class="epkb-check-mark-list__item__text">' . $item . '</span>';
-							echo '</li>';
-						}
-					}					?>
-				</ul>
-
-				<?php if ( $args['btn_text'] ) { ?>
-					<a href="<?php echo $args['btn_url']; ?>" target="_blank" class="epkb-body__btn epkb-body__btn--<?php echo $args['btn_color']; ?>"><?php echo $args['btn_text']; ?></a>
-				<?php } ?>
-
-				<?php if ( $args['more_info_text'] ) { ?>
-					<a href="<?php echo $args['more_info_url']; ?>" target="_blank" class="epkb-body__link epkb-body__link--<?php echo $args['more_info_color']; ?>">
-						<span class="epkb-body__link__icon epkbfa epkbfa-info-circle"></span>
-						<span class="epkb-body__link__text"><?php echo $args['more_info_text']; ?></span>
-						<span class="epkb-body__link__icon-after epkbfa epkbfa-angle-double-right"></span>
-
-					</a>
-				<?php } ?>
-
-			</div>
-
-		</div>	<?php
+			case 'number':
+			case 'text':
+			default:
+				$args['value'] = $field_value;
+				$args['type'] = $field_specs['type'];
+				self::text( $args );
+				break;
+		}
 	}
 }

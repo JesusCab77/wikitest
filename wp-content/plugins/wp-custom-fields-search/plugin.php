@@ -3,12 +3,12 @@
 Plugin Name: WP Custom Fields Search
 Plugin URI: http://www.webhammer.co.uk/wp_custom_fields_search
 Description: Adds powerful search forms to your wordpress site
-Version: 1.2.33
+Version: 1.2.34
 Author: Don Benjamin
 Author URI: http://www.webhammer.co.uk/
 Text Domain: wp_custom_fields_search
 */
-define('WPCFS_PLUGIN_VERSION',"1.2.31");
+define('WPCFS_PLUGIN_VERSION',"1.2.34");
 define('"wp_custom_fields_search"',"wp_custom_fields_search");
 /*
  * Copyright 2015 Webhammer UK Ltd.
@@ -104,13 +104,15 @@ class WPCustomFieldsSearchPlugin {
 		return $submitted;
 	}
 	function show_search_results_template($template){
-		$new_template = locate_template(array('wpcfs-search.php','search.php','index.php'));
-		if($new_template) return $new_template;
-		else return $template;
+        if (current_theme_supports('wp-block-styles')) {
+            return $template;
+        }
+		$new_template = locate_template(array('wpcfs-search.php','search.php','templates/index.html', 'index.php'));
+        return $new_template ?? $template;
 	}
 
 	function should_override_current_query($wp_query) {
-		$should_override = $wp_query->is_main_query();
+		$should_override = $wp_query->is_main_query() || ($wp_query->query_vars['wpcfs'] ?? false);
 		return apply_filters('wpcfs_should_override_current_query', $should_override, $wp_query);
 	}
 
@@ -138,7 +140,7 @@ class WPCustomFieldsSearchPlugin {
 			return $join;
 		}
 		foreach($this->get_submitted_inputs() as $input){
-			$isMulti = array_key_exists('multi_match', $input) && ($input['multi_match'] != "Selecciona");
+			$isMulti = array_key_exists('multi_match', $input) && ($input['multi_match'] != "Any");
 			$count = $isMulti ? count($input['input']->get_submitted_values($input, $_REQUEST)) : 1;
             $join = $input['datatype']->add_joins($input,$join,$count);
 		}
@@ -152,7 +154,7 @@ class WPCustomFieldsSearchPlugin {
         $request = stripslashes_deep($_REQUEST);
 		foreach($this->get_submitted_inputs() as $input){
 			$submitted = $input['input']->get_submitted_values($input,$request);
-			$isMulti = array_key_exists('multi_match', $input) && ($input['multi_match'] != "Selecciona");
+			$isMulti = array_key_exists('multi_match', $input) && ($input['multi_match'] != "Any");
 			$wheres = array();
             $join = $isMulti ? "AND" : "OR";
             $submitted_index = 0;
@@ -193,7 +195,7 @@ class WPCustomFieldsSearchPlugin {
 		);
 
 		$selected_post_types = $form['settings']['selected_post_types'];
-		if(in_array("###Selecciona###", $selected_post_types) || !$selected_post_types)
+		if(in_array("###ANY###", $selected_post_types) || !$selected_post_types)
 			return $where;
 
 		$options = [];
@@ -231,8 +233,8 @@ class WPCustomFieldsSearchPlugin {
         foreach($input['input']->get_submitted_values($input,$_REQUEST) as $value){
             $found[] = $input['comparison']->describe($label,$value);
         }
-        $join = (@$input['multi_match'] == "Selecciona") ? __(" or ","wp_custom_fields_search") : __(" &amp; ");
-        return join($found," $join ");
+        $join = (@$input['multi_match'] == "Any") ? __(" or ","wp_custom_fields_search") : __(" &amp; ");
+        return implode(" $join ", $found);
     }
 	function widgets_init(){
 		require_once(dirname(__FILE__).'/widget.php');
@@ -405,7 +407,8 @@ angular.module('WPCFS',['<?php echo join("','",$module_names); ?>']);
         $wpquery->is_singular = false;
         $wpquery->query_vars['pagename'] = null;
         $wpquery->query_vars['page_id'] = null;
-		$wpquery->query_vars['paged'] = $wpquery->query_vars['page'];
+		$wpquery->query_vars['paged'] = $wpquery->query_vars['page'] ?? null;
+        $wpquery->query_vars['wpcfs'] = true;
     }
 	function show_search_template_for_searches($template){
 		if($_REQUEST['wpcfs']){

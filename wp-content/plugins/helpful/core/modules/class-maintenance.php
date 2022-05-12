@@ -1,82 +1,66 @@
 <?php
 /**
- * ...
+ * Performs maintenance when the plugin is updated. This removes
+ * incorrect entries and optimizes the database table.
  *
- * @package Helpful\Core\Modules
- * @author  Pixelbart <me@pixelbart.de>
- * @version 4.3.0
+ * @package Helpful
+ * @subpackage Core\Modules
+ * @version 4.4.50
+ * @since 4.3.0
  */
+
 namespace Helpful\Core\Modules;
 
-use Helpful\Core\Helpers as Helpers;
 use Helpful\Core\Helper;
+use Helpful\Core\Module;
+use Helpful\Core\Helpers as Helpers;
+use Helpful\Core\Services as Services;
 
 /* Prevent direct access */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Maintenance
-{
-	/**
-	 * Class instance
-	 *
-	 * @var Maintenance
-	 */
-	public static $instance;
+/**
+ * ...
+ */
+class Maintenance {
+	use Module;
 
 	/**
-	 * Set instance and fire class
-	 *
-	 * @return Maintenance
+	 * Constructor
 	 */
-	public static function get_instance()
-	{
-		if ( ! isset( self::$instance ) ) {
-			self::$instance = new self();
-		}
-		return self::$instance;
-	}
-
-	/**
-	 * Class constructor
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		add_action( 'admin_enqueue_scripts', [ &$this, 'enqueue_scripts' ] );
-		add_action( 'wp_ajax_helpful_perform_maintenance', [ &$this, 'maintenance' ] );
-		add_action( 'admin_init', [ &$this, 'maintenance_after_update' ] );
+	public function __construct() {
+		add_action( 'admin_enqueue_scripts', array( & $this, 'enqueue_scripts' ) );
+		add_action( 'wp_ajax_helpful_perform_maintenance', array( & $this, 'maintenance' ) );
+		add_action( 'admin_init', array( & $this, 'maintenance_after_update' ) );
 	}
 
 	/**
 	 * Enqueue styles and scripts
 	 *
-	 * @param string $hook_suffix
+	 * @param string $hook_suffix Current page slug.
 	 *
 	 * @return void
 	 */
-	public function enqueue_scripts( $hook_suffix )
-	{
+	public function enqueue_scripts( $hook_suffix ) {
 		if ( 'toplevel_page_helpful' !== $hook_suffix ) {
 			return;
 		}
 
 		$plugin = Helper::get_plugin_data();
+		$nonce  = wp_create_nonce( 'helpful_maintenance_nonce' );
+		$file   = plugins_url( '/core/assets/js/admin-maintenance.js', HELPFUL_FILE );
 
-		$nonce = wp_create_nonce( 'helpful_maintenance_nonce' );
-		$file  = plugins_url( '/core/assets/js/admin-maintenance.js', HELPFUL_FILE );
+		wp_enqueue_script( 'helpful-maintenance', $file, array( 'jquery' ), $plugin['Version'], true );
 
-		wp_enqueue_script( 'helpful-maintenance', $file, [ 'jquery' ], $plugin['Version'], true );
-
-		$vars = [
+		$vars = array(
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
-			'data'     => [
+			'data' => array(
 				'action'   => 'helpful_perform_maintenance',
 				'_wpnonce' => $nonce,
-			],
-		];
+			),
+		);
 
 		wp_localize_script( 'helpful-maintenance', 'helpful_maintenance', $vars );
 	}
@@ -88,24 +72,20 @@ class Maintenance
 	 *
 	 * @return void
 	 */
-	public function maintenance()
-	{
+	public function maintenance() {
 		check_admin_referer( 'helpful_maintenance_nonce' );
-
 		$response = Helpers\Optimize::optimize_plugin();
 		$response = apply_filters( 'helpful_maintenance', $response );
-
 		wp_send_json( $response );
 	}
 
 	/**
 	 * Informs the user to perform maintenance.
-	 *
-	 * @return void
 	 */
-	public function maintenance_after_update()
-	{
-		if ( 'on' === get_option( 'helpful_notes' ) ) {
+	public function maintenance_after_update() {
+		$options = new Services\Options();
+
+		if ( 'on' === $options->get_option( 'helpful_notes' ) ) {
 			return;
 		}
 
@@ -117,7 +97,7 @@ class Maintenance
 		}
 
 		$plugin = Helper::get_plugin_data();
-		$option = get_option( 'helpful_plugin_version' );
+		$option = $options->get_option( 'helpful_plugin_version' );
 
 		if ( $option === $plugin['Version'] ) {
 			return;

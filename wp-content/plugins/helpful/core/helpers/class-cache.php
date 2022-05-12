@@ -1,11 +1,14 @@
 <?php
 /**
- * ...
+ * Helper function for the cache that Helpful uses.
+ * As a rule, the WordPress Transients.
  *
- * @package Helpful\Core\Helpers
- * @author  Pixelbart <me@pixelbart.de>
- * @version 4.3.0
+ * @package Helpful
+ * @subpackage Core\Helpers
+ * @version 4.4.50
+ * @since 4.3.0
  */
+
 namespace Helpful\Core\Helpers;
 
 use Helpful\Core\Helper;
@@ -15,18 +18,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Cache
-{
+/**
+ * ...
+ */
+class Cache {
 	/**
 	 * Returns the available times for caching with the Transients API from WordPress.
 	 *
-	 * @param boolean $labels Outputs either the miliseconds or the labels for the options.
+	 * @param bool $labels Outputs either the miliseconds or the labels for the options.
 	 *
 	 * @return array
 	 */
-	public static function get_cache_times( $labels = true )
-	{
-		$times = [];
+	public static function get_cache_times( $labels = true ) {
+		$times = array();
 
 		$times['minute'] = esc_html_x( 'One minute', 'caching time', 'helpful' );
 		$times['hour']   = esc_html_x( 'One hour', 'caching time', 'helpful' );
@@ -50,10 +54,9 @@ class Cache
 	/**
 	 * Deletes all transients related to Helpful and clears the cache of Helpful.
 	 *
-	 * @return integer Amount of deleted entries.
+	 * @return int Amount of deleted entries.
 	 */
-	public static function clear_cache()
-	{
+	public static function clear_cache() {
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'options';
@@ -64,12 +67,12 @@ class Cache
 
 		if ( $rows ) {
 			foreach ( $rows as $row ) :
-				if ( '_transient_timeout_helpful_updated' === $row->option_name || '_transient_helpful_updated' === $row->option_name ) {
+				if ( '_transient_timeout_helpful_updated' === $row->option_name || '_transient_helpful_updated' === $row->option_name) {
 					continue;
 				}
 
-				$values = [ 'option_name' => $row->option_name ];
-				$wpdb->delete( $table_name, $values );
+				$wpdb->delete( $table_name, array( 'option_name' => $row->option_name ) );
+
 				$count++;
 			endforeach;
 		}

@@ -54,10 +54,7 @@ if ( $article_rec ) {
 	$breadcrumb_tree = EPKB_Templates_Various::get_article_breadcrumb( $kb_config, $article_rec->ID );
 
 	foreach( $breadcrumb_tree as $category_id => $category_name ) {
-		$term_link = get_term_link( $category_id, EPKB_KB_Handler::get_category_taxonomy_name( $kb_config['id']) );
-		if ( is_wp_error( $term_link ) ) {
-			$term_link = '';
-		}
+		$term_link = EPKB_Utilities::get_term_url( $category_id, EPKB_KB_Handler::get_category_taxonomy_name( $kb_config['id']) );
 		$breadcrumb += array( $category_name => $term_link );
 	}
 
@@ -70,16 +67,12 @@ if ( $term_rec ) {
 	$breadcrumb_tree = EPKB_Templates_Various::get_term_breadcrumb( $kb_config, $term_rec->term_id );
 
 	foreach( $breadcrumb_tree as $category_id ) {
-		$term_link = get_term_link( $category_id, $term_rec->taxonomy );
-		if ( is_wp_error( $term_link ) ) {
-			$term_link = '';
-		}
-
 		$term = get_term( $category_id, $term_rec->taxonomy );
 		if ( empty($term) || is_wp_error( $term ) || ! property_exists( $term, 'name' ) ) {
 			continue;
 		}
 
+		$term_link = EPKB_Utilities::get_term_url( $category_id, $term_rec->taxonomy );
 		$breadcrumb += array( $term->name => $term_link );
 	}
 
@@ -97,45 +90,46 @@ $breadcrumb_style1 = EPKB_Utilities::get_inline_style('
 							margin-right:: breadcrumb_margin_right,
 							margin-bottom:: ' . ( isset($kb_config['use_old_margin_bottom']) && $kb_config['use_old_margin_bottom'] ? 'breadcrumb_margin_bottom_old' : 'breadcrumb_margin_bottom' ) . ', ' . '
 							margin-left:: breadcrumb_margin_left,
-							font-size::breadcrumb_font_size', $kb_config );
-$breadcrumb_style2 = EPKB_Utilities::get_inline_style( 'color:: breadcrumb_text_color', $kb_config );         ?>
+							typography::breadcrumb_typography', $kb_config );
+$breadcrumb_style2 = EPKB_Utilities::get_inline_style( 'color:: breadcrumb_text_color', $kb_config );     
+$breadcrumb_style_3 = EPKB_Utilities::get_inline_style( 'typography::breadcrumb_typography', $kb_config );	?>
 
 <div class="eckb-breadcrumb" <?php echo $breadcrumb_style1; ?>>	<?php
 
-	 if ( ! empty($kb_config['breadcrumb_description_text']) ) { ?>
+	 if ( ! empty($kb_config['breadcrumb_description_text']) || ! empty( $_REQUEST['epkb-editor-page-loaded'] ) ) { ?>
 		<div class="eckb-breadcrumb-label">
 			<?php echo esc_html($kb_config['breadcrumb_description_text']); ?>
 		</div>	<?php
 	 }    ?>
+	<nav class="eckb-breadcrumb-outline" aria-label="Breadcrumb">
+		<ul class="eckb-breadcrumb-nav">       <?php
+		    $ix = 0;
+			foreach ( $breadcrumb as $text => $link ) {
 
-	<ul class="eckb-breadcrumb-nav">       <?php
+				echo '<li ' . $breadcrumb_style_3 . '>';
+				echo '	<span class="eckb-breadcrumb-link">';
 
-    $ix = 0;
-	foreach ( $breadcrumb as $text => $link ) {
+		        $ix++;
+		        $text = empty($text) && $ix == 1 ? __( 'KB Home', 'echo-knowledge-base' ) : $text;
+		        $text = empty($text) && $ix > 1 ? __( 'Link ', 'echo-knowledge-base' ) . ($ix - 1) : $text;
 
-		echo '<li>';
-		echo '	<span class="eckb-breadcrumb-link">';
+		        // output URL if not the last crumb
+		        if ( $ix < sizeof($breadcrumb) ) {
+		            if ( empty($link) ) {
+		                echo '<span ' . $breadcrumb_style2 . ' >' . esc_html( $text ) . '</span>';
+		            } else {
+		                echo '<a tabindex="0" href="' . esc_url($link) . '"><span ' . $breadcrumb_style2 . ' >' . esc_html( $text ) . '</span></a>';
+		            }
+		            echo '<span class="eckb-breadcrumb-link-icon ' . esc_html($kb_config['breadcrumb_icon_separator']) . '" aria-hidden="true"></span>';
+		        } else {
+		            echo '<span aria-current="page"' . $breadcrumb_style2 . ' >' . esc_html( $text ) . '</span>';
+		        }
 
-        $ix++;
-        $text = empty($text) && $ix == 1 ? __( 'KB Home', 'echo-knowledge-base' ) : $text;
-        $text = empty($text) && $ix > 1 ? __( 'Link ', 'echo-knowledge-base' ) . ($ix - 1) : $text;
+				echo '	</span>';
+				echo '</li>';
 
-        // output URL if not the last crumb
-        if ( $ix < sizeof($breadcrumb) ) {
-            if ( empty($link) ) {
-                echo '<span ' . $breadcrumb_style2 . ' >' . esc_html( $text ) . '</span>';
-            } else {
-                echo '<a tabindex="0" href="' . esc_url($link) . '"><span ' . $breadcrumb_style2 . ' >' . esc_html( $text ) . '</span></a>';
-            }
-            echo '<span class="eckb-breadcrumb-link-icon ' . esc_html($kb_config['breadcrumb_icon_separator']) . '"></span>';
-        } else {
-            echo '<span aria-current="page"' . $breadcrumb_style2 . ' >' . esc_html( $text ) . '</span>';
-        }
+			}       ?>
+		</ul>
+	</nav>
 
-		echo '	</span>';
-		echo '</li>';
-
-	}       ?>
-
-	</ul>
 </div>          <?php

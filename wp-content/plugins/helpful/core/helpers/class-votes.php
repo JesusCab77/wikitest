@@ -1,11 +1,13 @@
 <?php
 /**
- * Provides useful functions in relation to votes that are used internally.
+ * Returns the values to votes.
  *
- * @package Helpful\Core\Helpers
- * @author  Pixelbart <me@pixelbart.de>
- * @version 4.3.0
+ * @package Helpful
+ * @subpackage Core\Helpers
+ * @version 4.4.50
+ * @since 4.3.0
  */
+
 namespace Helpful\Core\Helpers;
 
 use Helpful\Core\Helper;
@@ -15,26 +17,60 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Votes
-{
+/**
+ * ...
+ */
+class Votes {
 	/**
 	 * Returns all votes from the database.
-	 * 
+	 *
 	 * @global $wpdb
 	 *
-	 * @param output_type $type
+	 * @param string $type output type of the results query.
 	 *
 	 * @return array
 	 */
-	public static function get_votes( $type = OBJECT )
-	{
+	public static function get_votes( $type = OBJECT ) {
 		global $wpdb;
 
-		$table_name = $wpdb->prefix . 'helpful';
+		$cache_name = 'Helpful/Votes/get_votes';
+		$results    = wp_cache_get( $cache_name );
 
-		$sql = "SELECT * FROM $table_name";
+		if ( false === $results ) {
+			$table_name = $wpdb->prefix . 'helpful';
+			$sql        = "SELECT * FROM $table_name";
+			$results    = $wpdb->get_results( $sql, $type );
+			wp_cache_set( $cache_name, $results );
+		}
 
-		return $wpdb->get_results( $sql, $type );
+		return $results;
+	}
+
+	/**
+	 * Returns a single vote.
+	 *
+	 * @global $wpdb
+	 *
+	 * @param int    $vote_id vote id from database.
+	 * @param string $type output type of the results query.
+	 *
+	 * @return array
+	 */
+	public static function get_vote( $vote_id, $type = OBJECT ) {
+		global $wpdb;
+
+		$cache_name = 'Helpful/Votes/get_vote/' . $vote_id;
+		$results    = wp_cache_get( $cache_name );
+
+		if ( false === $results ) {
+			$table_name = $wpdb->prefix . 'helpful';
+			$sql        = "SELECT * FROM $table_name WHERE id = %d LIMIT 1";
+			$sql        = $wpdb->prepare( $sql, $vote_id );
+			$results    = $wpdb->get_row( $sql, $type );
+			wp_cache_set( $cache_name, $results );
+		}
+
+		return $results;
 	}
 
 	/**
@@ -42,21 +78,15 @@ class Votes
 	 *
 	 * @global $wpdb
 	 *
-	 * @param int $id
+	 * @param int $id vote id.
 	 *
 	 * @return int|false
 	 */
-	public static function delete_vote( $id )
-	{
+	public static function delete_vote( $id ) {
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'helpful';
-
-		$where = [
-			'id' => $id,
-		];
-		
-		$status = $wpdb->delete( $table_name, $where );
+		$status     = $wpdb->delete( $table_name, array( 'id' => $id ) );
 
 		if ( false !== $status ) {
 			Optimize::clear_cache();
@@ -70,17 +100,15 @@ class Votes
 	 *
 	 * @global $wpdb
 	 *
-	 * @param array $where
+	 * @param array $where array with data for the where clause.
 	 *
 	 * @return int|false
 	 */
-	public static function delete_vote_where( $where )
-	{
+	public static function delete_vote_where( $where ) {
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'helpful';
-		
-		$status = $wpdb->delete( $table_name, $where );
+		$status     = $wpdb->delete( $table_name, $where );
 
 		if ( false !== $status ) {
 			Optimize::clear_cache();
@@ -92,14 +120,14 @@ class Votes
 	/**
 	 * Insert vote for single user on single post.
 	 *
-	 * @param string $user
-	 * @param int $post_id
-	 * @param string $type
+	 * @param string $user user string.
+	 * @param int    $post_id post id.
+	 * @param string $type type of vote (pro, contra).
+	 * @param string $instance instance id.
 	 *
 	 * @return int|false
 	 */
-	public static function insert_vote( $user, $post_id, $type = 'pro' )
-	{
+	public static function insert_vote( $user, $post_id, $type = 'pro', $instance = null ) {
 		global $wpdb;
 
 		$pro    = 1;
@@ -110,13 +138,14 @@ class Votes
 			$contra = 1;
 		}
 
-		$data = [
-			'time'    => current_time( 'mysql' ),
-			'user'    => esc_attr( $user ),
-			'pro'     => $pro,
-			'contra'  => $contra,
-			'post_id' => absint( $post_id ),
-		];
+		$data = array(
+			'time'        => current_time( 'mysql' ),
+			'user'        => esc_attr( $user ),
+			'pro'         => $pro,
+			'contra'      => $contra,
+			'post_id'     => absint( $post_id ),
+			'instance_id' => $instance,
+		);
 
 		$table_name = $wpdb->prefix . 'helpful';
 

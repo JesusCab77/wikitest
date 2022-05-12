@@ -14,48 +14,46 @@ class EPKB_Delete_KB {
 	}
 
 	/**
-	 * @param EPKB_HTML_Elements $form
+	 * Return HTML form to delete all KBs data
 	 */
-	public function display_delete_tab( $form ) {
+	public function get_delete_all_kbs_data_form() {
 
 		// only administrators can handle this page
 		if ( ! current_user_can('manage_options') ) {
-			return;
-		}   ?>
+			return '';
+		}
 
-		<div class="epkb-admin-row epkb-admin-4col">
+		ob_start();
 
-			<div class="epkb-admin-info-box">
+		// Deletion message
+		if ( get_transient( '_epkb_delete_all_kb_data' ) ) {    ?>
+			<div class="epkb-delete-all-data__message">
+				<p><?php esc_html_e( 'All data will be deleted upon plugin uninstallation.', 'echo-knowledge-base' ); ?></p>
+			</div>      <?php
 
-				<div class="epkb-admin-info-box__header">
-					<div class="epkb-admin-info-box__header__icon epkbfa epkbfa-trash"></div>
-					<div class="epkb-admin-info-box__header__title"><?php echo __( 'Delete Data', 'echo-knowledge-base' ); ?></div>
-				</div>
+		// Deletion form
+		} else {    ?>
+			<form class="epkb-delete-all-data__form" action="" method="post">
+				<input type="hidden" name="_wpnonce_epkb_delete_all" value="<?php echo wp_create_nonce( '_wpnonce_epkb_delete_all' ); ?>">
 
-				<div class="epkb-admin-info-box__body">
-					<div class="form_options" id="epkb_delete_tab_page">
-						<section style="padding-top: 20px;" class="epkb-delete-data-section">
-							<form class="epkb-delete-kbs" action="<?php echo add_query_arg('epkb-tab','other'); ?>" method="post">								<?php
-								$form->text_basic( array(
-									'label'	=> __( 'Delete All KBs Data', 'echo-knowledge-base' ),
-									'value' => '',
-									'name'    => 'delete_text',
-								) );
-								echo '<div class="config-input-group epkb-other-info-item">' . sprintf( __( 'Write "%s" in the above input box if you want to delete ALL KB data including KB Articles, KB Categories, KB Tags and KB options. All add-ons data and custom tables will also be removed when you uninstall the plugin.', 'echo-knowledge-base' ), 'delete' ) . '</div>';
-								$form->submit_button( __('Delete All', 'echo-knowledge-base'), 'epkb_delete_all', 'epkb_delete_all epkb-aibb-btn epkb-aibb-btn--red' ); ?>
-							</form>
-						</section>
-					</div>
-				</div>
+				<p class="epkb-delete-all-data__form-title"><?php echo sprintf( esc_html__( 'Write "%s" in the below input box if you want to delete ALL KB data when plugin uninstalled. ' .
+				                                                                    'This includes Articles, Categories, and KB options.', 'echo-knowledge-base' ), 'delete' ); ?></p>    <?php
 
-			</div>
+				EPKB_HTML_Elements::text_basic( array(
+					'value' => '',
+					'name'    => 'delete_text',
+				) );
+				EPKB_HTML_Elements::submit_button_v2( __( 'Delete All', 'echo-knowledge-base' ), 'epkb_delete_all', '', '', false, '', 'epkb-error-btn' );   ?>
 
-		</div>		<?php
+			</form>     <?php
+		}
 
 		// show any notifications
 		foreach ( $this->message as $class => $message ) {
-			echo  EPKB_Utilities::get_bottom_notice_message_box( $message, '', $class );
+			echo  EPKB_HTML_Forms::notification_box_bottom( $message, '', $class );
 		}
+
+		return ob_get_clean();
 	}
 
 	// Handle actions that need reload of the page - manage tab and other from addons
@@ -63,17 +61,16 @@ class EPKB_Delete_KB {
 		/** @global wpdb $wpdb */
 		global $wpdb;
 
-		if ( empty($_REQUEST['action']) ) {
+		if ( empty( $_REQUEST['action'] ) ) {
 			return;
 		}
 
-	   // clear any messages
+		// clear any messages
 		$this->message = array();
-        update_option( 'epkb_delete_all_kb_data', '' );
 
 		// verify that request is authentic
 		if ( ! isset( $_REQUEST['_wpnonce_epkb_delete_all'] ) || ! wp_verify_nonce( $_REQUEST['_wpnonce_epkb_delete_all'], '_wpnonce_epkb_delete_all' ) ) {
-		  $this->message['error'] = __( 'Something went wrong', 'echo-knowledge-base' ) . ' (1)';
+		  $this->message['error'] = __( 'Error occurred', 'echo-knowledge-base' ) . ' (1)';
 		  return;
 		}
 
@@ -86,11 +83,11 @@ class EPKB_Delete_KB {
 		// ensure user wants to delete the KB data
 		$action = EPKB_Utilities::post( 'action' );
 		if ( empty($action) || $action != 'epkb_delete_all' ) {
-          $this->message['error'] = __( 'Could not delete Data (d01).', 'echo-knowledge-base' );
+          $this->message['error'] = __( 'Error occurred', 'echo-knowledge-base' ) . ' (2)';
           return;
 		}
 
-		// Delete Data
+		// ensure user typed delete word
 		if ( EPKB_Utilities::post( 'delete_text' ) != 'delete' ) {
 			$this->message['error'] = sprintf( __( 'Write "%s" in input box to delete ALL KB data', 'echo-knowledge-base' ), 'delete' );
 			return;
@@ -106,9 +103,9 @@ class EPKB_Delete_KB {
 		$wpdb->query( "DROP TABLE IF EXISTS " . $wpdb->prefix . "epkb_kb_search_data" );
 		$wpdb->query( "DROP TABLE IF EXISTS " . $wpdb->prefix . "epkb_article_ratings" );
 
-       update_option( 'epkb_delete_all_kb_data', 'delete' );
+		set_transient( '_epkb_delete_all_kb_data', true, DAY_IN_SECONDS );
 
-       $this->message['success'] = __( 'All Data deleted successfully', 'echo-knowledge-base' );
+       $this->message['success'] = __( 'All articles and categories deleted. Options will be deleted when plugin is uninstalled.', 'echo-knowledge-base' );
 	}
 
 	/**

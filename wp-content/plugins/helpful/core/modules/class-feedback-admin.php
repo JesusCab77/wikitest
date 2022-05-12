@@ -1,103 +1,75 @@
 <?php
 /**
- * ...
+ * Allows you to manage and view feedback in the admin area.
  *
- * @package Helpful\Core\Modules
- * @author  Pixelbart <me@pixelbart.de>
- * @version 4.3.0
+ * @package Helpful
+ * @subpackage Core\Modules
+ * @version 4.5.0
+ * @since 4.3.0
  */
+
 namespace Helpful\Core\Modules;
 
-use Helpful\Core\Helpers as Helpers;
 use Helpful\Core\Helper;
+use Helpful\Core\Module;
+use Helpful\Core\Helpers as Helpers;
+use Helpful\Core\Services as Services;
 
 /* Prevent direct access */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Feedback_Admin
-{
-	/**
-	 * Instance
-	 *
-	 * @var Feedback_Admin
-	 */
-	public static $instance;
+/**
+ * ...
+ */
+class Feedback_Admin {
+	use Module;
 
 	/**
-	 * Class constructor.
-	 *
-	 * @return void
+	 * Constructor
 	 */
-	public function __construct()
-	{
-		if ( Helper::is_feedback_disabled() ) :
+	public function __construct() {
+		if ( Helper::is_feedback_disabled() ) {
 			return;
-		endif;
-
-		add_action( 'admin_menu', [ &$this, 'add_submenu' ] );
-		add_action( 'admin_enqueue_scripts', [ &$this, 'enqueue_scripts' ] );
-
-		add_action( 'wp_ajax_helpful_admin_feedback_items', [ &$this, 'ajax_get_feedback_items' ] );
-		add_action( 'wp_ajax_helpful_remove_feedback', [ &$this, 'ajax_delete_feedback_item' ] );
-		add_action( 'wp_ajax_helpful_export_feedback', [ &$this, 'ajax_export_feedback' ] );
-	}
-
-	/**
-	 * Class instance.
-	 *
-	 * @return Feedback_Admin
-	 */
-	public static function get_instance()
-	{
-		if ( ! isset( self::$instance ) ) {
-			self::$instance = new self();
 		}
 
-		return self::$instance;
+		add_action( 'admin_menu', array( & $this, 'add_submenu' ) );
+		add_action( 'admin_enqueue_scripts', array( & $this, 'enqueue_scripts' ) );
+
+		add_action( 'wp_ajax_helpful_admin_feedback_items', array( & $this, 'ajax_get_feedback_items' ) );
+		add_action( 'wp_ajax_helpful_remove_feedback', array( & $this, 'ajax_delete_feedback_item' ) );
+		add_action( 'wp_ajax_helpful_export_feedback', array( & $this, 'ajax_export_feedback' ) );
+		add_action( 'wp_ajax_helpful_delete_all_feedback', array( & $this, 'ajax_delete_all_feedback' ) );
 	}
 
 	/**
-	 * Add submenu item for feedback with permission
-	 * for all roles with publish_posts.
-	 *
-	 * @version 4.3.0
-	 * @return void
+	 * Add submenu item for feedback with permission for all roles with publish_posts.
 	 */
-	public function add_submenu()
-	{
+	public function add_submenu() {
 		add_submenu_page(
 			'helpful',
 			__( 'Helpful Feedback', 'helpful' ),
 			__( 'Feedback', 'helpful' ),
 			apply_filters( 'helpful_feedback_capability', 'publish_posts' ),
 			'helpful_feedback',
-			[ &$this, 'admin_page_callback' ]
+			array( & $this, 'admin_page_callback' )
 		);
 	}
 
 	/**
 	 * Render admin page for feedback.
-	 *
-	 * @return void
 	 */
-	public function admin_page_callback()
-	{
+	public function admin_page_callback() {
 		include_once HELPFUL_PATH . 'templates/admin-feedback.php';
 	}
 
 	/**
 	 * Enqueue backend scripts and styles, if current screen is helpful.
 	 *
-	 * @version 4.3.0
-	 *
-	 * @param string $hook_suffix
-	 *
-	 * @return void
+	 * @param string $hook_suffix Current page name.
 	 */
-	public function enqueue_scripts( $hook_suffix )
-	{
+	public function enqueue_scripts( $hook_suffix ) {
 		if ( 'helpful_page_helpful_feedback' !== $hook_suffix ) {
 			return;
 		}
@@ -105,15 +77,18 @@ class Feedback_Admin
 		$plugin = Helper::get_plugin_data();
 
 		$file = plugins_url( 'core/assets/css/admin-feedback.css', HELPFUL_FILE );
-		wp_enqueue_style( 'helpful-admin-feedback', $file, [], $plugin['Version'] );
+		wp_enqueue_style( 'helpful-admin-feedback', $file, false, $plugin['Version'] );
 
 		$file = plugins_url( 'core/assets/js/admin-feedback.js', HELPFUL_FILE );
-		wp_enqueue_script( 'helpful-admin-feedback', $file, [], $plugin['Version'], true );
+		wp_enqueue_script( 'helpful-admin-feedback', $file, array(), $plugin['Version'], true );
 
-		$vars = [
+		$vars = array(
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
 			'nonce'    => wp_create_nonce( 'helpful_admin_feedback_nonce' ),
-		];
+			'texts'    => array(
+				'delete_feedback' => esc_html__( 'Are you sure you want to delete all your feedback?', 'helpful' ),
+			),
+		);
 
 		wp_localize_script( 'helpful-admin-feedback', 'helpful_admin_feedback', $vars );
 	}
@@ -121,48 +96,55 @@ class Feedback_Admin
 	/**
 	 * Ajax get feedback items
 	 *
-	 * @return void
+	 * @global $wpdb
 	 */
-	public function ajax_get_feedback_items()
-	{
+	public function ajax_get_feedback_items() {
 		check_ajax_referer( 'helpful_admin_feedback_filter' );
+
+		$request = array_map( 'sanitize_text_field', $_REQUEST );
+		$options = new Services\Options();
 
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'helpful_feedback';
-		$filters    = [ 'all', 'pro', 'contra' ];
+		$filters    = array( 'all', 'pro', 'contra' );
 		$sql        = "SELECT * FROM $table_name";
 
-		$limit = get_option( 'helpful_feedback_amount', 10 );
+		$limit = $options->get_option( 'helpful_feedback_amount', 10, 'intval' );
 		$limit = intval( apply_filters( 'helpful_feedback_limit', $limit ) );
+
+		if ( ! $limit || 0 === $limit ) {
+			$limit = 10;
+		}
 
 		$page = 1;
 
-		if ( isset( $_REQUEST['paginate'] ) && is_numeric( $_REQUEST['paginate'] ) ) {
-			$page = intval( $_REQUEST['paginate'] );
+		if ( isset( $request['paginate'] ) && is_numeric( $request['paginate'] ) ) {
+			$page = intval( $request['paginate'] );
 		}
 
-		if ( isset( $_REQUEST['filter'] ) && in_array( $_REQUEST['filter'], $filters ) ) {
-			if ( 'pro' === $_REQUEST['filter'] ) {
+		if ( isset( $request['filter'] ) && in_array( $request['filter'], $filters, true ) ) {
+			if ( 'pro' === $request['filter'] ) {
 				$sql .= ' WHERE pro = 1';
 			}
 
-			if ( 'contra' === $_REQUEST['filter'] ) {
+			if ( 'contra' === $request['filter'] ) {
 				$sql .= ' WHERE contra = 1';
 			}
 		}
 
-		if ( isset( $_REQUEST['post_id'] ) && is_numeric( $_REQUEST['post_id'] ) ) {
+		if ( isset( $request['post_id'] ) && is_numeric( $request['post_id'] ) ) {
 			if ( strpos( $sql, 'WHERE' ) ) {
-				$sql .= ' AND post_id = ' . intval( $_REQUEST['post_id'] );
+				$sql .= ' AND post_id = ' . intval( $request['post_id'] );
 			} else {
-				$sql .= ' WHERE post_id = ' . intval( $_REQUEST['post_id'] );
+				$sql .= ' WHERE post_id = ' . intval( $request['post_id'] );
 			}
 		}
 
 		$sql .= ' ORDER BY time DESC';
 
-		$count = count( $wpdb->get_results( $sql ) );
+		$count_sql = str_replace( 'SELECT *', 'SELECT count(*)', $sql );
+		$count     = $wpdb->get_var( $count_sql );
 
 		if ( $count <= $limit ) {
 			$max_num_pages = 1;
@@ -171,10 +153,10 @@ class Feedback_Admin
 		}
 
 		$next_show = true;
-		$next_page = $page+1;
+		$next_page = $page + 1;
 
 		$prev_show = true;
-		$prev_page = $page-1;
+		$prev_page = $page - 1;
 
 		if ( 1 >= $page ) {
 			$prev_show = false;
@@ -198,12 +180,12 @@ class Feedback_Admin
 
 		$posts = $wpdb->get_results( $sql );
 
-		if ( isset( $posts ) && 1 <= count( $posts ) ) {
+		if ( $posts && 1 <= count( $posts ) ) {
 			foreach ( $posts as $post ) {
 				$feedback = Helpers\Feedback::get_feedback( $post );
 				include HELPFUL_PATH . 'templates/admin-feedback-item.php';
 			}
-			
+
 			include HELPFUL_PATH . 'templates/admin-feedback-pagination.php';
 		} else {
 			printf(
@@ -218,18 +200,19 @@ class Feedback_Admin
 	/**
 	 * Ajax delete single feedback item.
 	 *
-	 * @return void
+	 * @global $wpdb
 	 */
-	public function ajax_delete_feedback_item()
-	{
+	public function ajax_delete_feedback_item() {
 		check_ajax_referer( 'helpful_admin_feedback_nonce' );
+
+		$request = array_map( 'sanitize_text_field', $_REQUEST );
 
 		global $wpdb;
 
-		if ( isset( $_REQUEST['feedback_id'] ) ) {
-			$feedback_id = absint( $_REQUEST['feedback_id'] );
+		if ( isset( $request['feedback_id'] ) ) {
+			$feedback_id = absint( $request['feedback_id'] );
 			$table_name  = $wpdb->prefix . 'helpful_feedback';
-			$wpdb->delete( $table_name, [ 'id' => $feedback_id ] );
+			$wpdb->delete( $table_name, array( 'id' => $feedback_id ) );
 		}
 
 		wp_die();
@@ -238,10 +221,9 @@ class Feedback_Admin
 	/**
 	 * Exports the feedback to a CSV.
 	 *
-	 * @return void
+	 * @global $wpdb
 	 */
-	public function ajax_export_feedback()
-	{
+	public function ajax_export_feedback() {
 		check_ajax_referer( 'helpful_admin_feedback_nonce' );
 
 		global $wpdb;
@@ -249,78 +231,68 @@ class Feedback_Admin
 		$table = $wpdb->prefix . 'helpful_feedback';
 		$rows  = $wpdb->get_results( "SELECT * FROM $table ORDER BY id DESC" );
 
-		$response = [
+		$response = array(
 			'status'  => 'error',
 			'file'    => '',
 			'message' => esc_html_x( 'File could not be created.', 'failed upload alert', 'helpful' ),
-		];
+		);
 
 		if ( $rows ) {
-			$items = [];
+			$items = array();
 
 			foreach ( $rows as $row ) :
-				$fields = maybe_unserialize( $row->fields  );
+				$fields = maybe_unserialize( $row->fields );
 
-				$items[] = [
-					'post'      => get_the_title( $row->post_id ),
-					'permalink' => get_the_permalink( $row->post_id ),
-					'name'      => isset( $fields['name'] ) ? $fields['name'] : '',
-					'email'     => isset( $fields['email'] ) ? $fields['email'] : '',
+				$line = array(
+					'post'      => esc_html( get_the_title( $row->post_id ) ),
+					'permalink' => esc_url( get_the_permalink( $row->post_id ) ),
+					'name'      => ( isset( $fields['name'] ) ) ? $fields['name'] : '',
+					'email'     => ( isset( $fields['email'] ) ) ? $fields['email'] : '',
 					'message'   => $row->message,
 					'pro'       => $row->pro,
 					'contra'    => $row->contra,
 					'time'      => $row->time,
-				];
+				);
+
+				$items[] = apply_filters( 'helpful/feedback/export/line', $line, $row );
 			endforeach;
 
 			if ( ! empty( $items ) ) {
+				$csv = new Services\CSV( apply_filters( 'helpful/feedback/export/csv_name', 'feedback.csv' ) );
+				$csv->add_items( $items );
+				$csv->create_file();
 
-				$lines   = [];
-				$lines[] = array_keys( $items[0] );
-
-				foreach ( $items as $item ) :
-					$lines[] = array_values( $item );
-				endforeach;
-				
-				$uploads = wp_upload_dir();		
-
-				if ( ! file_exists( $uploads['basedir'] . '/helpful' ) ) {
-					mkdir( $uploads['basedir'] . '/helpful', 0755, true );
-				}
-
-				$file_name = '/helpful/feedback.csv';
-
-				if ( file_exists( $uploads['basedir'] . $file_name ) ) {
-					unlink( $uploads['basedir'] . $file_name );
-				}
-
-				clearstatcache();
-
-				$separator  = ';';
-				$separators = [ ';', ',' ];
-				$separators = apply_filters( 'helpful_export_separators', $separators );
-
-				$option = get_option( 'helpful_export_separator' );
-
-				if ( $option && in_array( $option, $separators ) ) {
-					$separator = esc_html( $option );
-				}
-				
-				$file = fopen( $uploads['basedir'] . $file_name, 'w+' );
-
-				foreach ( $lines as $line ) :
-					fputcsv( $file, $line, $separator );
-				endforeach;
-
-				fclose( $file );
-
-				$file_name = $uploads['baseurl'] . $file_name;
-				
 				$response['status'] = 'success';
-				$response['file']   = $file_name;
+				$response['file']   = $csv->get_file();
 			}
 		}
 
 		wp_send_json( $response );
+	}
+
+	/**
+	 * Empties the feedback table and optimizes it afterwards.
+	 */
+	public function ajax_delete_all_feedback() {
+		check_ajax_referer( 'helpful_admin_feedback_nonce' );
+
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'helpful_feedback';
+
+		$wpdb->query( "TRUNCATE TABLE $table_name" );
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+
+		$rows = $wpdb->get_var( "SELECT count(*) FROM $table_name" );
+
+		if ( ! $rows ) {
+			wp_send_json_success( _x( 'Your feedback has been deleted.', 'success message', 'helpful' ) );
+		}
+
+		/* translators: %s link to wp.org */
+		$message = _x( 'Your feedback could not be deleted. Try again or report the error in the WordPress Support Forum: %s', 'error message', 'helpful' );
+		$message = sprintf( $message, 'https://wordpress.org/support/plugin/helpful/' );
+
+		wp_send_json_error( $message );
 	}
 }

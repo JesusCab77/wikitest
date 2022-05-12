@@ -1,9 +1,12 @@
 'use strict';
 jQuery(document).ready(function($) {
 
+	$('#epkb-editor-error-no-js-message').remove();
+
 	// we need Editor settings to continue
 	// noinspection JSUnresolvedVariable
 	if ( typeof epkb_editor_config == 'undefined' || epkb_editor_config == null || epkb_editor_config.length == 0 ) {
+		$('#epkb-editor-error-no-config-message').show();
 		return true;
 	}
 
@@ -11,7 +14,7 @@ jQuery(document).ready(function($) {
 
 		init: function(){
 			// start app only once
-			if ( typeof this.initSettings !== 'undefined' ) {
+			if ( typeof this.currentSettings !== 'undefined' ) {
 				return;
 			}
 			
@@ -24,7 +27,13 @@ jQuery(document).ready(function($) {
 			
 			// notice close 
 			$(document).on( 'click', '.epkb-close-notice', app, function( event ){
-				
+
+				if ( $('body').hasClass( 'epkb-editor-backend-mode' ) ) {
+					let iframe = window.parent.document.getElementById('epkb-editor-popup');
+					iframe.parentNode.removeChild(iframe);
+					return false;
+				}
+
 				if ( $(this).closest('.eckb-bottom-notice-message').hasClass('eckb-bottom-notice-message--center-aligned') ) {
 					event.data.toggleMode( event );
 				} else {
@@ -41,9 +50,7 @@ jQuery(document).ready(function($) {
 			// order is important
 			this.addModalWrap();
 			// noinspection JSUnresolvedVariable
-			this.initSettings = Object.assign( {}, epkb_editor_config );
 			this.currentSettings = Object.assign( {}, epkb_editor_config );
-			this.currentEditorSettings = Object.assign( {}, epkb_editor_settings );
 			this.activeZone = '';
 			this.addIframe();
 		},
@@ -63,11 +70,35 @@ jQuery(document).ready(function($) {
 			$('.epkb-editor-settings__panel-content-container .epkb-editor-settings__help').hide();
 		},
 
+		addFontLinks: function( $el ){
+			if ( typeof epkb_editor_font_links !== 'object' ) {
+				return;
+			}
+
+			if ( $el.find('.epkb-font-links').length ) {
+				return;
+			}
+
+			epkb_editor_font_links.forEach( function( link, i ){
+
+				// we need delay to prevent freezing the window and don't send a lot of requests in the one moment (browser can stop part of them)
+				setTimeout( function(){
+					$el.append(`<link rel="stylesheet" href="${link}" type="text/css" media="all" class="epkb-font-links">`);
+				}, 100 * i );
+
+			} );
+		},
+
 		addIframe: function(){
 
 			let iframe = document.createElement('iframe');
 			this.url = new URL( location.href );
-			this.url.searchParams.set( 'epkb-editor', '1' );
+			this.url.searchParams.set( 'epkb-editor-page-loaded', '1' );
+			this.url.searchParams.set( 'epkb-editor-page-type', epkb_editor.page_type );
+			if ( $('body').hasClass( 'epkb-editor-backend-mode' ) ) {
+				this.url.searchParams.set('epkb-editor-backend-mode', '1' );
+			}
+
 			iframe.src = this.url;
 			iframe.id = 'epkb-editor-iframe';
 			
@@ -90,12 +121,16 @@ jQuery(document).ready(function($) {
 		},
 
 		afterLoadIframe: function( event ) {
-
-			//ds()
-
+			
 			// "this"
 			let app = event.data;
-
+			
+			// check iframe url if it was changed 
+			if ( app.url.href != $('#epkb-editor-iframe').prop('src') ) {
+				$('#epkb-editor-iframe').prop( 'src', app.url.href );
+				return;
+			}
+			
 			// "wrap" for edit screen
 			app.iframe = $('#epkb-editor-iframe').contents();
 			
@@ -105,7 +140,7 @@ jQuery(document).ready(function($) {
 				// remove loader 
 				app.removeLoader();
 				
-				// trigger CRP error if there is one due to CRP mis-configuration
+				// trigger CSP error if there is one due to CSP mis-configuration
 				let t = $('#epkb-editor-iframe')[0].contentWindow.document;
 				
 				return;
@@ -116,7 +151,7 @@ jQuery(document).ready(function($) {
 			
 			for ( let zoneName in newConfig ) {
 				// if zone absent 
-				if ( typeof app.currentSettings[zoneName] == 'undefined' ) {
+				if ( ! app.isZoneExists( zoneName ) ) {
 					app.currentSettings[zoneName] = newConfig[zoneName];
 					continue;
 				}
@@ -138,7 +173,7 @@ jQuery(document).ready(function($) {
 			}
 			
 			for ( let zone_name in app.currentSettings ) {
-				if ( typeof newConfig[zone_name] == 'undefined' ) {
+				if ( typeof newConfig !== 'undefined' && typeof newConfig[zone_name] == 'undefined' ) {
 					delete app.currentSettings[zone_name];
 				}
 			}
@@ -147,19 +182,22 @@ jQuery(document).ready(function($) {
 			if ( $('[name=theme_presets]').length ) {
 				app.refreshPanel( app );
 			}
-
+			
 			// add styles tag to change styles in the iframe because jquery can't change hovers
 			app.iframe.find('body').append(`<style type="text/css" id="epkb-editor-style"></style>`);
 			app.styles = app.iframe.find('#epkb-editor-style');
 
 			// turn on styles for body to hide it only first time 
-			if ( app.loadingIframe == 'undefined' || app.loadingIframe ) {
+			if ( typeof app.loadingIframe == 'undefined' || app.loadingIframe ) {
 				$('body').addClass('epkb-edit-mode');
 			}
 
 			// a lot of lo-end themes don't use body_class()
 			app.iframe.find('body').addClass('epkb-editor-preview');
-			
+			if ( typeof epkb_editor.page_type != 'undefined' ) {
+				app.iframe.find('body').addClass( 'epkb-edit-mode--' + epkb_editor.page_type );
+			}
+				
 			// Get the Article Content Body Position
 			let articleContentBodyPosition = app.iframe.find( '#eckb-article-content-body' ).position();
 
@@ -216,7 +254,7 @@ jQuery(document).ready(function($) {
 				
 				$(this).parents('.epkb-editor-zone').each(function(){
 					if ( $(this).data('zone') == zone ) {
-						$(this).click();
+						$(this).trigger('click');
 						zone = false;
 					}
 				});
@@ -224,7 +262,14 @@ jQuery(document).ready(function($) {
 			} );
 
 			// block links inside iframes
-			app.iframe.find('a').click( function(e){
+			app.iframe.find( 'a:not(.eckb-redirect-link)' ).each( function(e){
+				$(this).on('click', function(e){
+					e.preventDefault();
+				} );
+			} );
+			
+			// for new links 
+			app.iframe.on('click', 'a:not(.eckb-redirect-link)', function(e){
 				e.preventDefault();
 			} );
 			
@@ -259,24 +304,65 @@ jQuery(document).ready(function($) {
 			app.updateText();
 			
 			// pre-open settings 
-			if ( epkb_editor.preopen == 'templates' ) {	
-				epkb_editor.preopen = 'open_themes';
-				$('.epkb-editor-header__inner__config').click();
-				$('.epkb-editor-settings-menu__group-item-container[data-name=templates]').click();
+			if ( epkb_editor.preopen_zone == 'templates' ) {	
+				epkb_editor.preopen_zone = 'open_themes';
+				$('.epkb-editor-header__inner__config').trigger('click');
+				$('.epkb-editor-settings-menu__group-item-container[data-name=templates]').trigger('click');
 			}
 			
-			if ( epkb_editor.preopen !== 'templates' && epkb_editor.preopen !== 'open_themes' && epkb_editor.preopen ) {
-				app.preselectZone = epkb_editor.preopen;
+			if ( epkb_editor.preopen_zone == 'layouts' ) {	
+				epkb_editor.preopen_zone = 'open_themes';
+				$('.epkb-editor-header__inner__config').trigger('click');
+				$('.epkb-editor-settings-menu__group-item-container[data-name=layouts]').trigger('click');
 			}
-			
+
+			if ( epkb_editor.preopen_zone !== 'templates' && epkb_editor.preopen_zone !== 'open_themes' && epkb_editor.preopen_zone ) {
+				app.preselectZone = epkb_editor.preopen_zone;
+				epkb_editor.preopen_zone = undefined;
+			}
+
 			// select zone if we have such task 
-			if ( typeof app.preselectZone == 'undefined' || typeof app.currentSettings[app.preselectZone] == 'undefined' || app.iframe.find( app.currentSettings[app.preselectZone].classes ).length == 0 ) {
+			if ( typeof app.preselectZone == 'undefined' || ! app.isZoneExists( app.preselectZone ) ) {
+
+				// check preselect setting 
+				if ( typeof epkb_editor.preopen_setting !== 'undefined' && epkb_editor.preopen_setting ) {
+					app.openSetting( epkb_editor.preopen_setting );
+					epkb_editor.preopen_setting = undefined;
+				}
+				
 				app.removeLoader();
 				app.clearErrorTimeouts(); // prevent timeout error 
 				return;
 			}
+
+			if ( typeof app.preselectEq == 'undefined' ) {
+				app.preselectEq = 0;
+			} 
 			
-			app.iframe.find( app.currentSettings[app.preselectZone].classes ).click();
+			if ( typeof app.opennedTypography == 'undefined' ) {
+				app.opennedTypography = false;
+			} 
+			
+			app.openZone( app.preselectZone, app.preselectEq );
+			
+			// open typography if need 
+			if ( app.opennedTypography ) {
+				$('.epkb-editor-settings-control-type-typography').each( function(){
+					if ( $(this).data( 'field' ) == app.opennedTypography ) {
+						$(this).find('.epkb-editor-settings-typography_form').addClass('active');
+					}
+				} );
+			}
+			
+			if ( 'help_dialog' == app.preselectZone && app.iframe.find('#eckb-help-dialog').css( 'display' ) == 'none' ) {
+				app.iframe.find('.eckb-hd-toggle').trigger('click');
+			}
+			
+			// move to zone 
+			if ( typeof app.iframeScroll != 'undefined' ) {
+				app.iframe.scrollTop( app.iframeScroll );
+			}
+			
 			app.preselectZone = undefined;
 			app.removeLoader();
 			
@@ -300,7 +386,17 @@ jQuery(document).ready(function($) {
 		bindModalEvents: function() {
 			// close editor button
 			$(document).on( 'click', '#epkb-editor-close', this, this.hideModal );
-			$('#epkb-editor-exit').on( 'click', this, this.toggleMode );
+
+			if ( $('body').hasClass( 'epkb-editor-backend-mode' ) ) {
+				$(document).on( 'click', '#epkb-editor-exit', function(){
+					let iframe = window.parent.document.getElementById('epkb-editor-popup');
+					iframe.parentNode.removeChild(iframe);
+
+					return false;
+				});
+			} else {
+				$('#epkb-editor-exit').on( 'click', this, this.toggleMode );
+			}
 
 			// change any setting on the panel
 			$(document).on( 'change keyup', '#epkb-editor input:not([type=number]):not([type=text]), #epkb-editor textarea, #epkb-editor select', this, this.onFieldChange );
@@ -311,12 +407,21 @@ jQuery(document).ready(function($) {
 				let app = event.data;
 				let $el = $(this);
 				
+				// check if the value was changed 
+				if ( app.getOption( $el.prop('name') ) == $el.val() ) {
+					$('body').removeClass('epkb-frontend-save-block--active');
+					return;
+				}
+				
+				$('body').addClass('epkb-frontend-save-block--active');
+				
 				if ( typeof app.numberTimer !== 'undefined' && app.numberTimer ) {
 					clearTimeout(app.numberTimer);
 				}
 				
 				app.numberTimer = setTimeout( function() {
 					app.onFieldChange( event, $el, app );
+					$('body').removeClass('epkb-frontend-save-block--active');
 				}, 500 );
 			} );
 
@@ -331,7 +436,9 @@ jQuery(document).ready(function($) {
 			
 			// save button
 			$(document).on( 'click', '#epkb-editor-save', this, this.saveSettings );
-			
+
+			// apply button for templates
+			$(document).on( 'click', '#epkb-editor-templates-apply', this, this.applyTemplates );
 			// Click on the gears button 
 			$(document).on( 'click', '.epkb-editor-header__inner__config', this, this.showSettings );
 			
@@ -385,7 +492,7 @@ jQuery(document).ready(function($) {
 					zone == 'search_input_zone' ||
 					zone == 'search_box_below_input_zone' ) ) {
 	
-					iframe.find( '.asea-search-toggle' ).first().click();
+					iframe.find( '.asea-search-toggle' ).first().trigger('click');
 				}
 				
 				if ( ! elayArticleVisible && zone == 'sidebar_articles_zone' ) {
@@ -400,7 +507,7 @@ jQuery(document).ready(function($) {
 				}
 				
 				// for custom links 
-				if ( ( typeof $(this).data('target') == 'undefined' || ! $(this).data('target') ) && typeof app.currentSettings[ $(this).data('zone') ] != 'undefined' ) {
+				if ( ( typeof $(this).data('target') == 'undefined' || ! $(this).data('target') ) && app.isZoneExists( $(this).data('zone') ) ) {
 					$(this).data( 'target', app.currentSettings[ $(this).data('zone') ].classes );
 				}
 				
@@ -415,7 +522,7 @@ jQuery(document).ready(function($) {
 				
 				if ( ( typeof event.originalEvent !== 'undefined' && $(event.target).hasClass('epkb-editor-navigation__link__help') ) || $(this).closest('.epkb-editor-navigation').length == 0 ) {
 					// call zone panel 
-					targetEl.click();
+					targetEl.trigger('click');
 				} else {
 					// only highlight 
 					app.iframe.find( '.epkb-editor-zone' ).removeClass( 'epkb-editor-zone--active' );
@@ -439,8 +546,8 @@ jQuery(document).ready(function($) {
 			});
 			
 			$(document).on( 'click', '.epkb-editor-navigation__activate-disabled-link', this, function( event ) {
-				$('.epkb-editor-header__inner__config').click();
-				$('#epkb-editor-settings-tab-hidden').click();
+				$('.epkb-editor-header__inner__config').trigger('click');
+				$('#epkb-editor-settings-tab-hidden').trigger('click');
 				return false;
 			});
 			
@@ -460,7 +567,7 @@ jQuery(document).ready(function($) {
 			$( '#epkb-editor' ).on( 'click', '#eprf_edit_feedback_zone', this, function( event ) {
 				let app = event.data;
 				
-				app.iframe.find('#eprf-article-feedback-container').click();
+				app.iframe.find('#eprf-article-feedback-container').trigger('click');
 				
 				return false;
 			} );
@@ -471,7 +578,8 @@ jQuery(document).ready(function($) {
 				let currentOptions = [];
 				let currentOptionsLabels = [];
 				let $that = $(this);
-				
+				let app = event.data;
+
 				$select.find('option').each(function(){
 					currentOptions.push($(this).val());
 					currentOptionsLabels.push($(this).text());
@@ -544,7 +652,8 @@ jQuery(document).ready(function($) {
 				let currentOptions = [];
 				let currentOptionsLabels = [];
 				let $that = $(this);
-				
+				let app = event.data;
+
 				$select.find('option').each(function(){
 					currentOptions.push($(this).val());
 					currentOptionsLabels.push($(this).text());
@@ -603,6 +712,25 @@ jQuery(document).ready(function($) {
 				
 				$select.trigger('change');
 			});
+
+			// Typography events 
+			$(document).on( 'click', '.epkb-editor-settings-typography_button', this, this.onTypographyEditButtonClick );
+			$(document).on( 'click', '.epkb-editor-settings-typography_form', this.onTypographyBodyClick );
+			$(document).on( 'click', this.onTypographyOutClick );
+			$(document).on( 'click.epkbcolorpicker', this.onTypographyOutClick );
+
+			// KB Template warning
+			$(document).on( 'click', '#epkb-editor-layout-warning .epkb-dbf__footer__accept__btn, #epkb-editor-layout-warning+.epkb-dialog-box-form-black-background', function(){
+				$('#epkb-editor-layout-warning').removeClass('epkb-dialog-box-form--active');
+				return false;
+			} );
+
+			$(document).on( 'click', '#epkb-editor-layout-warning .epkb-dbf__footer__cancel__btn', this, function( event ){
+				let app = event.data;
+				$('[value=kb_templates]').trigger('click');
+				$('#epkb-editor-layout-warning').removeClass('epkb-dialog-box-form--active');
+				return false;
+			} );
 		},
 		
 		// delete all content from modal before fill it for the new zone/settings screen 
@@ -615,6 +743,9 @@ jQuery(document).ready(function($) {
 			$( '.epkb-editor-settings-menu-container' ).hide();
 			this.iframe.find('.epkb-editor-zone__tabs').remove();
 			$('#epkb-editor-show-navigation').removeClass('epkb-editor-show-navigation--active');
+			$('.epkb-editor-settings__help .epkb-editor-settings__help-docs').remove();
+			$('#epkb-editor').removeAttr('data-zone');
+			$('#epkb-editor').removeAttr('data-setting');
 		},
 		
 		// toggle back/close button to menu/settings 
@@ -633,7 +764,7 @@ jQuery(document).ready(function($) {
 			$('.epkb-editor-header__inner__close-btn').show();
 			
 			// remember last zone that the user editing
-			if ( this.activeZone !== 'settings' || this.activeZone !== 'menu' || this.activeZone !== 'settings_panels' ) {
+			if ( this.activeZone !== 'settings_zone' || this.activeZone !== 'menu' || this.activeZone !== 'settings_panels' ) {
 				this.lastActiveZone = this.activeZone;
 			}
 			
@@ -667,21 +798,21 @@ jQuery(document).ready(function($) {
 			// open templates 
 			if ( $(this).data('name') == 'templates' ) {
 				$('#epkb-editor-settings-templates').show();
+				app.setActiveZone( 'settings_panel', 'templates' );
 			}
 			
 			// open layouts 
 			if ( $(this).data('name') == 'layouts' ) {
 				$('#epkb-editor-settings-layouts').show();
+				app.setActiveZone( 'settings_panel', 'layouts' );
 			}
 			
 			app.showBackButtons();
-			app.activeZone = 'settings_panels';
-			
 			return false;
 			
 		},
 		
-		// "<" button in menu/otions 
+		// "<" button in menu/options
 		onBackClick: function ( event ) {
 			event.stopPropagation();
 			
@@ -690,27 +821,32 @@ jQuery(document).ready(function($) {
 			if ( app.activeZone == 'settings_panels' ) {
 				// show settings 
 				app.showSettings( event );
-			} else if ( typeof ( app.currentSettings[app.lastActiveZone] ) !== 'undefined' ) {
-				app.iframe.find( app.currentSettings[app.lastActiveZone].classes ).click();
+			} else if ( app.isZoneExists( app.lastActiveZone ) ) {
+				app.openZone( app.lastActiveZone );
 				app.showMenuButtons();
 			} else {
-				// TODO initial screen 
-				app.clearModal();
-				$('.epkb-editor-header__inner__title').html( epkb_editor.epkb_name );
-				$('.epkb-editor-settings__panel-content-container').append( EPKBEditorTemplates.notice( { 'icon' : 'info-circle','title' : epkb_editor.clear_modal_notice, 'style' : 'edit-zone' } ) );
-				$('.epkb-editor-settings__help').hide();
-				app.showMenuButtons();
+				app.showInitialScreen();
 			}
 		},
-		
+
+		// show initial screen
+		showInitialScreen: function() {
+			let app = this;
+
+			app.clearModal();
+			$('.epkb-editor-header__inner__title').html( epkb_editor.epkb_name );
+			$('.epkb-editor-settings__panel-content-container').append( EPKBEditorTemplates.notice( { 'icon' : 'info-circle','title' : epkb_editor.clear_modal_notice, 'style' : 'edit-zone' } ) );
+			$('.epkb-editor-settings__help').hide();
+			app.showMenuButtons();
+		},
 		// "X" button in menu/options
 		onCloseClick: function ( event ) {
 			event.stopPropagation();
 			
 			let app = event.data;
 			
-			if ( typeof ( app.currentSettings[app.lastActiveZone] ) !== 'undefined' ) {
-				app.iframe.find( app.currentSettings[app.lastActiveZone].classes ).click();
+			if ( app.lastActiveZone != 'settings_zone' && app.isZoneExists( app.lastActiveZone ) ) {
+				app.openZone( app.lastActiveZone );
 				app.showMenuButtons();
 			} else {
 				// TODO initial screen 
@@ -725,7 +861,7 @@ jQuery(document).ready(function($) {
 
 		/*******  FIELD OPERATIONS   ********/
 
-		onFieldChange: function( event, $el, app ) {	
+		onFieldChange: function( event, $el, app ) {
 
 			if ( typeof $el == 'undefined' ) {
 				$el = $(this);
@@ -759,7 +895,7 @@ jQuery(document).ready(function($) {
 			if ( $el.closest('#epkb-editor-settings-panel-hidden').length > 0 ) {
 				
 				// wrong configs 
-				if ( typeof app.currentSettings[name] == 'undefined' ) {
+				if ( ! app.isZoneExists( name ) ) {
 					return;
 				}
 				
@@ -768,11 +904,41 @@ jQuery(document).ready(function($) {
 					// turn on 
 					for ( let optionName in app.currentSettings[name].disabled_settings ) {
 						let optionsList = app.getOptionsList( optionName );
+						let tocActive = false;
 						
-						if ( optionsList.length < 1 ) {
+						if ( optionsList.length < 1 || tocActive ) {
 							continue;
 						}
 						
+						// toc should enable only once 
+						if ( name == 'toc' ) {
+							
+							if ( app.isLeftPanelActive() ) {
+								app.updateOption( 'toc_left', '1' );
+								app.preselectZone = name;
+								app.setActiveZone( '' );
+								tocActive = true;
+								
+								continue;
+							}
+							
+							if ( app.isRightPanelActive() ) {
+								app.updateOption( 'toc_right', '1' );
+								app.preselectZone = name;
+								app.setActiveZone( '' );
+								tocActive = true;
+								continue;
+							}
+							
+							app.updateOption( 'toc_content', '1' );
+							app.preselectZone = name;
+							app.setActiveZone( '' );
+							tocActive = true;
+							
+							continue;
+							
+						}
+
 						if ( app.currentSettings[name].disabled_settings[optionName] == optionsList[0] ) {
 							app.updateOption( optionName, optionsList[1] );
 						} else {
@@ -782,7 +948,7 @@ jQuery(document).ready(function($) {
 					
 					// set zone that should be checked after reload 
 					app.preselectZone = name;
-					
+					app.setActiveZone( '' );
 				} else {
 					// turn off 
 					
@@ -824,7 +990,7 @@ jQuery(document).ready(function($) {
 						continue;
 					}
 					
-					// if linked set all neibors values the same 
+					// if linked set all neighbors values the same
 					$el.closest('.epkb-editor-settings-control-type-dimensions').find('input').val( newVal );
 					
 					for ( let fieldName in app.currentSettings[settingGroupSlug].settings[groupName].subfields ) {
@@ -888,7 +1054,74 @@ jQuery(document).ready(function($) {
 				refresh = true;
 			}
 			
+			// check search themes  
+			if ( name == 'search_presets' && typeof app.search_presets  !== 'undefined' && ( newVal == 'current' || typeof app.search_presets [newVal] !== 'undefined' ) ) {
+				// store old values in the current state 
+
+				if ( typeof app.search_presets.current == 'undefined' ) {
+					app.search_presets.current = {};
+				}
+				
+				for ( let fieldName in app.search_presets[newVal] ) {
+					if ( typeof app.search_presets.current[fieldName] == 'undefined' ) {
+						app.search_presets.current[fieldName] = app.getOption(fieldName);
+					}
+					
+					app.updateOption( fieldName, app.search_presets[newVal][fieldName] );
+				} 
+				
+				refreshPanel = true;
+				refresh = true;
+			}
+			
+			// check categories themes 
+			if ( name == 'categories_presets' && typeof app.categories_presets  !== 'undefined' && ( newVal == 'current' || typeof app.categories_presets [newVal] !== 'undefined' ) ) {
+				// store old values in the current state 
+
+				if ( typeof app.categories_presets.current == 'undefined' ) {
+					app.categories_presets.current = {};
+				}
+				
+				for ( let fieldName in app.categories_presets[newVal] ) {
+					if ( typeof app.categories_presets.current[fieldName] == 'undefined' ) {
+						app.categories_presets.current[fieldName] = app.getOption(fieldName);
+					}
+					
+					app.updateOption( fieldName, app.categories_presets[newVal][fieldName] );
+				} 
+				
+				refreshPanel = true;
+				refresh = true;
+			}
+
+			// check template to show warning
+			if ( name == 'templates_for_kb' && newVal == 'current_theme_templates' ) {
+				$('#epkb-editor-layout-warning').addClass('epkb-dialog-box-form--active');
+			}
+
+			// check typography field 
+			// Don't support checkbox/radio 
+			if ( $el.closest('.epkb-editor-settings-typography_field').length > 0 ) {
+				
+				// update font-weights 
+				app.onTypographyFamilyChange();
+				
+				// change newVal to complex typography array 
+				newVal = {};
+				
+				$el.closest('.epkb-editor-settings-typography_form').find( 'select, input, textarea' ).each( function(){
+					
+					newVal[ $(this).data('typography') ] = $(this).val();
+				});
+			}
+
+			if ( typeof $el.data('typography') != 'undefined' && $el.data('typography') == 'font-family' ) {
+				refresh = true;
+			}
+
+			// Apply the value
 			for ( let settingGroupSlug in app.currentSettings ) {
+
 				if ( typeof app.currentSettings[settingGroupSlug].settings[name] == 'undefined' ) {
 					continue;
 				}
@@ -925,18 +1158,71 @@ jQuery(document).ready(function($) {
 				
 			}
 			
-			if ( typeof app.currentEditorSettings.settings_zone.settings[name] != 'undefined' ) {
-				app.currentEditorSettings.settings_zone.settings[name].value = newVal;
+			if ( typeof app.currentSettings.settings_zone != 'undefined' && typeof app.currentSettings.settings_zone.settings[name] != 'undefined' ) {
+				app.currentSettings.settings_zone.settings[name].value = newVal;
 				
-				if ( typeof app.currentEditorSettings.settings_zone.settings[name].reload !== 'undefined' ) {
+				if ( typeof app.currentSettings.settings_zone.settings[name].reload !== 'undefined' ) {
 					refresh = true;
 				}
 			}
 			
+			// check if the option have custom defaults for some values 
+			for ( let settingGroupSlug in app.currentSettings ) {
+				
+				// check if we have custom defaults for current control
+				if ( typeof app.currentSettings[settingGroupSlug].settings[name] == 'undefined' || typeof app.currentSettings[settingGroupSlug].settings[name].custom_defaults != 'object') {
+					continue;
+				}
+				
+				let custom_defaults = app.currentSettings[settingGroupSlug].settings[name].custom_defaults;
+
+
+				// wrong config or no defaults for current value 
+				if ( typeof custom_defaults[newVal] != 'object' ) {
+					continue 
+				}
+				
+				for ( let optName in custom_defaults[newVal] ) {
+					app.updateOption( optName, custom_defaults[newVal][optName] );
+				}
+				
+			}
+
+			// We can show navigation only on the one side
+			if ( name == 'nav_sidebar_left' || name == 'article_nav_sidebar_type_left' ) {
+
+				if ( app.getOption( 'nav_sidebar_left' ) != '0' && app.getOption( 'article_nav_sidebar_type_left' ) != 'eckb-nav-sidebar-none' ) {
+					app.updateOption( 'nav_sidebar_right', '0' );
+				}
+			}
+
+			if ( name == 'nav_sidebar_right' || name == 'article_nav_sidebar_type_right' ) {
+
+				if ( app.getOption( 'nav_sidebar_right' ) != '0' && app.getOption( 'article_nav_sidebar_type_right' ) != 'eckb-nav-sidebar-none' ) {
+					app.updateOption( 'nav_sidebar_left', '0' );
+				}
+			}
+
 			app.checkTogglers();
 			app.updateStyles();
 			app.updateAttributes();
 			app.updateText();
+			
+			// check if we change presets 
+			// TODO update for new presets 
+			app.currentPreset = false;
+			
+			if ( name == 'theme_presets' && typeof app.theme_presets[newVal] != 'undefined' ) {
+				app.currentPreset = app.theme_presets[newVal];
+			}
+			
+			if ( name == 'search_presets' && typeof app.search_presets[newVal] != 'undefined' ) {
+				app.currentPreset = app.search_presets[newVal];
+			}
+			
+			if ( name == 'categories_presets' && typeof app.categories_presets[newVal] != 'undefined' ) {
+				app.currentPreset = app.categories_presets[newVal];
+			}
 			
 			if ( refresh ) {
 				app.refreshIframe( app );
@@ -946,6 +1232,7 @@ jQuery(document).ready(function($) {
 				app.refreshPanel( app );
 			}
 			
+			// TODO check if we can use isZoneEnabled here 
 			// check if zone become disabled 
 			for ( let zoneName in app.currentSettings ) {
 				
@@ -1017,8 +1304,9 @@ jQuery(document).ready(function($) {
 					case 'raw_html':
 						this.addRawHtml( fieldName, field );
 						break;
-						
-					// TODO add 
+					case 'typography':
+						this.addTypography( fieldName, field );
+						break;
 					
 					// notice - when will need it 
 				}
@@ -1285,14 +1573,7 @@ jQuery(document).ready(function($) {
 			let text = app.getOption( fieldName );
 			
 			// fill value to the editor 
-			
-			if ( ! tinymce.get('epkbeditormce') ) {
-				$('.epkb-editor-popup .wp-editor-wrap .switch-tmce').trigger('click');
-			}
-			
-			tinymce.get('epkbeditormce').setContent( text );
-
-			// set what field do we edit 
+			$('#epkbeditormce').val( text );
 			$('#epkbeditormce').data( 'fieldName', fieldName );
 			
 			// update title of the popup 
@@ -1309,7 +1590,7 @@ jQuery(document).ready(function($) {
 			let app = event.data;
 			
 			// get field 
-			let text = tinymce.get('epkbeditormce').getContent();
+			let text = $('#epkbeditormce').val();
 			let fieldName = $('#epkbeditormce').data( 'fieldName' );
 			
 			// save
@@ -1340,6 +1621,96 @@ jQuery(document).ready(function($) {
 				name: fieldName,
 				content: field.content,
 			} ) );
+		},
+		
+		addTypography: function( fieldName, field ) {
+			let el;
+			if ( typeof field.element_wrapper == 'undefined' ) {
+				el = $( '#epkb-editor-settings-panel-' + field.editor_tab );
+			} else {
+				el =  field.element_wrapper;
+			}
+			
+			el.append( EPKBEditorTemplates.typography( {
+				label: field.label,
+				name: fieldName,
+				value: field.value,
+			} ) );
+			
+			this.onTypographyFamilyChange();
+		},
+		
+		onTypographyEditButtonClick: function(event) {
+
+			let app = event.data;
+
+			app.addFontLinks( $('head') );
+
+			if ( $(this).closest('.epkb-editor-settings-control__field').find('.epkb-editor-settings-typography_form').hasClass('active') ) {
+				$('.epkb-editor-settings-typography_form').removeClass('active');
+			} else {
+				$('.epkb-editor-settings-typography_form').removeClass('active');
+				$(this).closest('.epkb-editor-settings-control__field').find('.epkb-editor-settings-typography_form').addClass('active');
+			}
+			
+			return false;
+		},
+		
+		onTypographyBodyClick: function(e) {
+			e.stopPropagation();
+		},
+		
+		onTypographyOutClick: function(e) {
+			$('.epkb-editor-settings-typography_form').removeClass('active');
+		},
+		
+		onTypographyFamilyChange: function(e) {
+			
+			$('.epkb-editor-settings-typography_form').each(function(){
+				
+				let $familySelect = $(this).find('[data-typography=font-family]');
+				let $weightSelect = $(this).find('[data-typography=font-weight]');
+				
+				let selectedFamily = $familySelect.val();
+				let allowedWeights = '';
+				
+				// Get allowed font weights 
+				if ( typeof selectedFamily !== 'undefined' && selectedFamily ) {
+					
+					$familySelect.find('option').each(function(){
+						if ( $(this).val() == selectedFamily ) {
+							allowedWeights = $(this).data('weight');
+						}
+					});
+					
+				}
+				
+				// Default font-family - allow all font weights 
+				if (  ! allowedWeights ) {
+					$weightSelect.find('option').attr('disabled', false);
+					return true;
+				}
+				
+				$weightSelect.find('option').each(function(){
+					
+					let disabled = 'disabled';
+					
+					// if value is allowed - remove blocking of the option 
+					if ( ~allowedWeights.indexOf( $(this).val() ) ) {
+						disabled = false;
+					}
+					
+					// check if this value selected and should be turned off with new font 
+					if ( disabled ) {
+						if ( $(this).val() == $weightSelect.val() ) {
+							$weightSelect.val( '' );
+						}
+					}
+					
+					$(this).attr('disabled', disabled);
+					
+				});
+			});
 		},
 		
 		/*******  ZONE CHANGE   ********/
@@ -1380,28 +1751,30 @@ jQuery(document).ready(function($) {
 			// clear modal 
 			app.clearModal();
 			
-			// clear current theme only for the openned page zone first time, not reload
+			// clear current theme only for the opened page zone first time, not reload
 			if ( zone != app.activeZone && typeof app.theme_presets != 'undefined' ) {
 				delete app.theme_presets.current;
+				delete app.search_presets.current;
+				delete app.categories_presets.current;
 			}
 			
 			// update header
-			if ( typeof app.currentSettings[zone] != 'undefined' && typeof app.currentSettings[zone].title != 'undefined' ) {
-				$('.epkb-editor-header__inner__title').html(app.currentSettings[zone].title);
+			if ( app.isZoneExists( zone ) && typeof app.currentSettings[zone].title != 'undefined' ) {
+				$('.epkb-editor-header__inner__title').html( app.currentSettings[zone].title );
 			}
 			
 			
-			if (typeof app.currentSettings[zone] == 'undefined') {
+			if ( ! app.isZoneExists( zone ) ) {
 				$('.epkb-editor-header__inner__title').html( epkb_editor.epkb_name );
 				$('.epkb-editor-settings__panel-content-container').append( EPKBEditorTemplates.notice( { 'title' : epkb_editor.no_settings } ) );
-				app.activeZone = '';
+				app.setActiveZone( '' );
 				
 				return true;
 			}
 			
-			// set active zone 
-			app.activeZone = zone;
-			
+			// set active zone
+			app.setActiveZone( zone );
+
 			// add tabs 
 			let tabs = [];
 			
@@ -1416,15 +1789,21 @@ jQuery(document).ready(function($) {
 			
 			// add tabs buttons on the top
 			$('.epkb-editor-settings__panel-navigation-container').append( EPKBEditorTemplates.modalTabsHeader( tabs ) );
-			
+
+			// add fields
 			for ( let fieldName in app.currentSettings[zone].settings ) {
 				app.addField( fieldName, app.currentSettings[zone].settings[fieldName] );
 			}
 			
 			// change active tab if needed, content by default
-			if ( ! $('#epkb-editor-settings-panel-content').html() ) {
+			if ( ! $('#epkb-editor-settings-panel-content').html() && typeof app.activeTab == 'undefined' ) {
 				$('#epkb-editor-settings-panel-content').removeClass('epkb-editor-settings__panel--active');
 				$('#epkb-editor-settings-panel-' + tabs[0]).addClass('epkb-editor-settings__panel--active');	
+			}
+			
+			if ( typeof app.activeTab !== 'undefined' ) {
+				$('#epkb-editor-settings-tab-' + app.activeTab).trigger('click');
+				app.activeTab = undefined;
 			}
 			
 			if ( typeof event !== 'undefined' ) {
@@ -1437,7 +1816,12 @@ jQuery(document).ready(function($) {
 				}
 				
 			}
-			
+
+			// add docs link to the bottom
+			if ( typeof app.currentSettings[zone].docs_html != 'undefined' ) {
+				$('.epkb-editor-settings__help').prepend( EPKBEditorTemplates.documentation_link( app.currentSettings[zone].docs_html ) );
+			}
+
 			app.activateColorPickers();
 			app.activateSliders();
 			app.checkTogglers();
@@ -1496,43 +1880,25 @@ jQuery(document).ready(function($) {
 			$(this).addClass('epkb-editor-settings-control__input__linking--active');
 			
 			$(this).closest('.epkb-editor-settings-control__fields').find('input').val( firstField.val() );
-			firstField.change();
+			firstField.trigger( 'change' );
 		},
 		
 		updateStyles: function() {
-			// clear old styles
-			this.styles.html('');
 
-			for ( let settingGroupSlug in this.currentSettings ) {
+			let app = this;
+
+			// clear old styles
+			app.styles.html('');
+
+			for ( let settingGroupSlug in app.currentSettings ) {
 				
-				
-				for ( let fieldName in this.currentSettings[settingGroupSlug].settings ) {
-					let field = this.currentSettings[settingGroupSlug].settings[fieldName];
-					
-					// check togglers 
-					if ( typeof field.toggler == 'string' ) {
-						let togglerOption = this.getOption(field.toggler);
-						
-						if ( togglerOption == 'off' ) {						
-							continue;
-						}
-					} else if ( typeof field.toggler == 'object' ) {
-						// object, for selects 
-						let togglerState = true;
-							
-						for ( let togglerFieldName in field.toggler ) {
-							let togglerOption = this.getOption(togglerFieldName);
-								
-							if ( togglerOption !== field.toggler[togglerFieldName] ) {
-								togglerState = false;
-							}
-						}
-							
-						if ( ! togglerState ) {
-							continue;
-						}
+				for ( let fieldName in app.currentSettings[settingGroupSlug].settings ) {
+					// check togglers
+					if ( ! app.getFieldTogglerState(fieldName) ) {
+						continue;
 					}
-					
+
+					let field = app.currentSettings[settingGroupSlug].settings[fieldName];
 					let important = '!important';
 					
 					if ( typeof field.style_important !== 'undefined' && ! field.style_important ) {
@@ -1547,9 +1913,9 @@ jQuery(document).ready(function($) {
 							
 							if ( typeof subfield.styles != 'undefined' ) {
 								for ( let selector in subfield.styles ) {
-									this.styles.append(`
+									app.styles.append(`
 										${selector} {
-											${subfield.styles[selector]}: ${subfield.value}${ this.getPostfix( subfield.postfix ) }${important};
+											${subfield.styles[selector]}: ${subfield.value}${ app.getPostfix( subfield.postfix ) }${important};
 										}
 									`);
 								}
@@ -1558,10 +1924,10 @@ jQuery(document).ready(function($) {
 							if ( typeof subfield.target_selector == 'undefined' || typeof subfield.style_name == 'undefined' ) {
 								continue;
 							}
-							
-							this.styles.append(`
+
+							app.styles.append(`
 								${subfield.target_selector} {
-									${subfield.style_name}: ${subfield.value}${ this.getPostfix( subfield.postfix ) }${important};
+									${subfield.style_name}: ${subfield.value}${ app.getPostfix( subfield.postfix ) }${important};
 								}
 							`);
 						}
@@ -1581,7 +1947,7 @@ jQuery(document).ready(function($) {
 						for ( let subfieldName in field.subfields ) {
 							let subfield = field.subfields[subfieldName];
 							
-							cssRule = cssRule.replace( subfieldName, subfield.value + this.getPostfix( subfield.postfix ) );
+							cssRule = cssRule.replace( subfieldName, subfield.value + app.getPostfix( subfield.postfix ) );
 						}
 						
 						this.styles.append(`
@@ -1591,11 +1957,58 @@ jQuery(document).ready(function($) {
 						`);
 					}
 					
+					// typography 
+					if ( field.type == 'typography' ) {
+						
+						let typoStyles = '';
+
+						if ( typeof field.value['font-family'] !== 'undefined' ) {
+							
+							if ( field.value['font-family'] ) {
+								typoStyles += `font-family: ${field.value['font-family']}${important};`;
+							} else {
+								app.iframe.find(field.target_selector).css({'font-family' : ''});
+							}
+							
+						} 
+						
+						if ( typeof field.value['font-weight'] !== 'undefined' ) {
+							if ( field.value['font-weight'] ) {
+								typoStyles += `font-weight: ${field.value['font-weight']}${important};`;
+							} else {
+								app.iframe.find(field.target_selector).css({'font-weight' : ''});
+							}
+							
+						} 
+						
+						if ( typeof field.value['font-size'] !== 'undefined' ) {
+							
+							if ( field.value['font-size'] ) {
+								let units = 'px';
+								
+								if ( typeof field.value['font-size-units'] !== 'undefined' ) {
+									units = field.value['font-size-units'];
+								}
+								
+								typoStyles += `font-size: ${field.value['font-size']}${field.value['font-size-units']}${important};`;
+							} else {
+								app.iframe.find(field.target_selector).css({'font-size' : ''});
+							}
+						}
+
+						app.styles.append(`
+							${field.target_selector} {
+								${typoStyles};
+							}
+						`);
+						continue;
+					}
+					
 					if ( typeof field.styles != 'undefined' ) {
 						for ( let selector in field.styles ) {
-							this.styles.append(`
+							app.styles.append(`
 								${selector} {
-									${field.styles[selector]}: ${field.value}${ this.getPostfix( field.postfix ) }${important};
+									${field.styles[selector]}: ${field.value}${ app.getPostfix( field.postfix ) }${important};
 								}
 							`);
 						}
@@ -1604,8 +2017,8 @@ jQuery(document).ready(function($) {
 					if ( typeof field.target_selector == 'undefined' || typeof field.style_name == 'undefined' ) {
 						continue;
 					}
-					
-					this.styles.append(`
+
+					app.styles.append(`
 						${field.target_selector} {
 							${field.style_name}: ${field.value}${ this.getPostfix( field.postfix ) }${important};
 						}
@@ -1616,28 +2029,28 @@ jQuery(document).ready(function($) {
 			// check article columns 
 			if ( epkb_editor.page_type == 'article-page' ) {
 				
-				let leftSidebar = this.currentSettings.left_sidebar.settings,
-					rightSidebar = this.currentSettings.right_sidebar.settings,
+				let leftSidebar = app.currentSettings.left_sidebar.settings,
+					rightSidebar = app.currentSettings.right_sidebar.settings,
 					leftSidebarWidthDesktop = 0,
 					rightSidebarWidthDesktop = 0,
 					contentWidthDesktop;
 				
-				if ( this.isLeftPanelActive() ) {
+				if ( app.isLeftPanelActive() ) {
 					leftSidebarWidthDesktop = leftSidebar['article-left-sidebar-desktop-width-v2'].value ? leftSidebar['article-left-sidebar-desktop-width-v2'].value : 20;
 				}
 				
-				if ( this.isRightPanelActive() ) {
+				if ( app.isRightPanelActive() ) {
 					rightSidebarWidthDesktop = rightSidebar['article-right-sidebar-desktop-width-v2'].value ? rightSidebar['article-right-sidebar-desktop-width-v2'].value : 20;
 				}
 			
 				contentWidthDesktop = 100 - leftSidebarWidthDesktop - rightSidebarWidthDesktop;
 				
 				// resave content width if it is not true 
-				this.currentSettings.left_sidebar.settings['article-left-sidebar-desktop-width-v2'].value = leftSidebarWidthDesktop;
-				this.currentSettings.right_sidebar.settings['article-right-sidebar-desktop-width-v2'].value = rightSidebarWidthDesktop;
-				this.currentSettings.article_content.settings['article-content-desktop-width-v2'].value = contentWidthDesktop;
-				
-				this.styles.append(`
+				app.currentSettings.left_sidebar.settings['article-left-sidebar-desktop-width-v2'].value = leftSidebarWidthDesktop;
+				app.currentSettings.right_sidebar.settings['article-right-sidebar-desktop-width-v2'].value = rightSidebarWidthDesktop;
+				app.currentSettings.article_content.settings['article-content-desktop-width-v2'].value = contentWidthDesktop;
+
+				app.styles.append(`
 						#eckb-article-page-container-v2 #eckb-article-body {
 							grid-template-columns: ${leftSidebarWidthDesktop}% ${contentWidthDesktop}% ${rightSidebarWidthDesktop}%!important;
 						}
@@ -1648,36 +2061,19 @@ jQuery(document).ready(function($) {
 
 		updateAttributes: function() {
 
-			for ( let settingGroupSlug in this.currentSettings ) {
-				for ( let fieldName in this.currentSettings[settingGroupSlug].settings ) {
-					let field = this.currentSettings[settingGroupSlug].settings[fieldName];
+			let app = this;
+
+			for ( let settingGroupSlug in app.currentSettings ) {
+				for ( let fieldName in app.currentSettings[settingGroupSlug].settings ) {
+					let field = app.currentSettings[settingGroupSlug].settings[fieldName];
 
 					if ( typeof field.target_attr == 'undefined' ) {
 						continue;
 					}
-					
-					// check togglers 
-					if ( typeof field.toggler == 'string' ) {
-						let togglerOption = this.getOption(field.toggler);
-						
-						if ( togglerOption == 'off' ) {						
-							continue;
-						}
-					} else if ( typeof field.toggler == 'object' ) {
-						// object, for selects 
-						let togglerState = true;
-							
-						for ( let togglerFieldName in field.toggler ) {
-							let togglerOption = this.getOption(togglerFieldName);
-								
-							if ( togglerOption !== field.toggler[togglerFieldName] ) {
-								togglerState = false;
-							}
-						}
-							
-						if ( ! togglerState ) {
-							continue;
-						}
+
+					// check togglers
+					if ( ! app.getFieldTogglerState(fieldName) ) {
+						continue;
 					}
 					
 					let attributes = field.target_attr.split('|');
@@ -1691,89 +2087,46 @@ jQuery(document).ready(function($) {
 		},
 
 		updateText: function() {
+			let app = this;
 
-			for ( let settingGroupSlug in this.currentSettings ) {
-				for ( let fieldName in this.currentSettings[settingGroupSlug].settings ) {
-			
-					let field = this.currentSettings[settingGroupSlug].settings[fieldName];
-					
-					// check togglers 
-					if ( typeof field.toggler == 'string' ) {
-						let togglerOption = this.getOption(field.toggler);
-						
-						if ( togglerOption == 'off' ) {						
-							continue;
-						}
-					} else if ( typeof field.toggler == 'object' ) {
-						// object, for selects 
-						let togglerState = true;
-							
-						for ( let togglerFieldName in field.toggler ) {
-							let togglerOption = this.getOption(togglerFieldName);
-								
-							if ( togglerOption !== field.toggler[togglerFieldName] ) {
-								togglerState = false;
-							}
-						}
-							
-						if ( ! togglerState ) {
-							continue;
-						}
+			for ( let settingGroupSlug in app.currentSettings ) {
+				for ( let fieldName in app.currentSettings[settingGroupSlug].settings ) {
+
+					if ( ! app.getFieldTogglerState(fieldName) ) {
+						continue;
 					}
+
+					let field = app.currentSettings[settingGroupSlug].settings[fieldName];
 					
 					if ( typeof field.text != 'undefined' ) {
-						this.iframe.find(field.target_selector).text( this.decodeHtml(field.value) );
+						app.iframe.find(field.target_selector).text( app.decodeHtml(field.value) );
 					}
 
 					if ( typeof field.html != 'undefined' ) {
-						this.iframe.find(field.target_selector).html( field.value );
+						app.iframe.find(field.target_selector).html( field.value );
 					}
 				}
 			}
 		},
 		
 		checkTogglers: function() {
+
+			let app = this;
+
 			// check active inputs and togglers in modal 
-			if ( this.activeZone == '' || typeof this.currentSettings[this.activeZone] == 'undefined' ) {
+			if ( app.activeZone == '' || typeof app.currentSettings[app.activeZone] == 'undefined' ) {
 				return;
 			}
 			
-			for ( let fieldName in this.currentSettings[this.activeZone].settings ) {
+			for ( let fieldName in app.currentSettings[app.activeZone].settings ) {
 
-				let field = this.currentSettings[this.activeZone].settings[fieldName];
+				let field = app.currentSettings[app.activeZone].settings[fieldName];
 				
 				if ( typeof field.toggler == 'undefined' ) {
 					continue;
 				}
 
-				let togglerState = false;
-
-				if ( typeof field.toggler == 'string' ) {
-					togglerState = ( this.getOption(field.toggler) == 'on' ); 
-				}
-
-				if ( typeof field.toggler == 'object' ) {
-					// object, for selects 
-					togglerState = true;
-					for ( let togglerFieldName in field.toggler ) {
-						let togglerOption = this.getOption(togglerFieldName);
-
-						// check ! 
-						if ( field.toggler[togglerFieldName][0] == '!' ) {
-							if ( togglerOption == field.toggler[togglerFieldName].substring(1) ) {
-								togglerState = false;
-							}
-						} else {
-							if ( togglerOption !== field.toggler[togglerFieldName] ) {
-								togglerState = false;
-							}
-						}
-						
-					}
-					
-				}
-				
-				if ( togglerState ) {
+				if ( app.getFieldTogglerState( fieldName ) ) {
 					$('[data-field='+fieldName+']').show();
 					$('[data-separator='+fieldName+']').show();
 				} else {
@@ -1781,6 +2134,84 @@ jQuery(document).ready(function($) {
 					$('[data-separator='+fieldName+']').hide();
 				}
 			}
+		},
+
+		// return true if the field should be shown or false if the field should be hidden
+		getFieldTogglerState: function( fieldName ) {
+
+			let app           = this,
+				fieldTogglers = false;
+
+			// get field toggler settings
+			for ( let zoneName in app.currentSettings ) {
+
+				if ( typeof app.currentSettings[zoneName].settings == 'undefined' ) {
+					continue;
+				}
+
+				if ( typeof app.currentSettings[zoneName].settings[fieldName] == 'undefined' ) {
+					continue;
+				}
+
+				if ( typeof app.currentSettings[zoneName].settings[fieldName].toggler == 'undefined' ) {
+					continue;
+				}
+
+				fieldTogglers = app.currentSettings[zoneName].settings[fieldName].toggler;
+			}
+
+			// no togglers - always show
+			if ( ! fieldTogglers ) {
+				return true;
+			}
+
+			// simple condition
+			if ( typeof fieldTogglers == 'string' ) {
+				return ( app.getOption(fieldTogglers) == 'on' );
+			}
+
+			// wrong toggler - also show
+			if ( typeof fieldTogglers != 'object' ) {
+				return true;
+			}
+
+			for ( let togglerFieldName in fieldTogglers ) {
+				let togglerOption = this.getOption(togglerFieldName);
+				let fieldTogglerValue = fieldTogglers[togglerFieldName];
+
+				// check !
+				if ( fieldTogglerValue[0] == '!' ) {
+
+					if ( togglerOption == fieldTogglerValue.substring(1) ) {
+						return false;
+					} else {
+						continue;
+					}
+				}
+
+				// check |
+				if ( ~ fieldTogglerValue.indexOf( '|' ) ) {
+					let fieldTogglerValues = fieldTogglerValue.split('|');
+					let fieldState = false;
+
+					fieldTogglerValues.forEach( function( val ){
+						if ( val == togglerOption ) {
+							fieldState = true;
+						}
+					});
+
+					if ( ! fieldState ) {
+						return false;
+					}
+				} else {
+					if ( togglerOption !== fieldTogglerValue ) {
+						return false;
+					}
+				}
+
+			}
+
+			return true;
 		},
 
 		refreshIframe: function( app ) {
@@ -1792,13 +2223,14 @@ jQuery(document).ready(function($) {
 				app.iframe.find('body').append(`
 					<form id="epkb-settings-form" method="post">
 						<input type="hidden" name="epkb-editor-settings">
-						<input type="hidden" name="epkb-editor" value="1">
+						<input type="hidden" name="epkb-editor-page-loaded" value="1">
 						<input type="hidden" name="epkb-editor-kb-id" value="${epkb_editor.epkb_editor_kb_id}">
+						<input type="hidden" name="epkb-editor-preset" value="">
 					</form>
 				`);
 			}
 			
-			let allSettings = Object.assign( {}, app.currentSettings, app.currentEditorSettings );
+			let allSettings = Object.assign( {}, app.currentSettings );
 			
 			for ( let settingZone in allSettings ) {
 				for ( let fieldName in allSettings[settingZone].settings ) {
@@ -1807,9 +2239,49 @@ jQuery(document).ready(function($) {
 			}
 			
 			delete allSettings.themes;
+			
+			if ( app.activeZone ) {
+				app.preselectZone = app.activeZone;
+				
+				// remember which zone was selected by number 
+				app.preselectEq = 0;
+				
+				if ( app.isZoneExists( app.preselectZone ) ) {
+				
+					app.iframe.find( app.currentSettings[app.preselectZone].classes ).each(function(){
+						if ( $(this).hasClass('epkb-editor-zone--active') ) {
+							return false;
+						}
+						
+						app.preselectEq++;
+					});
+				}
+			}
+			
+			// add preset values 
+			if ( app.currentPreset ) {
+				app.iframe.find('#epkb-settings-form input[name=epkb-editor-preset]').val( JSON.stringify( app.currentPreset ) );
+			} else {
+				app.iframe.find('#epkb-settings-form input[name=epkb-editor-preset]').val( JSON.stringify( [] ) );
+			}
+			
+			// remember scroll top 
+			app.iframeScroll = app.iframe.scrollTop();
 
+			// remember tab on the zones settings, NOT global tab
+			if ( $('.epkb-editor-settings__panel-navigation__tab--active').data('target') !== 'global' && $('.epkb-editor-settings__panel-navigation__tab--active').data('target') !== 'hidden' ) {
+				app.activeTab = $('.epkb-editor-settings__panel-navigation__tab--active').data('target');
+			}
+			
+			// remember active typography field 
+			if ( $('.epkb-editor-settings-typography_form.active').length ) {
+				app.opennedTypography = $('.epkb-editor-settings-typography_form.active').closest('.epkb-editor-settings-control-type-typography').data( 'field' );
+			} else {
+				app.opennedTypography = false;
+			}
+			
 			app.iframe.find('#epkb-settings-form input[name=epkb-editor-settings]').val( JSON.stringify( allSettings ) );
-			app.iframe.find('#epkb-settings-form').submit();
+			app.iframe.find('#epkb-settings-form').trigger( 'submit' );
 		},
 		
 		refreshPanel: function() {
@@ -1819,7 +2291,7 @@ jQuery(document).ready(function($) {
 			
 			this.onZoneClick();
 			
-			$('#epkb-editor-settings-tab-' + currentTab).click();
+			$('#epkb-editor-settings-tab-' + currentTab).trigger('click');
 			$('.epkb-editor-settings__panel-content-container').scrollTop( currentScroll );
 		},
 
@@ -1865,7 +2337,7 @@ jQuery(document).ready(function($) {
 					},
 				});
 				
-				input.change(function( event, type ){
+				input.on( 'change', function( event, type ){
 					if ( type == 'updateSlider' ) {
 						return true;
 					}
@@ -1885,6 +2357,7 @@ jQuery(document).ready(function($) {
 			// load with ajax 
 			let postData = {
 				action: 'eckb_editor_get_themes_list',
+				epkb_editor_kb_id: epkb_editor.epkb_editor_kb_id,
 				_wpnonce_apply_editor_changes: epkb_editor._wpnonce_apply_editor_changes,
 			};
 			
@@ -1895,10 +2368,13 @@ jQuery(document).ready(function($) {
 				url: epkb_editor.ajaxurl,
 				beforeSend: function (xhr) {
 					$('[name=theme_presets]').prop('disabled', 'disabled');
+					$('[name=search_presets]').prop('disabled', 'disabled');
+					$('[name=categories_presets]').prop('disabled', 'disabled');
 				}
 			}).done(function (response) {
-				
-				app.theme_presets = response.data;
+				app.theme_presets = response.data.theme_presets;
+				app.search_presets = response.data.search_presets;
+				app.categories_presets = response.data.categories_presets;
 
 			}).fail(function (response, textStatus, error) {
 				let msg = ( error ? error : 'unknown error' );
@@ -1908,6 +2384,8 @@ jQuery(document).ready(function($) {
 				});
 			}).always(function () {
 				$('[name=theme_presets]').prop('disabled', false);
+				$('[name=search_presets]').prop('disabled', false);
+				$('[name=categories_presets]').prop('disabled', false);
 			});
 
 		},
@@ -1915,10 +2393,10 @@ jQuery(document).ready(function($) {
 		/*******  MODAL SHOW/HIDE   ********/
 		toggleMode: function( event ){
 			let app = event.data;
-			
+
 			if ( $('body').hasClass( 'epkb-edit-mode' ) ) {
 				
-				// remove preopen parameter and reload
+				// remove preopen_zone parameter and reload
 				let rtn = location.href.split( '?' )[0],
 					param,
 					params_arr = [],
@@ -1926,10 +2404,11 @@ jQuery(document).ready(function($) {
 					
 				if ( queryString !== '' ) {
 					params_arr = queryString.split( '&' );
+					
 					for ( var i = params_arr.length - 1; i >= 0; i -= 1 ) {
 						param = params_arr[i].split( '=' )[0];
 						
-						if ( param === 'preopen' ) {
+						if ( param === 'preopen_zone' ) {
 							params_arr.splice( i, 1 );
 						}
 						
@@ -1937,6 +2416,13 @@ jQuery(document).ready(function($) {
 							params_arr.splice( i, 1 );
 						}
 						
+						if ( param === 'epkb_editor_type' ) {
+							params_arr.splice( i, 1 );
+						}
+						
+						if ( param === 'preopen_setting' ) {
+							params_arr.splice( i, 1 );
+						}
 					}
 					rtn = rtn + '?' + params_arr.join( '&' );
 				}
@@ -1965,11 +2451,13 @@ jQuery(document).ready(function($) {
 		/*******  MESSAGES/LOADER SETTINGS   ********/
 
 		showLoader: function(){
+			$('body').addClass('epkb-frontend-loader--active');
 			$('.epkb-frontend-loader').addClass('epkb-frontend-loader--active'); 
 		},
 		
 		removeLoader: function(){
 			setTimeout( function() {
+				$('body').removeClass('epkb-frontend-loader--active');
 				$('.epkb-frontend-loader').removeClass('epkb-frontend-loader--active'); 
 			}, 200);
 		},
@@ -2014,7 +2502,7 @@ jQuery(document).ready(function($) {
 			
 			let app = event.data;
 			let config = {};
-			let allSettings = Object.assign( {}, app.currentSettings, app.currentEditorSettings );
+			let allSettings = Object.assign( {}, app.currentSettings );
 			
 			delete allSettings.themes;
 			
@@ -2041,7 +2529,8 @@ jQuery(document).ready(function($) {
 				_wpnonce_apply_editor_changes: epkb_editor._wpnonce_apply_editor_changes,
 				kb_config: config,
 				epkb_editor_kb_id: epkb_editor.epkb_editor_kb_id,
-				page_type: epkb_editor.page_type
+				page_type: epkb_editor.page_type,
+				current_url: location.href
 			};
 			
 			$.ajax({
@@ -2077,7 +2566,18 @@ jQuery(document).ready(function($) {
 				app.removeLoader();
 			});
 		},
-	
+
+		// apply template
+		applyTemplates: function( event ) {
+
+			event.preventDefault();
+			let app = event.data;
+
+			$('#epkb-editor').removeAttr('data-preopen');
+			$('#epkb-editor-save').trigger('click');
+			app.showInitialScreen();
+		},
+
 		/******* SETTINGS ********/
 		
 		showMenu: function ( event ) {
@@ -2099,8 +2599,8 @@ jQuery(document).ready(function($) {
 			
 			app.showBackButtons();
 			
-			// change active zone 
-			app.activeZone = 'menu';
+			// change active zone
+			app.setActiveZone( 'menu' );
 		},
 		
 		showSettings: function( event ) {
@@ -2128,28 +2628,32 @@ jQuery(document).ready(function($) {
 			$('#epkb-editor-settings-panel-global').append( epkb_editor.settings_html );
 			
 			// set active to template and layouts
-			$('.epkb-editor-settings-control-image-select input[value='+epkb_editor_settings.settings_zone.settings.templates_for_kb.value+']').prop('checked', 'checked');
-			$('.epkb-editor-settings-control-image-select input[value='+epkb_editor_settings.settings_zone.settings.kb_main_page_layout.value+']').prop('checked', 'checked');
+			if ( typeof app.currentSettings.settings_zone != 'undefined' && typeof epkb_editor_config.settings_zone.settings.templates_for_kb !== 'undefined' ) {
+				$('.epkb-editor-settings-control-image-select input[value='+epkb_editor_config.settings_zone.settings.templates_for_kb.value+']').prop('checked', 'checked');
+				$('.epkb-editor-settings-control-image-select input[value='+epkb_editor_config.settings_zone.settings.kb_main_page_layout.value+']').prop('checked', 'checked');
+			}
 			
 			$('.epkb-editor-settings-panel-global__links-container').append(
 				( epkb_editor.page_type == 'main-page' ? EPKBEditorTemplates.menuLinks( '#', 'templates', 'sliders', epkb_editor.theme_link ) : '' ) +
 				( epkb_editor.page_type == 'main-page' ? EPKBEditorTemplates.menuLinks( '#', 'layouts', 'sitemap', epkb_editor.layouts_link ) : '' ) +
-				EPKBEditorTemplates.menuLinks( epkb_editor.kb_url+'&page=epkb-kb-configuration&wizard-global', 'urls', 'globe', epkb_editor.urls_and_slug ) +
-				EPKBEditorTemplates.menuLinks( epkb_editor.kb_url+'&page=epkb-kb-configuration&wizard-ordering', 'ordering', 'object-group', epkb_editor.order_categories_and_articles ) + 
-				EPKBEditorTemplates.menuLinks( epkb_editor.kb_url+'&page=epkb-manage-kb', 'manage_kb', 'pencil-square-o', epkb_editor.rename_kb ) 
+				EPKBEditorTemplates.menuLinks( epkb_editor.urls_and_slug_url, 'urls', 'globe', epkb_editor.urls_and_slug ) +
+				EPKBEditorTemplates.menuLinks( epkb_editor.order_categories_url, 'urls', 'object-group', epkb_editor.order_categories ) +
+				( epkb_editor.page_type == 'main-page' ? EPKBEditorTemplates.menuLinks( epkb_editor.rename_kb_url, 'urls', 'pencil-square-o', epkb_editor.rename_kb ) : '' )
 			);
 			
 			// add settings on the global tab 
-			for ( let fieldName in app.currentEditorSettings.settings_zone.settings ) {
-				let field = app.currentEditorSettings.settings_zone.settings[fieldName];
-				field.element_wrapper = $('#epkb-editor-settings-panel-global');
-				app.addField( fieldName, field );
+			if ( typeof app.currentSettings.settings_zone != 'undefined' ) { 
+				for ( let fieldName in app.currentSettings.settings_zone.settings ) {
+					let field = app.currentSettings.settings_zone.settings[fieldName];
+					field.element_wrapper = $('#epkb-editor-settings-panel-global');
+					app.addField( fieldName, field );
+				}
 			}
-
+			
 			app.showBackButtons();
 			
-			// change active zone 
-			app.activeZone = 'settings';
+			// change active zone
+			app.setActiveZone( 'settings_zone' );
 		},
 		
 		/******* HELPERS ********/
@@ -2180,20 +2684,6 @@ jQuery(document).ready(function($) {
 				}
 			}
 			
-			for ( let settingGroupSlug in this.currentEditorSettings ) {
-				
-				for ( let fieldName in this.currentEditorSettings[settingGroupSlug].settings ) {
-					
-					let field = this.currentEditorSettings[settingGroupSlug].settings[fieldName];
-					
-					if ( optionName == fieldName ) {
-						
-						return field.value;
-					}
-					
-				}
-			}
-			
 			return false;
 		},
 		
@@ -2219,12 +2709,6 @@ jQuery(document).ready(function($) {
 						
 						this.currentSettings[settingGroupSlug].settings[fieldName].subfields[optionName].value = newVal;
 					}
-				}
-			}
-			
-			for ( let fieldName in this.currentEditorSettings.settings_zone.settings ) {
-				if ( optionName == fieldName ) {			
-					this.currentEditorSettings.settings_zone.settings[fieldName].value = newVal;
 				}
 			}
 		},
@@ -2290,7 +2774,14 @@ jQuery(document).ready(function($) {
 			
 			return postfixField;
 		},
-		
+
+		setActiveZone: function ( zone, settingName = '' ) {
+			let app = this;
+			app.activeZone = zone;
+			$('#epkb-editor').attr('data-zone', zone);
+			$('#epkb-editor').attr('data-setting', settingName);
+		},
+
 		// detect errors during load iframe 
 		errorHandler: function ( errorMsg, url, lineNumber, columnNumber, errorObject ) {
 
@@ -2300,9 +2791,19 @@ jQuery(document).ready(function($) {
 			
 			let message = '';
 			let error = '';
-			
+			let message3 = '';
+
 			if ( ~ errorMsg.indexOf( 'cross-origin' ) ) {
-				// detect CRP
+				// detect CSP
+				let url = new URL( location.href );
+				let csp = url.searchParams.get( 'epkb_csp_on' );
+				
+				if ( typeof csp == 'undefined' || ! csp ) {
+					url.searchParams.set( 'epkb_csp_on', '1' );
+					location.href = url;
+					return;
+				}
+				
 				message = epkb_editor.csr_error;
 				error = 'Cross-Origin error';
 
@@ -2314,14 +2815,23 @@ jQuery(document).ready(function($) {
 				});
 				return;
 
+			// redirect to backend mode if we are in usual editor
+			} else if ( ! $('body').hasClass( 'epkb-editor-backend-mode' ) ) {
+				location.href = epkb_editor.config_backend_mode_link;
+				return;
 			} else if ( errorMsg == 'timeout2' ) {
 				message = epkb_editor.timeout2_error;
 				error = 'Timeout error';
 
+			} else if ( ~ errorMsg.toLocaleLowerCase().indexOf( 'ns_error_unexpected' ) ) {
+				// firefox error
+				message = '';
+				message3 = epkb_editor.ns_error_unexpected_error;
+				error = 'NS_ERROR_UNEXPECTED';
 			} else {
 				// other errors 
 				message = epkb_editor.other_error_found;
-				error = errorMsg + ' At ' + url + ' line: ' + lineNumber;
+				error = errorMsg + ' At ' + url + ' line: ' + lineNumber + ':' + columnNumber;
 			}
 			
 			if ( $( '#epkb-editor-error-message-timeout-2' ).length ) {
@@ -2336,8 +2846,12 @@ jQuery(document).ready(function($) {
 				window.epkbErrorsList = []; // clear global notices because we already show the message
 			}
 			
-			$('.epkb-editor-error--form-message-1').text( message );
+			$('.epkb-editor-error--form-message-1').html( message );
 			$('textarea.editor_error').text( error );
+
+			if ( message3.length ) {
+				$('.epkb-editor-error--form-message-3').html( message3 );
+			}
 			
 			let app = this;
 			
@@ -2351,11 +2865,11 @@ jQuery(document).ready(function($) {
 		},
 
 		clearErrorTimeouts: function() {
-			if ( this.loadingIframe !== 'undefined' && this.loadingIframe ) {
+			if ( typeof this.loadingIframe !== 'undefined' && this.loadingIframe ) {
 				clearTimeout( this.loadingIframe );
 			}
 			
-			if ( this.longLoadingIframe !== 'undefined' && this.longLoadingIframe ) {
+			if ( typeof this.longLoadingIframe !== 'undefined' && this.longLoadingIframe ) {
 				clearTimeout( this.longLoadingIframe );
 			}
 			
@@ -2429,7 +2943,6 @@ jQuery(document).ready(function($) {
 				
 			} else {
 				$('#epkb-editor-settings-panel-navigator-enabled').addClass('epkb-editor-settings__panel--active');
-				
 			}
 			
 			
@@ -2440,30 +2953,17 @@ jQuery(document).ready(function($) {
 			let disabledZonesCounter = 0;
 			
 			for ( let zoneName in app.currentSettings ) {
-				if ( typeof app.currentSettings[zoneName].disabled_settings == 'undefined' ) {
-					continue;
-				}
-				
-				let zone = app.currentSettings[zoneName], 
-				    is_on = false;
-					
-				for ( let fieldName in zone.disabled_settings ) {
-					let optionValue = app.getOption( fieldName );
-					let conditionValue = zone.disabled_settings[fieldName];
-					
-					if ( optionValue != conditionValue ) {
-						is_on = true;
-					}						
-				}
 				
 				// dont show activated zones
-				if ( is_on ) {
+				if ( app.isZoneEnabled( zoneName ) ) {
 					continue;
 				}
 				
+				let zone = app.currentSettings[zoneName];
+				
 				app.addCheckbox( zoneName, {
-					label: zone.title,
-					value: is_on ? 'on' : 'off',
+					label: ( zoneName == 'article_content' ) ? epkb_editor.article_header_rows : zone.title,
+					value: 'off',
 					editor_tab: 'hidden'
 				});
 				
@@ -2475,12 +2975,19 @@ jQuery(document).ready(function($) {
 					content: epkb_editor.all_zones_active,
 					editor_tab: 'hidden'
 				});
+			} else {
+				
+				if ( disabledZonesCounter > 1 ) {
+					$('#epkb-editor-settings-tab-hidden .epkb-editor-settings__panel-navigation__tab__icon').append(`
+						<span class="epkb-editor-settings__panel-navigation__tab__counter">${disabledZonesCounter}</span>
+					`);
+				}
 			}
 			
 			app.showBackButtons();
 			
-			// change active zone 
-			app.activeZone = 'navigation';
+			// change active zone
+			app.setActiveZone( 'navigation' );
 			
 			$('#epkb-editor-show-navigation').addClass('epkb-editor-show-navigation--active');
 			$('.epkb-editor-container').addClass('epkb-editor-container--navigator');
@@ -2501,7 +3008,7 @@ jQuery(document).ready(function($) {
 				if ( $parentEl.parents('.epkb-editor-zone').length ) {
 					return true;
 				}
-				
+
 				zonesTree.push({
 					name: $parentEl.data('zone'),
 					children: app.searchZones( $(this), level, app )
@@ -2516,7 +3023,7 @@ jQuery(document).ready(function($) {
 		searchZones: function( $el, level, app ) {
 			
 			let children = [];
-			
+
 			if ( typeof $el == 'undefined' ) {
 				return children;
 			}
@@ -2545,9 +3052,24 @@ jQuery(document).ready(function($) {
 					return true;
 				}
 				
+				// check if it is let/right panels
+				if ( $(this).prop('id') == 'eckb-article-left-sidebar' && ! app.isLeftPanelActive() ) {
+					return true;
+				}
+
+				// check if it is let/right panels
+				if ( $(this).prop('id') == 'eckb-article-right-sidebar' && ! app.isRightPanelActive() ) {
+					return true;
+				}
+				
 				// check that zone is not duplicated 
 				let duplicated = false;
 				let zone = $(this).data('zone');
+				
+				// hide article footer from navigation when it turned off
+				if ( zone == 'metadata_footer' && app.iframe.find('.eckb-article-content-footer__article-meta [class*="article-meta"]').length < 1) {
+					return true;
+				}
 				
 				children.forEach(function( element, index ){
 					if ( element.name == zone ) {
@@ -2581,7 +3103,7 @@ jQuery(document).ready(function($) {
 			// add first top elements 
 			data.forEach( function( element ){
 					
-				if ( typeof app.currentSettings[element.name] == 'undefined' || ( ! app.iframe.find( app.currentSettings[element.name].classes ).is(':visible') && ( element.name == 'search_button_zone' || element.name == 'article_search_button_zone' ) ) ) {
+				if ( ! app.isZoneExists( element.name ) || ( ! app.iframe.find( app.currentSettings[element.name].classes ).is(':visible') && ( element.name == 'search_button_zone' || element.name == 'article_search_button_zone' ) ) ) {
 					return true;
 				}
 					
@@ -2598,7 +3120,232 @@ jQuery(document).ready(function($) {
 			html += '</ul>';
 			
 			return html;
-		}
+		},
+		
+		// check if zone exists 
+		isZoneExists: function( zoneName ) {
+			
+			if ( ! zoneName ) {
+				return false;
+			}
+
+			// settings zone exist if there is visible config button
+			if ( zoneName == 'settings_zone' && $('.epkb-editor-header__inner__config:visible').length ) {
+				return true;
+			}
+
+			return typeof this.currentSettings[zoneName] != 'undefined';
+		},
+		
+		// check if zone disabled or enabled. True = ENABLED. False = DISABLED
+		isZoneEnabled: function( zoneName ) {
+
+			let app = this;
+
+			// wrong zone, true to hide in disabled zones list 
+			if ( ! app.isZoneExists( zoneName ) ) {
+				return true;
+			}
+
+			// have no conditions - enabled 
+			if ( typeof app.currentSettings[zoneName].disabled_settings == 'undefined' ) {
+				return true;
+			}
+
+			let zone = app.currentSettings[zoneName], 
+				is_on = false;
+
+			for ( let fieldName in zone.disabled_settings ) {
+				let optionValue = app.getOption( fieldName );
+				let conditionValue = zone.disabled_settings[fieldName];
+
+				if ( optionValue != conditionValue ) {
+					is_on = true;
+				}						
+			}
+
+			// check if TOC really hidden 
+			if ( zoneName == 'toc' ) {
+				is_on = false;
+
+				if ( app.isLeftPanelActive() && parseInt( app.getOption( 'toc_left' ) ) ) {
+					is_on = true;
+				}
+
+				if ( app.isRightPanelActive() && parseInt( app.getOption( 'toc_right' ) ) ) {
+					is_on = true;
+				}
+
+				if ( parseInt(app.getOption( 'toc_content' )) ) {
+					is_on = true;
+				}
+			}
+
+			// check if metadata_footer really hidden 
+			if ( zoneName == 'metadata_footer' && is_on == true && app.iframe.find('.eckb-article-content-footer__article-meta [class*="article-meta"]').length < 1) {
+				is_on = false;
+			}
+
+			return is_on;
+		},
+		
+		// Open zone, if it is possible.
+		openZone: function( zoneName, eq = 0 ) {
+			let app = this;
+
+			if ( ! app.isZoneExists( zoneName ) ) {
+				// no such zone 
+				app.showMessage({
+					text: epkb_editor.zone_absent_error + ' ' + zoneName,
+					type: 'error'
+				});
+				return false;
+			}
+
+			if ( zoneName == 'settings_zone' ) {
+				$('.epkb-editor-header__inner__config').trigger('click');
+				return;
+			}
+
+			let zoneTitle = typeof app.currentSettings[zoneName].title == 'undefined' ? zoneName : app.currentSettings[zoneName].title;
+			
+			// setting hidden with complex logic 
+			if ( app.iframe.find( app.currentSettings[zoneName].classes ).length == 0 && typeof app.currentSettings[zoneName].disabled_settings == 'undefined' ) {
+				
+				// no such zone 
+				app.showMessage({
+					text: epkb_editor.zone_absent_error + ' ' + zoneTitle,
+					type: 'error'
+				});
+				return false;
+			}
+			
+			// zone disabled - redirect to navigation 
+			if ( ! app.isZoneEnabled( zoneName ) ) {
+				app.showNavigation( true );
+				app.showMessage({
+					text: epkb_editor.zone_disabled_text,
+					type: 'error'
+				});
+				
+				app.highlightZone(zoneName);
+				return false;
+			}
+
+			app.iframe.find( app.currentSettings[zoneName].classes ).eq( eq ).trigger('click');
+			app.highlightZone( zoneName );
+			return true;
+		},
+		
+		// Open tab if it is possible 
+		openTab: function( tabName ) {
+			// check if some tabs are exist 
+			if ( $('#epkb-editor-settings-tab-' + tabName ).length == 0 ) {
+				return false;
+			}
+			
+			$('#epkb-editor-settings-tab-' + tabName ).trigger( 'click' );
+			return true;
+		},
+		
+		// Open setting if it is possible 
+		openSetting: function( settingName ) {
+			
+			let app = this, settingZoneName = false, settingTab, settingTitle = settingName;
+			
+			for ( let zoneName in app.currentSettings ) {
+				
+				if ( typeof app.currentSettings[zoneName].settings == 'undefined' || typeof app.currentSettings[zoneName].settings[settingName] == 'undefined' ) {
+					continue;
+				}
+				
+				settingZoneName = zoneName;
+				settingTab = typeof app.currentSettings[zoneName].settings[settingName].editor_tab == 'undefined' ? '' : app.currentSettings[zoneName].settings[settingName].editor_tab;
+				settingTitle = typeof app.currentSettings[zoneName].settings[settingName].label == 'undefined' ? settingName : app.currentSettings[zoneName].settings[settingName].label;
+			}
+			
+			if ( ! settingZoneName || ! app.openZone( settingZoneName ) || ! app.openTab( settingTab ) ) {
+				// no such zone 
+				app.showMessage({
+					text: epkb_editor.zone_absent_error + ' ' + settingTitle,
+					type: 'error'
+				});
+				return false;
+			}
+			
+			// highlight zone
+			app.highlightZone( settingZoneName );
+			
+			// check if zone hidden by toggler
+			// TODO in future get name and show why setting can't be shown 
+			if ( ! app.getFieldTogglerState(settingName) ) {
+				app.showMessage({
+					text: epkb_editor.zone_absent_error + ' ' + settingTitle,
+					type: 'error'
+				});
+				return false;
+			}
+			
+			// setting can be active, scroll to it
+			let $control = $('[data-field=' + settingName + ']');
+			let elOffset = $control.offset().top - 100;
+			$('.epkb-editor-settings__panel-content-container').scrollTop( elOffset );
+			
+			// highlight the setting
+			$control.addClass('epkb-editor-settings--highlight');
+				
+			setTimeout(function(){
+				$control.removeClass('epkb-editor-settings--highlight');
+			}, 5000);
+
+			// highlight inside iframe
+			let settingDataSelector = app.currentSettings[settingZoneName].settings[settingName].target_selector;
+			if ( typeof settingDataSelector == 'undefined' || ! settingDataSelector || app.iframe.find( settingDataSelector ).length == 0 ) {
+				return;
+			}
+			
+			app.iframe.find( settingDataSelector ).addClass('epkb-editor-settings--highlight');
+			
+			setTimeout(function(){
+				app.iframe.find( settingDataSelector ).removeClass('epkb-editor-settings--highlight');
+			}, 5000);
+			
+			// scroll to el 
+			app.iframe.scrollTop( app.iframe.find( settingDataSelector ).offset().top - 100 );
+		},
+		
+		// function for navigation 
+		highlightZone: function( zoneName ) {
+			let app = this;
+			
+			// highlight disabled setting 
+			let $control = $('.epkb-editor-settings-control-container[data-field=' + zoneName + ']');
+			
+			if ( $control.length ) {
+				$control.addClass('epkb-editor-settings--highlight');
+				
+				setTimeout(function(){
+					$control.removeClass('epkb-editor-settings--highlight');
+				}, 5000);
+			}
+			
+			// highlight zone in iframe 
+			let $iframe_zone = [];
+			if ( typeof app.currentSettings[zoneName] != 'undefined' && typeof app.currentSettings[zoneName].classes != 'undefined' && app.iframe.find( app.currentSettings[zoneName].classes ).length ) {
+				$iframe_zone = app.iframe.find( app.currentSettings[zoneName].classes );
+			}
+
+			if ( $iframe_zone.length ) {
+				$iframe_zone.addClass('epkb-editor-zone--highlight');
+				setTimeout(function(){
+					$control.removeClass('epkb-editor-zone--highlight');
+				}, 5000);
+
+				// scroll to el
+				app.iframe.scrollTop( $iframe_zone.offset().top - 100 );
+			}
+		},
+		
 	};
 
 	window.EPKBEditorTemplates = {
@@ -2686,14 +3433,29 @@ jQuery(document).ready(function($) {
 			}
 				
 					
-			
-			html += `
-				<div class="epkb-editor-settings-control-container epkb-editor-settings-control-type-select epkb-editor-settings-control-type-select--${data.style}" data-field="${data.name}">
-					<div class="epkb-editor-settings-control__field">
-						<label class="epkb-editor-settings-control__title">${data.label} ${ data.info_url ? '<a class="epkb-editor-settings-control__info" href="' + data.info_url + '" target="_blank"><span class="epkbfa epkbfa-info-circle"></span><span class="info-tooltip">Click to read more about this feature</span></a>' : '' }</label>
-						<div class="epkb-editor-settings-control__input">
-							<select name="${data.name}" value="${data.value}">
-			`;
+
+			if ( data.info_url ) {
+				html += `
+					<div class="epkb-editor-settings-control-container epkb-editor-settings-control-type-select epkb-editor-settings-control-type-select--${data.style}" data-field="${data.name}">
+						<div class="epkb-editor-settings-control__field epkb-editor-settings-control__field--descriptive">
+							<div class="epkb-editor-settings-control__title-wrap">
+								<label class="epkb-editor-settings-control__title">${data.label}</label>
+								<span class="epkb-editor-settings-control__title-description"><a class="epkb-editor-settings-control__info" href="${data.info_url}" target="_blank"><span class="epkbfa epkbfa-info-circle"></span><span class="epkb-editor-settings-control__info-content">Click to read more about this feature</span></a></span>
+							</div>
+							<div class="epkb-editor-settings-control__input">
+								<select name="${data.name}" value="${data.value}">
+				`;
+
+			} else {
+				html += `
+					<div class="epkb-editor-settings-control-container epkb-editor-settings-control-type-select epkb-editor-settings-control-type-select--${data.style}" data-field="${data.name}">
+						<div class="epkb-editor-settings-control__field">
+							<label class="epkb-editor-settings-control__title">${data.label}</label>
+							<div class="epkb-editor-settings-control__input">
+								<select name="${data.name}" value="${data.value}">
+				`;
+			}
+
 
 			for ( let optionName in data.options ) {
 				
@@ -3048,19 +3810,105 @@ jQuery(document).ready(function($) {
 			`;
 		},
 		
-		modalHeader: function () {
-			return `
-				<!-- Header Container -->
-					<header class="epkb-editor-header-container">
-						<div class="epkb-editor-header__inner">
-							<div class="epkb-editor-header__inner__menu-btn"><span class="epkbfa epkbfa-bars"></span></div>
-							<div class="epkb-editor-header__inner__back-btn"><span class="epkbfa epkbfa-chevron-left"></span></div>
-							<div class="epkb-editor-header__inner__title">${epkb_editor.epkb_name}</div>
-							<div class="epkb-editor-header__inner__config"><span class="epkbfa epkbfa-cog"></span></div>
-							<div class="epkb-editor-header__inner__close-btn"><span class="epkbfa epkbfa-times"></span></div>
+		typography: function ( data ) {
+			
+			data = Object.assign( { value: {}, name: '' }, data );
+			data.value = Object.assign( epkb_editor.typography_defaults, data.value );
+			
+			let html = `
+				<div class="epkb-editor-settings-control-container epkb-editor-settings-control-type-typography" data-field="${data.name}">
+					<div class="epkb-editor-settings-control__field">
+						<label class="epkb-editor-settings-control__title">${data.label}</label>
+						<div class="epkb-editor-settings-control__input">
+							<button class="epkb-editor-settings-typography_button ep_font_icon_pencil"></button>
 						</div>
-					</header>
-				<!-- /Header Container -->`;
+						<div class="epkb-editor-settings-typography_form">
+				`;
+
+				// add form fields 
+				html += `<div class="epkb-editor-settings-typography_field">
+									<label>${epkb_editor.typography_font_family}</label>
+									<select name="${data.name}" data-typography="font-family">`;
+								
+								if ( data.value['font-family'] == '' ) {
+									html += `<option value="" selected=selected">${epkb_editor.inherit}</option>`;
+								} else {
+									html += `<option value="">${epkb_editor.inherit}</option>`;
+								}
+								
+								for ( let fontFamily in epkb_editor.typography_fonts ) {
+									let fontUrl = epkb_editor.typography_fonts[fontFamily];	
+									
+									if ( data.value['font-family'] == fontFamily ) {
+										html += `<option value="${fontFamily}" selected=selected" style="font-family:${fontFamily};" data-weight="${fontUrl}">${fontFamily}</option>`;
+									} else {
+										html += `<option value="${fontFamily}" style="font-family:${fontFamily};" data-weight="${fontUrl}">${fontFamily}</option>`;
+									}
+								}
+								
+			html += `</select>
+						</div>
+						<div class="epkb-editor-settings-typography_field">
+							<label>${epkb_editor.typography_font_size}</label>
+							<div class="epkb-editor-settings-control__input">
+								<input type="number" name="${data.name}" value="${data.value['font-size']}" min="1" max="100"  data-typography="font-size" placeholder="${epkb_editor.inherit}">
+							</div>
+						</div>
+						<div class="epkb-editor-settings-typography_field">
+							<label>${epkb_editor.typography_font_weight}</label>
+							<div class="epkb-editor-settings-control__input">
+								<select name="${data.name}" data-typography="font-weight">
+									<option value="" ${ ( data.value['font-weight'] == '' ) ? 'selected="selected"' : '' }>${epkb_editor.inherit}</option>
+									<option value="100" ${ ( data.value['font-weight'] == 100 ) ? 'selected="selected"' : '' }>100</option>
+									<option value="200" ${ ( data.value['font-weight'] == 200 ) ? 'selected="selected"' : '' }>200</option>
+									<option value="300" ${ ( data.value['font-weight'] == 300 ) ? 'selected="selected"' : '' }>300</option>
+									<option value="400" ${ ( data.value['font-weight'] == 400 ) ? 'selected="selected"' : '' }>400</option>
+									<option value="500" ${ ( data.value['font-weight'] == 500 ) ? 'selected="selected"' : '' }>500</option>
+									<option value="600" ${ ( data.value['font-weight'] == 600 ) ? 'selected="selected"' : '' }>600</option>
+									<option value="700" ${ ( data.value['font-weight'] == 700 ) ? 'selected="selected"' : '' }>700</option>
+									<option value="800" ${ ( data.value['font-weight'] == 800 ) ? 'selected="selected"' : '' }>800</option>
+									<option value="900" ${ ( data.value['font-weight'] == 900 ) ? 'selected="selected"' : '' }>900</option>
+								</select>
+							</div>
+						</div>
+						<input type="hidden" name="${data.name}" value="${data.value['font-size-units']}"  data-typography="font-size-units">
+					</div>
+				</div>
+				`;
+			
+			return html;
+		},
+		
+		modalHeader: function () {
+			
+			if ( epkb_editor.page_type == 'help-dialog' ) {
+				return `
+					<!-- Header Container -->
+						<header class="epkb-editor-header-container">
+							<div class="epkb-editor-header__inner">
+								<div class="epkb-editor-header__inner__menu-btn"></div>
+								<div class="epkb-editor-header__inner__back-btn"></div>
+								<div class="epkb-editor-header__inner__title">${epkb_editor.epkb_name}</div>
+								<div class="epkb-editor-header__inner__config"></div>
+								<div class="epkb-editor-header__inner__close-btn"></div>
+							</div>
+						</header>
+					<!-- /Header Container -->`;
+			} else {
+				return `
+					<!-- Header Container -->
+						<header class="epkb-editor-header-container">
+							<div class="epkb-editor-header__inner">
+								<div class="epkb-editor-header__inner__menu-btn"><span class="epkbfa epkbfa-bars"></span></div>
+								<div class="epkb-editor-header__inner__back-btn"><span class="epkbfa epkbfa-chevron-left"></span></div>
+								<div class="epkb-editor-header__inner__title">${epkb_editor.epkb_name}</div>
+								<div class="epkb-editor-header__inner__config"><span class="epkbfa epkbfa-cog"></span></div>
+								<div class="epkb-editor-header__inner__close-btn"><span class="epkbfa epkbfa-times"></span></div>
+							</div>
+						</header>
+					<!-- /Header Container -->`;
+			}
+			
 		},
 		
 		modalTabsHeader: function( data = [] ) {
@@ -3227,17 +4075,20 @@ jQuery(document).ready(function($) {
 		},
 	
 		modalFooter: function () {
-			return `
-				<footer class="epkb-editor-footer-container">
-					<nav class="epkb-editor-footer-nav">
-						<div class="epkb-editor-footer-nav__item epkb-editor-footer-nav__item-icon" style="display:none;"><span class="epkbfa epkbfa-reply-all" id="epkb-show-list"></span></div>
-						
+			
+			let nav_button = epkb_editor.page_type == 'help-dialog' ? '' : `
 						<div class="epkb-editor-footer-nav__item epkb-editor-footer-nav__item-btn epkb-editor-footer-nav__item-btn__navigation">
 							<button id="epkb-editor-show-navigation" class="epkb-editor-btn epkb-editor-navigation">
 								<span class="epkbfa epkbfa-map-marker"></span>
 								${epkb_editor.navigation}
 							</button>
-						</div>
+						</div>`;
+			return `
+				<footer class="epkb-editor-footer-container">
+					<nav class="epkb-editor-footer-nav">
+						<div class="epkb-editor-footer-nav__item epkb-editor-footer-nav__item-icon" style="display:none;"><span class="epkbfa epkbfa-reply-all" id="epkb-show-list"></span></div>
+						
+						${nav_button}
 						<div class="epkb-editor-footer-nav__item epkb-editor-footer-nav__item-btn">
 							<button id="epkb-editor-exit" class="epkb-editor-btn epkb-editor-exit">${epkb_editor.exit_button}</button>
 						</div>
@@ -3252,8 +4103,9 @@ jQuery(document).ready(function($) {
 		},
 		
 		modalWindow: function() {
+
 			return `
-				<div id="epkb-editor" class="epkb-editor-container">
+				<div id="epkb-editor" class="epkb-editor-container" data-preopen="${epkb_editor.preopen_zone}">
 					${ this.modalHeader() }
 					${ this.modalSettingsContainer( { tabs : [] } ) }
 					${ this.modalFooter() }
@@ -3326,6 +4178,14 @@ jQuery(document).ready(function($) {
 		
 		navigation: function ( navHTML ) {
 			return `<div class="epkb-editor-navigation">${navHTML}</div>`;
+		},
+
+		documentation_link: function( link ) {
+			return `
+				<div class="epkb-editor-settings__help-docs">
+					${link}
+				</div>
+			`;
 		},
 	};
 	
